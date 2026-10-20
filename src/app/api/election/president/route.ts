@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 import { president, QueryError } from '@/lib/tse/service';
+import { withAccess } from '@/lib/access/guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export async function GET(request: Request) {
+async function get(request: Request) {
   try {
     const params = new URL(request.url).searchParams;
     if (new Set(params.keys()).size !== Array.from(params.keys()).length)
@@ -38,3 +39,4 @@ export async function GET(request: Request) {
     return Response.json({ error: 'Não foi possível consultar a fonte oficial.' }, { status: 503 });
   }
 }
+export const GET = withAccess(get);

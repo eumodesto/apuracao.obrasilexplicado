@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
 import { history } from '@/lib/tse/history';
+import { withAccess } from '@/lib/access/guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export async function GET(request: Request) {
+async function get(request: Request) {
   if (new URL(request.url).searchParams.size)
     return Response.json(
       { error: 'O histórico corresponde ao resultado nacional presidencial.' },
@@ -15,3 +16,4 @@ export async function GET(request: Request) {
     ? new Response(null, { status: 304, headers })
     : Response.json(data, { headers });
 }
+export const GET = withAccess(get);

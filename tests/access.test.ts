@@ -1,0 +1,358 @@
+import { createHmac } from 'node:crypto';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { accessStatus, watchedSeconds } from '../src/lib/access/access';
+import { applyPayment, openPix, refreshPayment, webhookUrl } from '../src/lib/access/billing';
+import { safeNext } from '../src/lib/access/google';
+import {
+  MercadoPago,
+  mercadoPagoDate,
+  paymentStatus,
+  validWebhookSignature,
+  type MercadoPagoPayment,
+} from '../src/lib/access/mercadopago';
+import { sign, verify } from '../src/lib/access/signed';
+import { FileAccessStore } from '../src/lib/access/store';
+
+const T0 = Date.parse('2026-10-25T17:00:00-03:00');
+const limits = { free: 300, endsAt: Date.parse('2026-10-31T23:59:59-03:00'), price: 5 };
+const profile = { id: 'google:1', email: 'ana@example.com', name: 'Ana' };
+
+describe('signed tokens', () => {
+  const secret = 'x'.repeat(32);
+  it('round-trips and expires', () => {
+    const token = sign({ sub: 'u1' }, secret, 60, T0);
+    expect(verify<{ sub: string }>(token, secret, T0 + 59_000)?.sub).toBe('u1');
+    expect(verify(token, secret, T0 + 60_000)).toBeNull();
+  });
+  it('rejects tampering and other secrets', () => {
+    const token = sign({ sub: 'u1' }, secret, 60, T0);
+    const [payload, signature] = token.split('.');
+    const forged = Buffer.from(JSON.stringify({ sub: 'admin', exp: 9e9 })).toString('base64url');
+    expect(verify(`${forged}.${signature}`, secret, T0)).toBeNull();
+    expect(verify(`${payload}.${signature}x`, secret, T0)).toBeNull();
+    expect(verify(token, 'y'.repeat(32), T0)).toBeNull();
+    expect(verify(undefined, secret, T0)).toBeNull();
+    expect(verify('garbage', secret, T0)).toBeNull();
+  });
+});
+
+describe('free time', () => {
+  it('counts gaps between requests, capped so absences do not drain the free time', () => {
+    expect(watchedSeconds(null, T0, 20)).toBe(0);
+    expect(watchedSeconds(T0, T0 + 3_000, 20)).toBe(3);
+    expect(watchedSeconds(T0, T0 + 3_600_000, 20)).toBe(20);
+    expect(watchedSeconds(T0, T0 - 5_000, 20)).toBe(0);
+  });
+
+  it('is free, then locked after five watched minutes, and paid until the end of the count', () => {
+    const user = {
+      ...profile,
+      freeSecondsUsed: 0,
+      lastSeenAt: null,
+      paidAt: null,
+      paymentId: null,
+    };
+    expect(accessStatus(user, T0, limits)).toMatchObject({ state: 'free', remainingSeconds: 300 });
+    expect(accessStatus({ ...user, freeSecondsUsed: 299.2 }, T0, limits)).toMatchObject({
+      state: 'free',
+      remainingSeconds: 1,
+    });
+    expect(accessStatus({ ...user, freeSecondsUsed: 300 }, T0, limits).state).toBe('locked');
+    const paid = { ...user, freeSecondsUsed: 300, paidAt: T0 };
+    expect(accessStatus(paid, T0, limits).state).toBe('paid');
+    expect(accessStatus(paid, limits.endsAt, limits).state).toBe('locked');
+  });
+
+  it('accumulates watched time in the store without double counting parallel requests', async () => {
+    const store = new FileAccessStore();
+    await store.upsertUser(profile);
+    let now = T0;
+    await store.touch(profile.id, now, 20);
+    for (let i = 0; i < 100; i++) {
+      now += 3_000;
+      // Several panels poll at once; only the wall-clock time counts.
+      await Promise.all([1, 2, 3].map(() => store.touch(profile.id, now, 20)));
+    }
+    const user = await store.getUser(profile.id);
+    expect(user!.freeSecondsUsed).toBe(300);
+    expect(accessStatus(user!, now, limits).state).toBe('locked');
+  });
+
+  it('stops counting once paid and keeps name changes', async () => {
+    const store = new FileAccessStore();
+    await store.upsertUser(profile);
+    await store.touch(profile.id, T0, 20);
+    await store.markPaid(profile.id, 'p1', T0);
+    await store.touch(profile.id, T0 + 10_000, 20);
+    await store.upsertUser({ ...profile, name: 'Ana Souza' });
+    expect(await store.getUser(profile.id)).toMatchObject({
+      name: 'Ana Souza',
+      freeSecondsUsed: 0,
+      paidAt: T0,
+      paymentId: 'p1',
+    });
+  });
+
+  it('persists to its JSON file', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'access-')),
+      file = path.join(dir, 'access.json');
+    try {
+      const first = new FileAccessStore(file);
+      await first.upsertUser(profile);
+      await first.touch(profile.id, T0, 20);
+      await first.touch(profile.id, T0 + 7_000, 20);
+      expect((await new FileAccessStore(file).getUser(profile.id))?.freeSecondsUsed).toBe(7);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+const remote = (overrides: Partial<MercadoPagoPayment> = {}): MercadoPagoPayment => ({
+  id: '123',
+  status: 'pending',
+  amount: 5,
+  currency: 'BRL',
+  externalReference: profile.id,
+  qrCode: '000201pix',
+  qrCodeBase64: 'iVBOR',
+  expiresAt: T0 + 30 * 60_000,
+  ...overrides,
+});
+
+const fakeMercadoPago = (payment: MercadoPagoPayment) =>
+  ({
+    createPix: vi.fn(async () => payment),
+    getPayment: vi.fn(async () => payment),
+  }) as unknown as MercadoPago & {
+    createPix: ReturnType<typeof vi.fn>;
+    getPayment: ReturnType<typeof vi.fn>;
+  };
+
+describe('Pix payment', () => {
+  it('creates one charge and reuses it while it is still payable', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile),
+      mp = fakeMercadoPago(remote());
+    const first = await openPix(user, store, mp, T0, 5);
+    expect(first).toMatchObject({ id: '123', status: 'pending', qrCode: '000201pix' });
+    expect(mp.createPix).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 5, email: 'ana@example.com', userId: profile.id }),
+    );
+    expect((await openPix(user, store, mp, T0 + 60_000, 5)).id).toBe('123');
+    expect(mp.createPix).toHaveBeenCalledTimes(1);
+    mp.createPix.mockResolvedValueOnce(remote({ id: '456' }));
+    // Less than two minutes left: issue a fresh code.
+    expect((await openPix(user, store, mp, T0 + 29 * 60_000, 5)).id).toBe('456');
+  });
+
+  it('grants access only for an approved BRL payment of the full price by the same user', async () => {
+    for (const [overrides, granted] of [
+      [{ status: 'approved' }, true],
+      [{ status: 'pending' }, false],
+      [{ status: 'approved', amount: 0.5 }, false],
+      [{ status: 'approved', currency: 'USD' }, false],
+      [{ status: 'approved', externalReference: 'google:2' }, false],
+    ] as const) {
+      const store = new FileAccessStore(),
+        user = await store.upsertUser(profile);
+      await openPix(user, store, fakeMercadoPago(remote()), T0, 5);
+      expect(await applyPayment(remote(overrides), store, T0, 5)).toBe(granted);
+      expect((await store.getUser(profile.id))!.paidAt).toBe(granted ? T0 : null);
+    }
+  });
+
+  it('ignores payments it did not create', async () => {
+    const store = new FileAccessStore();
+    await store.upsertUser(profile);
+    expect(await applyPayment(remote({ status: 'approved' }), store, T0, 5)).toBe(false);
+    expect((await store.getUser(profile.id))!.paidAt).toBeNull();
+  });
+
+  it('confirms a pending charge by asking Mercado Pago (no webhook needed)', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    await openPix(user, store, fakeMercadoPago(remote()), T0, 5);
+    const payment = await refreshPayment(
+      user,
+      store,
+      fakeMercadoPago(remote({ status: 'approved' })),
+      T0,
+    );
+    expect(payment?.status).toBe('approved');
+    expect((await store.getUser(profile.id))!.paymentId).toBe('123');
+  });
+
+  it('simulates a charge without Mercado Pago', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    const payment = await openPix(user, store, null, T0, 5);
+    expect(payment.id).toMatch(/^dev-/);
+    expect(payment.qrCodeBase64).toBeNull();
+  });
+
+  it('maps Mercado Pago statuses', () => {
+    expect(paymentStatus('approved')).toBe('approved');
+    expect(paymentStatus('in_process')).toBe('pending');
+    expect(paymentStatus('rejected')).toBe('rejected');
+    expect(paymentStatus('refunded')).toBe('cancelled');
+  });
+
+  it('sends the Pix request Mercado Pago expects', async () => {
+    const transport = vi.fn(async () =>
+      Response.json({
+        id: 987,
+        status: 'pending',
+        transaction_amount: 5,
+        currency_id: 'BRL',
+        external_reference: profile.id,
+        date_of_expiration: '2026-10-25T17:30:00.000-03:00',
+        point_of_interaction: { transaction_data: { qr_code: 'PIXCODE', qr_code_base64: 'QR' } },
+      }),
+    );
+    const payment = await new MercadoPago('TOKEN', transport as typeof fetch).createPix({
+      amount: 5,
+      email: profile.email,
+      userId: profile.id,
+      description: 'Acesso',
+      expiresAt: T0 + 30 * 60_000,
+      notificationUrl: 'https://example.com/api/billing/webhook',
+    });
+    expect(payment).toMatchObject({ id: '987', qrCode: 'PIXCODE', qrCodeBase64: 'QR' });
+    const [url, init] = transport.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.mercadopago.com/v1/payments');
+    const headers = init.headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer TOKEN');
+    expect(headers['X-Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/);
+    expect(JSON.parse(init.body as string)).toEqual({
+      transaction_amount: 5,
+      description: 'Acesso',
+      payment_method_id: 'pix',
+      payer: { email: profile.email },
+      external_reference: profile.id,
+      date_of_expiration: '2026-10-25T17:30:00.000-03:00',
+      notification_url: 'https://example.com/api/billing/webhook',
+    });
+  });
+
+  it('formats dates in Brasília time and only sends public HTTPS webhooks', () => {
+    expect(mercadoPagoDate(Date.parse('2026-10-25T20:30:00Z'))).toBe(
+      '2026-10-25T17:30:00.000-03:00',
+    );
+    expect(webhookUrl('https://apuracao.example.com')).toBe(
+      'https://apuracao.example.com/api/billing/webhook',
+    );
+    expect(webhookUrl('http://localhost:3000')).toBeNull();
+  });
+
+  it('verifies the webhook signature', () => {
+    const secret = 'webhook-secret',
+      ts = '1761422400',
+      v1 = createHmac('sha256', secret).update(`id:123;request-id:req-1;ts:${ts};`).digest('hex');
+    const input = { secret, requestId: 'req-1', dataId: '123' };
+    expect(validWebhookSignature({ ...input, signature: `ts=${ts},v1=${v1}` })).toBe(true);
+    expect(validWebhookSignature({ ...input, signature: `ts=${ts},v1=${'0'.repeat(64)}` })).toBe(
+      false,
+    );
+    expect(validWebhookSignature({ ...input, dataId: '124', signature: `ts=${ts},v1=${v1}` })).toBe(
+      false,
+    );
+    expect(validWebhookSignature({ ...input, signature: null })).toBe(false);
+  });
+});
+
+describe('login redirect', () => {
+  it('only follows same-site paths', () => {
+    expect(safeNext('/?view=municipalities')).toBe('/?view=municipalities');
+    expect(safeNext('https://evil.example')).toBe('/');
+    expect(safeNext('//evil.example')).toBe('/');
+    expect(safeNext('/\\evil.example')).toBe('/');
+    expect(safeNext(null)).toBe('/');
+  });
+});
+
+describe('election data guard', () => {
+  afterEach(() => {
+    vi.resetModules();
+    vi.doUnmock('../src/lib/access/session');
+    delete (globalThis as { __accessStore?: unknown }).__accessStore;
+  });
+
+  async function guarded(session: typeof profile | null, store: FileAccessStore) {
+    vi.resetModules();
+    vi.doMock('../src/lib/access/session', () => ({
+      readSession: async () =>
+        session && { sub: session.id, email: session.email, name: session.name },
+    }));
+    (globalThis as { __accessStore?: unknown }).__accessStore = store;
+    const { withAccess } = await import('../src/lib/access/guard');
+    return withAccess(async () => Response.json({ data: true }))(new Request('http://x/'), {});
+  }
+
+  it('requires login', async () => {
+    expect((await guarded(null, new FileAccessStore())).status).toBe(401);
+  });
+
+  it('serves free and paid users and refuses once the free time is used', async () => {
+    const store = new FileAccessStore();
+    expect((await guarded(profile, store)).status).toBe(200);
+    await store.markPaid(profile.id, 'p1', Date.now());
+    expect((await guarded(profile, store)).status).toBe(200);
+
+    const other = { ...profile, id: 'google:2' },
+      lockedStore = new FileAccessStore();
+    await lockedStore.upsertUser(other);
+    // Burn the free time with consecutive requests.
+    let now = Date.now() - 400_000;
+    for (; now < Date.now(); now += 10_000) await lockedStore.touch(other.id, now, 20);
+    const response = await guarded(other, lockedStore);
+    expect(response.status).toBe(402);
+    expect((await response.json()).access.state).toBe('locked');
+  });
+});
+
+describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres store', () => {
+  it('counts time atomically, records payments and grants access once', async () => {
+    const { PostgresAccessStore } = await import('../src/lib/access/store');
+    const store = new PostgresAccessStore(process.env.TEST_DATABASE_URL!),
+      id = `test:${T0}:${Math.random()}`;
+    // Concurrent first use must not race on table creation.
+    await Promise.all([store.getUser('none'), store.latestPayment('none')]);
+    await store.upsertUser({ ...profile, id });
+    let now = T0;
+    await store.touch(id, now, 20);
+    for (let i = 0; i < 10; i++) {
+      now += 3_000;
+      await Promise.all([1, 2, 3].map(() => store.touch(id, now, 20)));
+    }
+    now += 3_600_000;
+    const user = await store.touch(id, now, 20);
+    expect(user).toMatchObject({ id, freeSecondsUsed: 50, lastSeenAt: now, paidAt: null });
+
+    const payment = {
+      id: `pay-${id}`,
+      userId: id,
+      status: 'pending' as const,
+      amount: 5,
+      qrCode: '000201',
+      qrCodeBase64: null,
+      expiresAt: now + 1_800_000,
+      createdAt: now,
+    };
+    await store.savePayment(payment);
+    expect(await store.latestPayment(id)).toEqual(payment);
+    await store.setPaymentStatus(payment.id, 'approved');
+    await store.markPaid(id, payment.id, now);
+    await store.markPaid(id, 'other', now + 1);
+    await store.touch(id, now + 5_000, 20);
+    expect(await store.getPayment(payment.id)).toMatchObject({ status: 'approved', amount: 5 });
+    expect(await store.getUser(id)).toMatchObject({
+      freeSecondsUsed: 50,
+      paidAt: now,
+      paymentId: payment.id,
+    });
+  });
+});

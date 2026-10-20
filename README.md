@@ -2,6 +2,8 @@
 
 Painel independente exclusivo para Presidente da República, 1º turno de 2026. Dados e fotos vêm dos arquivos públicos oficiais do TSE, consultados pelo servidor. Não há resultados fictícios na aplicação.
 
+O acesso exige login com Google: cada conta tem 5 minutos grátis e depois paga R$ 5,00 no Pix (Mercado Pago) para acompanhar até o fim da apuração. Veja [Login, tempo grátis e pagamento Pix](docs/ACCESS_AND_PAYMENT.md).
+
 ## Executar
 
 Requer Node.js 20.9+ (validado com Node 24).
@@ -11,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Abra http://127.0.0.1:3000. Para produção: `npm run build` e `npm start`. Configure `SITE_URL` com o domínio público. Consulte `.env.example` para os parâmetros opcionais; nenhuma credencial do TSE é necessária.
+Abra http://127.0.0.1:3000. Sem credenciais do Google e do Mercado Pago, o modo de desenvolvimento oferece um login de teste e um Pix simulado. Para produção: `npm run build` e `npm start`. Configure `SITE_URL` com o domínio público e as variáveis de login e pagamento descritas em `.env.example`; nenhuma credencial do TSE é necessária.
 
 ## Verificar
 
@@ -22,7 +24,7 @@ npm test
 npm run build
 ```
 
-Com o servidor local na porta 3000 e Microsoft Edge instalado: `npm run test:e2e`. Os testes de navegador verificam dados reais, filtros, 304 e sete larguras. Os estados controlados de apuração/erro/finalização existem apenas na interceptação do navegador de teste e recebem uma faixa explícita de simulação nas capturas. Nunca são servidos pela aplicação.
+Com o servidor local na porta 3000 (`FREE_SECONDS=86400 npm run dev`) e Microsoft Edge instalado: `npm run test:e2e`. Os testes entram com o login de teste do modo de desenvolvimento. Os testes de navegador verificam dados reais, filtros, 304 e sete larguras. Os estados controlados de apuração/erro/finalização existem apenas na interceptação do navegador de teste e recebem uma faixa explícita de simulação nas capturas. Nunca são servidos pela aplicação.
 
 ## Integração
 
