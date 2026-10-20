@@ -31,6 +31,6 @@ export function accessStatus(
     paidUntil: new Date(limits.endsAt).toISOString(),
     waiting: !paid && waiting,
     staff,
-    user: { name: user.name, email: user.email },
+    user: { name: user.name, email: user.email, username: user.username },
   };
 }

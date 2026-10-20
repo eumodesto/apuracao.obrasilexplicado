@@ -8,11 +8,11 @@ Duas iterações visuais corrigiram escala e sobreposição dos controles ao ext
 
 Medições:
 
-| Viewport | Header | Canvas | Geometria / altura canvas | Timeline | Laterais / gap / margens |
-| --- | --- | --- | --- | --- | --- |
-| 1366×768 | 52px | 745×682 | 87% | 42px | 290 / 265 / 17 / 16px |
-| 1440×900 | 52px | 819×814 | 87% | 42px | 290 / 265 / 17 / 16px |
-| 1920×1080 | 52px | 1289×994 | 87% | 42px | 295 / 270 / 17 / 16px |
+| Viewport  | Header | Canvas   | Geometria / altura canvas | Timeline | Laterais / gap / margens |
+| --------- | ------ | -------- | ------------------------- | -------- | ------------------------ |
+| 1366×768  | 52px   | 745×682  | 87%                       | 42px     | 290 / 265 / 17 / 16px    |
+| 1440×900  | 52px   | 819×814  | 87%                       | 42px     | 290 / 265 / 17 / 16px    |
+| 1920×1080 | 52px   | 1289×994 | 87%                       | 42px     | 295 / 270 / 17 / 16px    |
 
 Sem overflow horizontal ou erros JavaScript nas três resoluções. Gráfico e timeline inteiros. Testes de navegador validaram nove larguras, toque, modos, filtros, exterior, busca, deep links, replay, 304 e preservação do mapa/zoom durante indisponibilidade. Sete cenários aprovados; duas falhas de sincronização inicial foram corrigidas e passaram na repetição. Testes editoriais adicionais de tamanho do header, área do mapa e navegação recolhida aprovados. Lint, TypeScript e build aprovados.
 

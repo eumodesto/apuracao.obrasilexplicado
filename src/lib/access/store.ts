@@ -2,9 +2,28 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
 import { watchedSeconds } from './access';
-import type { AccessStore, AccessUser, PaymentStatus, PixPayment } from './types';
+import type { AccessStore, AccessUser, PaymentStatus, PixPayment, ProfileInput } from './types';
+
+const usernameKey = (username: string) => username.toLowerCase();
 
 type Data = { users: Record<string, AccessUser>; payments: Record<string, PixPayment> };
+
+/** Defaults for a new account (and for records saved before these fields existed). */
+const newUser = (id: string): AccessUser => ({
+  id,
+  email: '',
+  name: '',
+  freeSecondsUsed: 0,
+  lastSeenAt: null,
+  paidAt: null,
+  paymentId: null,
+  sessionId: null,
+  sessionChanges: 0,
+  username: null,
+  party: null,
+  partyConsentAt: null,
+  onboardedAt: null,
+});
 
 /** In-process store, optionally mirrored to a JSON file. For local development and tests only. */
 export class FileAccessStore implements AccessStore {
@@ -47,13 +66,8 @@ export class FileAccessStore implements AccessStore {
   async upsertUser({ id, email, name }: Pick<AccessUser, 'id' | 'email' | 'name'>) {
     return this.change((data) => {
       const user = (data.users[id] = {
-        ...(data.users[id] ?? {
-          id,
-          freeSecondsUsed: 0,
-          lastSeenAt: null,
-          paidAt: null,
-          paymentId: null,
-        }),
+        ...newUser(id),
+        ...data.users[id],
         email,
         name,
       });
@@ -64,7 +78,46 @@ export class FileAccessStore implements AccessStore {
   async getUser(id: string) {
     await this.load();
     const user = this.data.users[id];
-    return user ? { ...user } : null;
+    return user ? { ...newUser(id), ...user } : null;
+  }
+
+  async startSession(id: string, sessionId: string) {
+    await this.change((data) => {
+      const user = data.users[id];
+      if (!user) return;
+      if (user.sessionId && user.sessionId !== sessionId)
+        user.sessionChanges = (user.sessionChanges ?? 0) + 1;
+      user.sessionId = sessionId;
+    });
+  }
+
+  async saveProfile(id: string, profile: ProfileInput, now: number) {
+    return this.change((data) => {
+      const user = data.users[id];
+      if (!user) return 'missing' as const;
+      const key = usernameKey(profile.username);
+      if (
+        Object.values(data.users).some(
+          (other) => other.id !== id && other.username && usernameKey(other.username) === key,
+        )
+      )
+        return 'taken' as const;
+      Object.assign(user, {
+        ...profile,
+        onboardedAt: user.onboardedAt ?? now,
+        // Time spent filling the form is not free time: the next request starts counting fresh.
+        lastSeenAt: null,
+      });
+      return 'ok' as const;
+    });
+  }
+
+  async usernameTaken(username: string, exceptId?: string) {
+    await this.load();
+    const key = usernameKey(username);
+    return Object.values(this.data.users).some(
+      (user) => user.id !== exceptId && !!user.username && usernameKey(user.username) === key,
+    );
   }
 
   async touch(id: string, now: number, maxGapSeconds: number, count = true) {
@@ -120,6 +173,12 @@ type UserRow = {
   last_seen_at: Date | null;
   paid_at: Date | null;
   payment_id: string | null;
+  session_id: string | null;
+  session_changes: number;
+  username: string | null;
+  party: string | null;
+  party_consent_at: Date | null;
+  onboarded_at: Date | null;
 };
 type PaymentRow = {
   id: string;
@@ -140,6 +199,12 @@ const toUser = (row: UserRow): AccessUser => ({
   lastSeenAt: row.last_seen_at?.getTime() ?? null,
   paidAt: row.paid_at?.getTime() ?? null,
   paymentId: row.payment_id,
+  sessionId: row.session_id,
+  sessionChanges: Number(row.session_changes),
+  username: row.username,
+  party: row.party,
+  partyConsentAt: row.party_consent_at?.getTime() ?? null,
+  onboardedAt: row.onboarded_at?.getTime() ?? null,
 });
 const toPayment = (row: PaymentRow): PixPayment => ({
   id: row.id,
@@ -184,6 +249,14 @@ export class PostgresAccessStore implements AccessStore {
         created_at timestamptz NOT NULL
       );
       CREATE INDEX IF NOT EXISTS access_payments_user ON access_payments (user_id, created_at DESC);
+      ALTER TABLE access_users
+        ADD COLUMN IF NOT EXISTS session_id text,
+        ADD COLUMN IF NOT EXISTS session_changes integer NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS username text,
+        ADD COLUMN IF NOT EXISTS party text,
+        ADD COLUMN IF NOT EXISTS party_consent_at timestamptz,
+        ADD COLUMN IF NOT EXISTS onboarded_at timestamptz;
+      CREATE UNIQUE INDEX IF NOT EXISTS access_users_username ON access_users (lower(username));
     `
       .simple()
       .catch((error) => {
@@ -207,6 +280,44 @@ export class PostgresAccessStore implements AccessStore {
     await this.schema();
     const [row] = await this.sql<UserRow[]>`SELECT * FROM access_users WHERE id = ${id}`;
     return row ? toUser(row) : null;
+  }
+
+  async startSession(id: string, sessionId: string) {
+    await this.schema();
+    await this.sql`
+      UPDATE access_users SET
+        session_changes = session_changes + CASE
+          WHEN session_id IS NOT NULL AND session_id <> ${sessionId} THEN 1 ELSE 0 END,
+        session_id = ${sessionId}
+      WHERE id = ${id}`;
+  }
+
+  async saveProfile(id: string, profile: ProfileInput, now: number) {
+    await this.schema();
+    try {
+      const rows = await this.sql`
+        UPDATE access_users SET
+          username = ${profile.username},
+          party = ${profile.party},
+          party_consent_at = ${profile.partyConsentAt === null ? null : new Date(profile.partyConsentAt)},
+          onboarded_at = COALESCE(onboarded_at, ${new Date(now)}),
+          last_seen_at = NULL
+        WHERE id = ${id}
+        RETURNING id`;
+      return rows.length ? ('ok' as const) : ('missing' as const);
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') return 'taken' as const;
+      throw error;
+    }
+  }
+
+  async usernameTaken(username: string, exceptId?: string) {
+    await this.schema();
+    const rows = await this.sql`
+      SELECT 1 FROM access_users
+      WHERE lower(username) = ${usernameKey(username)} AND id <> ${exceptId ?? ''}
+      LIMIT 1`;
+    return rows.length > 0;
   }
 
   async touch(id: string, now: number, maxGapSeconds: number, count = true) {

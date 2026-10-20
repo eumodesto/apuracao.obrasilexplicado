@@ -313,3 +313,19 @@ body:has(.access-badge) {
     font-size: 16px;
   }
 }
+
+.access-badge-user {
+  max-width: 140px;
+  padding-right: 8px;
+  margin-right: 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  color: #b6b5ae;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .access-badge-user {
+    max-width: 96px;
+  }
+}

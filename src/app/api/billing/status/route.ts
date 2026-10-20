@@ -1,5 +1,5 @@
 import { mercadoPago, refreshPayment } from '@/lib/access/billing';
-import { currentAccess } from '@/lib/access/guard';
+import { currentAccess, sessionProblem } from '@/lib/access/guard';
 import { readSession } from '@/lib/access/session';
 import { accessStore } from '@/lib/access/store';
 export const runtime = 'nodejs';
@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const session = await readSession();
   const before = await currentAccess(session, undefined, undefined, { fresh: true });
-  if (!before) return Response.json({ error: 'Faça login para continuar.' }, { status: 401 });
+  const problem = sessionProblem(before);
+  if (problem || !before) return problem!;
   let payment = null;
   try {
     payment = await refreshPayment(before.user, accessStore(), mercadoPago());

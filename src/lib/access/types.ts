@@ -6,7 +6,20 @@ export type AccessUser = {
   lastSeenAt: number | null;
   paidAt: number | null;
   paymentId: string | null;
+  /** The only session allowed to use the account; a new login replaces it. */
+  sessionId: string | null;
+  /** How many times a login replaced an active session (for spotting shared accounts). */
+  sessionChanges: number;
+  /** Public, unique (case-insensitive) name chosen at sign-up. */
+  username: string | null;
+  /** Party code from the parties list, or 'none' ("Prefiro não informar"). */
+  party: string | null;
+  /** LGPD consent to use the party (sensitive data); null when no party was given. */
+  partyConsentAt: number | null;
+  onboardedAt: number | null;
 };
+
+export type ProfileInput = { username: string; party: string; partyConsentAt: number | null };
 
 export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'expired';
 
@@ -33,12 +46,17 @@ export type AccessStatus = {
   waiting: boolean;
   /** Team access (STAFF_EMAILS): always paid, never asked to pay. */
   staff: boolean;
-  user: { name: string; email: string };
+  user: { name: string; email: string; username: string | null };
 };
 
 export interface AccessStore {
   upsertUser(user: Pick<AccessUser, 'id' | 'email' | 'name'>): Promise<AccessUser>;
   getUser(id: string): Promise<AccessUser | null>;
+  /** Makes `sessionId` the account's only valid session, replacing any other. */
+  startSession(id: string, sessionId: string): Promise<void>;
+  /** Saves the sign-up profile. 'taken' when another account has the username. */
+  saveProfile(id: string, profile: ProfileInput, now: number): Promise<'ok' | 'taken' | 'missing'>;
+  usernameTaken(username: string, exceptId?: string): Promise<boolean>;
   /**
    * Records activity. Counts the time since the previous request (capped) as watched, unless
    * already paid or `count` is false (the election count has not started).

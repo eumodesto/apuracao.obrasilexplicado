@@ -37,7 +37,29 @@ export async function currentAccess(
     if (recent.size > 50_000) recent.clear();
     recent.set(session.sub, { user, store });
   }
-  return { user, status: accessStatus(user, now, undefined, !started) };
+  return {
+    user,
+    status: accessStatus(user, now, undefined, !started),
+    /** Another device signed in with this account after this session started. */
+    replaced: !session.sid || user.sessionId !== session.sid,
+    onboarded: user.onboardedAt !== null,
+  };
+}
+
+/** API answer for a session that can no longer be used, or null when it can. */
+export function sessionProblem(access: { replaced: boolean; onboarded: boolean } | null) {
+  if (!access) return Response.json({ error: 'Faça login para continuar.' }, { status: 401 });
+  if (access.replaced)
+    return Response.json(
+      { error: 'Sua conta foi conectada em outro aparelho.', code: 'replaced' },
+      { status: 401 },
+    );
+  if (!access.onboarded)
+    return Response.json(
+      { error: 'Conclua o cadastro para continuar.', code: 'onboarding' },
+      { status: 403 },
+    );
+  return null;
 }
 
 /** Drops the cached record, e.g. right after a payment changes it. */
@@ -55,7 +77,8 @@ export function withAccess<C>(handler: Handler<C>): Handler<C> {
       console.error('[access] check failed', error);
       return Response.json({ error: 'Não foi possível verificar o acesso.' }, { status: 503 });
     }
-    if (!access) return Response.json({ error: 'Faça login para continuar.' }, { status: 401 });
+    const problem = sessionProblem(access);
+    if (problem || !access) return problem!;
     if (access.status.state === 'locked')
       return Response.json(
         { error: 'O tempo gratuito acabou.', access: access.status },

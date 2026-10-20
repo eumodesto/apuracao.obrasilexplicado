@@ -37,4 +37,3 @@ Os 36 testes originais foram preservados. Sete novos testes unitários cobrem ge
 Capturas: `outputs/map-{375,390,430,768,1024,1280,1440}.png`. A verificação testa ausência de overflow em todas essas larguras. Capturas e interações usam dados oficiais reais; o teste de troca de liderança intercepta somente a API no navegador e não altera os dados de produção.
 
 Resultado final: lint e typecheck aprovados; 43 testes unitários aprovados; 5 testes de navegador aprovados em 31,5 segundos, incluindo os dois existentes; build de produção concluído. Capturas revisadas visualmente nas sete larguras. A rodada final de navegador usa o build de produção local. Algumas capturas exibem indisponibilidade porque há arquivos estaduais com horário antigo; o painel conserva as cores e mostra esses horários, sem ocultar a defasagem oficial.
-

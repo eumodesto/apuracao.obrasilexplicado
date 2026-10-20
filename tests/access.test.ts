@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accessStatus, watchedSeconds } from '../src/lib/access/access';
 import { applyPayment, openPix, refreshPayment, webhookUrl } from '../src/lib/access/billing';
 import { safeNext } from '../src/lib/access/google';
+import { NO_PARTY, PARTIES, validPartyChoice } from '../src/lib/profile/parties';
+import { cleanUsername, usernameProblem } from '../src/lib/profile/username';
 import {
   MercadoPago,
   mercadoPagoDate,
@@ -19,6 +21,14 @@ import { FileAccessStore } from '../src/lib/access/store';
 const T0 = Date.parse('2026-10-25T17:00:00-03:00');
 const limits = { free: 300, endsAt: Date.parse('2026-10-31T23:59:59-03:00'), price: 5 };
 const profile = { id: 'google:1', email: 'ana@example.com', name: 'Ana' };
+const blankProfile = {
+  sessionId: null,
+  sessionChanges: 0,
+  username: null,
+  party: null,
+  partyConsentAt: null,
+  onboardedAt: null,
+};
 
 describe('signed tokens', () => {
   const secret = 'x'.repeat(32);
@@ -54,6 +64,7 @@ describe('free time', () => {
       lastSeenAt: null,
       paidAt: null,
       paymentId: null,
+      ...blankProfile,
     };
     expect(accessStatus(user, T0, limits)).toMatchObject({ state: 'free', remainingSeconds: 300 });
     expect(accessStatus({ ...user, freeSecondsUsed: 299.2 }, T0, limits)).toMatchObject({
@@ -281,11 +292,26 @@ describe('election data guard', () => {
     delete (globalThis as { __accessStore?: unknown }).__accessStore;
   });
 
-  async function guarded(session: typeof profile | null, store: FileAccessStore) {
+  /** Calls a guarded route as `session`, signed in with session id `sid` and signed up. */
+  async function guarded(
+    session: typeof profile | null,
+    store: FileAccessStore,
+    { sid = 's1', signedUp = true }: { sid?: string; signedUp?: boolean } = {},
+  ) {
     vi.resetModules();
+    if (session && !(await store.getUser(session.id))) {
+      await store.upsertUser(session);
+      await store.startSession(session.id, 's1');
+      if (signedUp)
+        await store.saveProfile(
+          session.id,
+          { username: session.id.replace(/\W/g, ''), party: 'none', partyConsentAt: null },
+          Date.now(),
+        );
+    }
     vi.doMock('../src/lib/access/session', () => ({
       readSession: async () =>
-        session && { sub: session.id, email: session.email, name: session.name },
+        session && { sub: session.id, email: session.email, name: session.name, sid },
     }));
     (globalThis as { __accessStore?: unknown }).__accessStore = store;
     const { withAccess } = await import('../src/lib/access/guard');
@@ -304,13 +330,37 @@ describe('election data guard', () => {
 
     const other = { ...profile, id: 'google:2' },
       lockedStore = new FileAccessStore();
-    await lockedStore.upsertUser(other);
+    await guarded(other, lockedStore);
     // Burn the free time with consecutive requests.
     let now = Date.now() - 400_000;
     for (; now < Date.now(); now += 10_000) await lockedStore.touch(other.id, now, 20);
     const response = await guarded(other, lockedStore);
     expect(response.status).toBe(402);
     expect((await response.json()).access.state).toBe('locked');
+  });
+
+  it('signs out a device once the account logs in on another one', async () => {
+    const store = new FileAccessStore();
+    expect((await guarded(profile, store)).status).toBe(200);
+    // Another device logs in: its session id replaces s1.
+    await store.startSession(profile.id, 's2');
+    const old = await guarded(profile, store, { sid: 's1' });
+    expect(old.status).toBe(401);
+    expect((await old.json()).code).toBe('replaced');
+    expect((await guarded(profile, store, { sid: 's2' })).status).toBe(200);
+    expect((await store.getUser(profile.id))!.sessionChanges).toBe(1);
+  });
+
+  it('refuses cookies from before session ids existed', async () => {
+    const store = new FileAccessStore();
+    await guarded(profile, store);
+    expect((await guarded(profile, store, { sid: '' })).status).toBe(401);
+  });
+
+  it('asks for the sign-up before serving data', async () => {
+    const response = await guarded(profile, new FileAccessStore(), { signedUp: false });
+    expect(response.status).toBe(403);
+    expect((await response.json()).code).toBe('onboarding');
   });
 });
 
@@ -361,6 +411,47 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres store', () => {
       paymentId: payment.id,
     });
   });
+
+  it('keeps one session per account and unique usernames', async () => {
+    const { PostgresAccessStore } = await import('../src/lib/access/store');
+    const store = new PostgresAccessStore(process.env.TEST_DATABASE_URL!),
+      run = `${Date.now()}${Math.floor(Math.random() * 1e6)}`,
+      a = `test:a:${run}`,
+      b = `test:b:${run}`;
+    await store.upsertUser({ ...profile, id: a });
+    await store.upsertUser({ ...profile, id: b });
+    await store.startSession(a, 's1');
+    await store.startSession(a, 's1');
+    await store.startSession(a, 's2');
+    expect(await store.getUser(a)).toMatchObject({ sessionId: 's2', sessionChanges: 1 });
+    const name = `Pg_${run}`.slice(0, 20);
+    expect(
+      await store.saveProfile(a, { username: name, party: 'PL', partyConsentAt: T0 }, T0),
+    ).toBe('ok');
+    expect(
+      await store.saveProfile(
+        b,
+        { username: name.toLowerCase(), party: NO_PARTY, partyConsentAt: null },
+        T0,
+      ),
+    ).toBe('taken');
+    expect(await store.usernameTaken(name.toUpperCase())).toBe(true);
+    expect(await store.usernameTaken(name, a)).toBe(false);
+    expect(await store.getUser(a)).toMatchObject({
+      username: name,
+      party: 'PL',
+      partyConsentAt: T0,
+      onboardedAt: T0,
+      lastSeenAt: null,
+    });
+    expect(
+      await store.saveProfile(
+        `test:none:${run}`,
+        { username: 'x_y_z', party: NO_PARTY, partyConsentAt: null },
+        T0,
+      ),
+    ).toBe('missing');
+  });
 });
 
 describe('free time setting', () => {
@@ -396,6 +487,7 @@ describe('free time before the count starts', () => {
       lastSeenAt: null,
       paidAt: null,
       paymentId: null,
+      ...blankProfile,
     };
     expect(accessStatus(user, T0, limits, true)).toMatchObject({ state: 'free', waiting: true });
     expect(accessStatus({ ...user, paidAt: T0 }, T0, limits, true).waiting).toBe(false);
@@ -433,6 +525,7 @@ describe('team access', () => {
       lastSeenAt: null,
       paidAt: null,
       paymentId: null,
+      ...blankProfile,
     };
     expect(
       accessStatus(user, T0, limits, false, staff.has(user.email.toLowerCase())),
@@ -442,5 +535,90 @@ describe('team access', () => {
     });
     vi.stubEnv('STAFF_EMAILS', '');
     expect(accessStatus(user, T0, limits).state).toBe('locked');
+  });
+});
+
+describe('sign-up profile', () => {
+  it('accepts ordinary usernames', () => {
+    for (const name of ['ana', 'joao.silva', 'Maria_2026', 'computador', 'enviado', 'disputa'])
+      expect(usernameProblem(name), name).toBeNull();
+    expect(cleanUsername('  @ana.souza ')).toBe('ana.souza');
+  });
+
+  it('rejects malformed, reserved and offensive usernames', () => {
+    for (const name of [
+      'ab',
+      'a'.repeat(21),
+      'joão',
+      'ana souza',
+      '.ana',
+      'ana_',
+      'a..b',
+      '12345',
+      'admin',
+      'Admin2026',
+      'ad.min',
+      'equipe_oficial',
+      'tse',
+      'lula',
+      'lula13',
+      'Bolsonaro',
+      'flavio.bolsonaro',
+      'caralho',
+      'car4lho',
+      'puta',
+      'Puta123',
+      'v1ado',
+    ])
+      expect(usernameProblem(name), name).not.toBeNull();
+  });
+
+  it('keeps usernames unique without regard to case', async () => {
+    const store = new FileAccessStore();
+    await store.upsertUser(profile);
+    await store.upsertUser({ ...profile, id: 'google:2' });
+    const input = { username: 'Ana.Souza', party: 'PT', partyConsentAt: T0 };
+    expect(await store.saveProfile(profile.id, input, T0)).toBe('ok');
+    expect(await store.saveProfile('google:2', { ...input, username: 'ana.souza' }, T0)).toBe(
+      'taken',
+    );
+    expect(await store.usernameTaken('ANA.SOUZA')).toBe(true);
+    expect(await store.usernameTaken('ana.souza', profile.id)).toBe(false);
+    // Saving again (e.g. changing the party) keeps the same name.
+    expect(
+      await store.saveProfile(
+        profile.id,
+        { ...input, party: NO_PARTY, partyConsentAt: null },
+        T0 + 1,
+      ),
+    ).toBe('ok');
+    expect(await store.getUser(profile.id)).toMatchObject({
+      username: 'Ana.Souza',
+      party: NO_PARTY,
+      partyConsentAt: null,
+      onboardedAt: T0,
+    });
+    expect(await store.saveProfile('missing', input, T0)).toBe('missing');
+  });
+
+  it('does not count the time spent filling the form as free time', async () => {
+    const store = new FileAccessStore();
+    await store.upsertUser(profile);
+    await store.touch(profile.id, T0, 20);
+    await store.saveProfile(
+      profile.id,
+      { username: 'ana', party: NO_PARTY, partyConsentAt: null },
+      T0 + 60_000,
+    );
+    await store.touch(profile.id, T0 + 61_000, 20);
+    expect((await store.getUser(profile.id))!.freeSecondsUsed).toBe(0);
+  });
+
+  it('offers only known parties, plus "Prefiro não informar"', () => {
+    expect(validPartyChoice(NO_PARTY)).toBe(true);
+    expect(validPartyChoice('PT')).toBe(true);
+    expect(validPartyChoice('XYZ')).toBe(false);
+    expect(new Set(PARTIES.map((p) => p.code)).size).toBe(PARTIES.length);
+    expect(PARTIES.every((p) => /^#[0-9a-f]{6}$/i.test(p.color))).toBe(true);
   });
 });

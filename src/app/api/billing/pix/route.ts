@@ -1,6 +1,6 @@
 import { mercadoPago, openPix } from '@/lib/access/billing';
 import { devPaymentEnabled } from '@/lib/access/config';
-import { currentAccess } from '@/lib/access/guard';
+import { currentAccess, sessionProblem } from '@/lib/access/guard';
 import { readSession } from '@/lib/access/session';
 import { accessStore } from '@/lib/access/store';
 export const runtime = 'nodejs';
@@ -8,7 +8,8 @@ export const dynamic = 'force-dynamic';
 /** Opens (or reuses) the signed-in user's Pix charge. */
 export async function POST() {
   const access = await currentAccess(await readSession(), undefined, undefined, { fresh: true });
-  if (!access) return Response.json({ error: 'Faça login para continuar.' }, { status: 401 });
+  const problem = sessionProblem(access);
+  if (problem || !access) return problem!;
   if (access.status.state === 'paid') return Response.json({ access: access.status });
   const mp = mercadoPago();
   if (!mp && !devPaymentEnabled())

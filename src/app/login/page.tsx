@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { brl, duration } from '@/features/access/format';
 import { devLoginEnabled, freeSeconds, googleConfig, priceBrl } from '@/lib/access/config';
-import { readSession } from '@/lib/access/session';
+import { activeSession } from '@/lib/access/auth';
 import { PanelPreview } from './panel-preview';
 import './login.css';
 export const dynamic = 'force-dynamic';
@@ -10,13 +10,15 @@ export const metadata: Metadata = { title: 'Entrar — Resultados Brasil', robot
 const errors: Record<string, string> = {
   login: 'Não foi possível entrar com o Google. Tente novamente.',
   config: 'O login ainda não está disponível.',
+  'outro-aparelho':
+    'Sua conta foi conectada em outro aparelho e este foi desconectado. Para continuar aqui, entre de novo: o outro aparelho é que será desconectado.',
 };
 export default async function LoginPage({
   searchParams,
 }: {
   searchParams: Promise<{ erro?: string }>;
 }) {
-  if (await readSession()) redirect('/');
+  if (await activeSession()) redirect('/');
   const { erro } = await searchParams;
   return (
     <main className="login" id="conteudo">

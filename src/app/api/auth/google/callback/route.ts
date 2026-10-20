@@ -2,9 +2,8 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { googleConfig, sessionSecret, siteUrl } from '@/lib/access/config';
 import { googleProfile, OAUTH_COOKIE, type OAuthState } from '@/lib/access/google';
-import { startSession } from '@/lib/access/session';
+import { signIn } from '@/lib/access/auth';
 import { verify } from '@/lib/access/signed';
-import { accessStore } from '@/lib/access/store';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
@@ -19,8 +18,7 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL('/login?erro=login', base), 303);
   try {
     const profile = await googleProfile({ code, verifier: oauth.verifier, ...google, base });
-    await accessStore().upsertUser({ id: profile.sub, email: profile.email, name: profile.name });
-    await startSession(profile);
+    await signIn(profile);
     return NextResponse.redirect(new URL(oauth.next, base), 303);
   } catch (error) {
     console.error('[auth] Google login failed', error);

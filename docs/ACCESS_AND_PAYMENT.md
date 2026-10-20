@@ -6,15 +6,17 @@ O painel exige login com Google. Cada conta tem 1 minuto grátis de acompanhamen
 
 1. `/` sem cookie de sessão redireciona para `/login` (`src/proxy.ts`). A página também valida a assinatura do cookie.
 2. "Entrar com Google" usa o fluxo Authorization Code com PKCE (`/api/auth/google` → Google → `/api/auth/google/callback`). Só contas com e-mail verificado entram. A sessão é um cookie `HttpOnly` assinado com HMAC (`SESSION_SECRET`), válido por 30 dias.
-3. O tempo grátis é contado **no servidor**, por conta. Cada requisição às APIs de resultado (`/api/election/president/*`) e o batimento do painel (`POST /api/access`, a cada 15 s com a aba visível) somam o intervalo desde a requisição anterior, limitado a 20 s. Assim, vários painéis abertos ao mesmo tempo não contam em dobro, e uma ausência longa conta no máximo 20 s. Sair e entrar de novo não reinicia o tempo. Enquanto o TSE não publica o primeiro resultado da eleição ativa, o tempo grátis não corre (o selo mostra "começa a contar com a apuração"). Para aguentar o pico, cada pessoa grava no banco no máximo uma vez a cada 5 s; a contagem continua exata porque mede o intervalo desde a última gravação.
-4. Quando o tempo acaba, as APIs de resultado respondem **402**, o HTML deixa de trazer os dados e o painel mostra o popup (`src/features/access/access-gate.tsx`), que não pode ser fechado.
-5. "Pagar com Pix" cria uma cobrança no Mercado Pago (`POST /api/billing/pix`) e mostra o QR Code e o código copia e cola, válidos por 30 minutos. Uma cobrança pendente é reaproveitada enquanto ainda faltarem pelo menos 2 minutos para vencer.
-6. A confirmação chega por dois caminhos, e qualquer um libera o acesso:
+3. **Sessão única.** Cada login gera um identificador de sessão gravado na conta; só o mais recente vale. Se a mesma conta entrar em outro aparelho, o anterior recebe 401 (`code: "replaced"`) na próxima requisição e o batimento do painel (a cada 10 s, inclusive para quem pagou) leva para `/login?erro=outro-aparelho`. Entrar de novo derruba o outro aparelho. As trocas ficam contadas em `session_changes`, para a administração identificar contas compartilhadas.
+4. **Cadastro** (`/cadastro`), obrigatório no primeiro login: nome de usuário único (sem diferenciar maiúsculas; reservados e palavrões recusados; ver `src/lib/profile/username.ts`) e partido que apoia (`src/lib/profile/parties.ts`), com a opção "Prefiro não informar". Se a pessoa indicar um partido, o consentimento LGPD é obrigatório e fica gravado com data. O tempo do formulário não conta como tempo grátis. Sem cadastro, as APIs de resultado respondem 403 (`code: "onboarding"`).
+5. O tempo grátis é contado **no servidor**, por conta. Cada requisição às APIs de resultado (`/api/election/president/*`) e o batimento do painel (`POST /api/access`, a cada 10 s com a aba visível) somam o intervalo desde a requisição anterior, limitado a 20 s. Assim, vários painéis abertos ao mesmo tempo não contam em dobro, e uma ausência longa conta no máximo 20 s. Sair e entrar de novo não reinicia o tempo. Enquanto o TSE não publica o primeiro resultado da eleição ativa, o tempo grátis não corre (o selo mostra "começa a contar com a apuração"). Para aguentar o pico, cada pessoa grava no banco no máximo uma vez a cada 5 s; a contagem continua exata porque mede o intervalo desde a última gravação.
+6. Quando o tempo acaba, as APIs de resultado respondem **402**, o HTML deixa de trazer os dados e o painel mostra o popup (`src/features/access/access-gate.tsx`), que não pode ser fechado.
+7. "Pagar com Pix" cria uma cobrança no Mercado Pago (`POST /api/billing/pix`) e mostra o QR Code e o código copia e cola, válidos por 30 minutos. Uma cobrança pendente é reaproveitada enquanto ainda faltarem pelo menos 2 minutos para vencer.
+8. A confirmação chega por dois caminhos, e qualquer um libera o acesso:
    - o **webhook** do Mercado Pago (`POST /api/billing/webhook`);
    - a **consulta** que o popup faz a cada 4 s (`GET /api/billing/status`), que pergunta ao Mercado Pago pelo pagamento pendente. Esse caminho também funciona em `localhost`, onde o webhook não chega.
-7. O acesso só é liberado quando o Mercado Pago informa o pagamento como `approved`, em BRL, com valor maior ou igual ao preço e com `external_reference` igual à conta que abriu a cobrança. O corpo do webhook nunca é usado diretamente: o pagamento é sempre consultado de volta na API do Mercado Pago.
-8. O pagamento fica ligado à conta, não ao aparelho. Quem já pagou entra com a mesma conta Google em qualquer aparelho e o acesso é liberado na hora; a tela de login lembra isso em "Já pagou?". Não há envio de e-mail.
-9. O acesso pago vale até `PAID_ACCESS_ENDS_AT` (padrão: 31/10/2026, 23h59 de Brasília).
+9. O acesso só é liberado quando o Mercado Pago informa o pagamento como `approved`, em BRL, com valor maior ou igual ao preço e com `external_reference` igual à conta que abriu a cobrança. O corpo do webhook nunca é usado diretamente: o pagamento é sempre consultado de volta na API do Mercado Pago.
+10. O pagamento fica ligado à conta, não ao aparelho. Quem já pagou entra com a mesma conta Google em qualquer aparelho e o acesso é liberado na hora; a tela de login lembra isso em "Já pagou?". Não há envio de e-mail.
+11. O acesso pago vale até `PAID_ACCESS_ENDS_AT` (padrão: 31/10/2026, 23h59 de Brasília).
 
 Rotas públicas, sem verificação de acesso: `/login`, `/api/election/geography`, `/api/election/photo/*` (geografia e fotos não são resultados).
 
@@ -89,6 +91,8 @@ Os testes de navegador (`npm run test:e2e`) entram com o login de teste. Rode o 
 ## Arquivos
 
 - `src/lib/access/`: configuração, sessão assinada, contagem do tempo, armazenamento (arquivo local e Postgres), Google, Mercado Pago, cobrança e proteção das rotas.
+- `src/app/cadastro/`, `src/app/api/profile/*`, `src/lib/profile/`: cadastro (nome de usuário, partido, consentimento).
+- `src/lib/access/auth.ts`: login com sessão única.
 - `src/app/login/`: página de login, com uma prévia ilustrativa e desfocada do painel ao fundo (mapa real dos estados, sem resultados).
 - `src/app/api/auth/*`, `src/app/api/access`, `src/app/api/billing/*`: rotas de login, batimento e pagamento.
 - `src/features/access/`: contador, selo e popup do Pix.

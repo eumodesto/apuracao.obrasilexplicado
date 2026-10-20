@@ -9,6 +9,8 @@ export const dynamic = 'force-dynamic';
 export default async function Page() {
   const access = await currentAccess(await readSession(), undefined, undefined, { fresh: true });
   if (!access) redirect('/login');
+  if (access.replaced) redirect('/login?erro=outro-aparelho');
+  if (!access.onboarded) redirect('/cadastro');
   const { initial, regions } = await readBootCache();
   // Without access, the first HTML must not carry results either.
   const locked = access.status.state === 'locked';

@@ -1,11 +1,11 @@
 'use client';
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { AccessStatus } from '@/lib/access/types';
 import { brl, clock } from './format';
 import './access.css';
 
-const HEARTBEAT_MS = 15000;
+/** Also how fast a device notices that the account signed in somewhere else. */
+const HEARTBEAT_MS = 10000;
 const PAYMENT_POLL_MS = 4000;
 
 type Pix = {
@@ -33,7 +33,6 @@ export function AccessGate({
   simulatedPayment: boolean;
   children: React.ReactNode;
 }) {
-  const router = useRouter();
   const [status, setStatus] = useState(initial);
   const [remaining, setRemaining] = useState(initial.remainingSeconds);
   const left = useRef(initial.remainingSeconds);
@@ -42,7 +41,17 @@ export function AccessGate({
   const heartbeat = useCallback(async () => {
     try {
       const response = await fetch('/api/access', { method: 'POST' });
-      if (response.status === 401) return router.replace('/login');
+      if (response.status === 401 || response.status === 403) {
+        const body = await response.json().catch(() => ({}));
+        // A full navigation also stops every poll still running on this page.
+        return window.location.assign(
+          body.code === 'replaced'
+            ? '/login?erro=outro-aparelho'
+            : body.code === 'onboarding'
+              ? '/cadastro'
+              : '/login',
+        );
+      }
       if (!response.ok) return;
       const next: AccessStatus = await response.json();
       left.current = next.remainingSeconds;
@@ -51,10 +60,10 @@ export function AccessGate({
     } catch {
       // Offline: the next beat retries; the server keeps the authoritative count.
     }
-  }, [router]);
+  }, []);
 
+  // Runs for paid users too: it is what signs this device out when the account logs in elsewhere.
   useEffect(() => {
-    if (status.state === 'paid') return;
     const beat = setInterval(() => !document.hidden && heartbeat(), HEARTBEAT_MS);
     const onVisible = () => !document.hidden && heartbeat();
     document.addEventListener('visibilitychange', onVisible);
@@ -62,7 +71,7 @@ export function AccessGate({
       clearInterval(beat);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [status.state, heartbeat]);
+  }, [heartbeat]);
 
   useEffect(() => {
     // Before the count starts the server does not spend free time, so neither does the clock.
@@ -91,6 +100,11 @@ export function AccessGate({
 function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: number }) {
   return (
     <div className="access-badge" role="status">
+      {status.user.username && (
+        <span className="access-badge-user" title={status.user.email}>
+          @{status.user.username}
+        </span>
+      )}
       {status.state === 'free' && status.waiting && (
         <span className="access-badge-time">
           Grátis: <b>{clock(remaining)}</b> · começa a contar com a apuração
