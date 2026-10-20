@@ -5,6 +5,7 @@ test-results/
 playwright-report/
 .env*
 !.env.example
+!.env.development
 *.tsbuildinfo
 .cache/
 .vercel/
@@ -13,5 +14,6 @@ outputs/
 .vercel
 .env*
 !.env.example
+!.env.development
 .data/
 next-env.d.ts
