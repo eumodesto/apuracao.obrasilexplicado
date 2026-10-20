@@ -66,6 +66,8 @@ export function ChatDock() {
   const [unread, setUnread] = useState(0);
   const [atBottom, setAtBottom] = useState(true);
   const [report, setReport] = useState<Report | null>(null);
+  const [moderator, setModerator] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
   const list = useRef<HTMLOListElement>(null);
   const openRef = useRef(open);
   const atBottomRef = useRef(atBottom);
@@ -109,6 +111,7 @@ export function ChatDock() {
       setOnline(body.online);
       setMe(body.me);
       setCanWrite(body.canWrite);
+      setModerator(body.moderator === true);
       setConnected(true);
     });
     source.addEventListener('message', (event) => {
@@ -132,7 +135,11 @@ export function ChatDock() {
           ? '/login?erro=outro-aparelho'
           : code === 'onboarding'
             ? '/cadastro'
-            : null;
+            : code === 'paused'
+              ? '/login?erro=suspensa'
+              : code === 'deleted'
+                ? '/login?erro=excluida'
+                : null;
       if (target) window.location.assign(target);
     });
     return () => source.close();
@@ -161,6 +168,15 @@ export function ChatDock() {
     await fetch(`/api/chat/messages/${id}/report`, { method: 'POST' }).catch(() => null);
     setReport({ id, state: 'done' });
     setTimeout(() => setReport((current) => (current?.id === id ? null : current)), 2500);
+  };
+
+  // Administrators: the stream's delete event removes it for everyone, this tab included.
+  const removeMessage = async (id: string) => {
+    const response = await fetch(`/api/admin/messages/${id}`, { method: 'DELETE' }).catch(
+      () => null,
+    );
+    if (response?.ok) setMessages((current) => current.filter((message) => message.id !== id));
+    setRemoving(null);
   };
 
   const launcher = (
@@ -246,7 +262,38 @@ export function ChatDock() {
                   <time dateTime={new Date(message.createdAt).toISOString()}>
                     {timeOf(message.createdAt)}
                   </time>
+                  {moderator &&
+                    (removing === message.id ? (
+                      <span className="chat-report-confirm">
+                        Apagar para todos?
+                        <button type="button" onClick={() => removeMessage(message.id)}>
+                          Sim
+                        </button>
+                        <button type="button" onClick={() => setRemoving(null)}>
+                          Não
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="chat-report chat-remove"
+                        onClick={() => setRemoving(message.id)}
+                        aria-label={`Apagar mensagem de @${message.username}`}
+                        title="Apagar (administração)"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                          <path
+                            d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </button>
+                    ))}
                   {!mine &&
+                    removing !== message.id &&
                     (report?.id === message.id ? (
                       report.state === 'confirm' ? (
                         <span className="chat-report-confirm">

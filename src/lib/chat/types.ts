@@ -32,6 +32,10 @@ export interface ChatStore {
   remove(id: string, by: string, at: number): Promise<boolean>;
   /** One report per person per message; returns false when already reported. */
   report(messageId: string, userId: string, at: number): Promise<boolean>;
+  /** Visible messages with at least one report, most reported first. */
+  reported(limit: number): Promise<{ message: ChatMessage; reports: number }[]>;
+  /** Removes every visible message of an author; returns their ids. */
+  removeByAuthor(userId: string, by: string, at: number): Promise<string[]>;
 }
 
 /** Fan-out of chat events to every server, plus cross-server counters. */

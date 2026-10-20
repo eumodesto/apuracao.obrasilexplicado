@@ -112,6 +112,18 @@ export async function deleteMessage(id: string, by: string, state = chat(), now 
   return removed;
 }
 
+/** Removes all of an author's messages for everyone (account deleted). */
+export async function deleteMessagesBy(
+  userId: string,
+  by: string,
+  state = chat(),
+  now = Date.now(),
+) {
+  const ids = await state.store.removeByAuthor(userId, by, now);
+  for (const id of ids) await state.bus.publish({ type: 'delete', id });
+  return ids.length;
+}
+
 export async function reportMessage(id: string, userId: string, state = chat(), now = Date.now()) {
   if (!(await state.store.get(id))) return 'missing' as const;
   return (await state.store.report(id, userId, now)) ? ('ok' as const) : ('already' as const);

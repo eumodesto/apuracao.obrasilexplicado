@@ -357,3 +357,11 @@
     right: 396px;
   }
 }
+/* Administrators: delete beside the report flag. */
+.chat-remove + .chat-report,
+.chat-remove + .chat-report-confirm {
+  margin-left: 0;
+}
+.chat-remove:hover {
+  color: #ffb4a8;
+}

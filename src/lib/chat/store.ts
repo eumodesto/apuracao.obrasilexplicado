@@ -37,6 +37,29 @@ export class MemoryChatStore implements ChatStore {
     this.reports.add(key);
     return true;
   }
+
+  async reported(limit: number) {
+    const counts = new Map<string, number>();
+    for (const key of this.reports) {
+      const id = key.split('|')[0];
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return this.messages
+      .filter((message) => message.deletedAt === null && counts.has(message.id))
+      .map((message) => ({ message: { ...message }, reports: counts.get(message.id)! }))
+      .sort((a, b) => b.reports - a.reports || b.message.createdAt - a.message.createdAt)
+      .slice(0, limit);
+  }
+
+  async removeByAuthor(userId: string, _by: string, at: number) {
+    const removed: string[] = [];
+    for (const message of this.messages)
+      if (message.userId === userId && message.deletedAt === null) {
+        message.deletedAt = at;
+        removed.push(message.id);
+      }
+    return removed;
+  }
 }
 
 type MessageRow = {
@@ -132,5 +155,24 @@ export class PostgresChatStore implements ChatStore {
       VALUES (${messageId}, ${userId}, ${new Date(at)})
       ON CONFLICT DO NOTHING RETURNING message_id`;
     return rows.length > 0;
+  }
+
+  async reported(limit: number) {
+    await this.schema();
+    const rows = await this.sql<(MessageRow & { reports: string })[]>`
+      SELECT m.*, r.reports FROM chat_messages m
+      JOIN (SELECT message_id, count(*) AS reports FROM chat_reports GROUP BY message_id) r
+        ON r.message_id = m.id
+      WHERE m.deleted_at IS NULL
+      ORDER BY r.reports DESC, m.created_at DESC LIMIT ${limit}`;
+    return rows.map((row) => ({ message: toMessage(row), reports: Number(row.reports) }));
+  }
+
+  async removeByAuthor(userId: string, by: string, at: number) {
+    await this.schema();
+    const rows = await this.sql<{ id: string }[]>`
+      UPDATE chat_messages SET deleted_at = ${new Date(at)}, deleted_by = ${by}
+      WHERE user_id = ${userId} AND deleted_at IS NULL RETURNING id`;
+    return rows.map((row) => row.id);
   }
 }

@@ -33,13 +33,20 @@ export const devPaymentEnabled = () => isDevelopment() && !mercadoPagoConfig();
  * Team members who always have full access, without free time or payment.
  * Safe in production because Google only signs in verified e-mails.
  */
+const emailList = (value: string | undefined) =>
+  (value ?? '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean);
+
 export function staffEmails() {
-  return new Set(
-    (process.env.STAFF_EMAILS ?? '')
-      .split(',')
-      .map((email) => email.trim().toLowerCase())
-      .filter(Boolean),
-  );
+  // Administrators are part of the team too.
+  return new Set([...emailList(process.env.STAFF_EMAILS), ...emailList(process.env.ADMIN_EMAILS)]);
+}
+
+/** Who may open /admin (Google sign-in only accepts verified e-mails). */
+export function adminEmails() {
+  return new Set(emailList(process.env.ADMIN_EMAILS));
 }
 
 export function freeSeconds() {

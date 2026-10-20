@@ -28,6 +28,10 @@ const blankProfile = {
   party: null,
   partyConsentAt: null,
   onboardedAt: null,
+  createdAt: null,
+  pausedAt: null,
+  pausedReason: null,
+  deletedAt: null,
 };
 
 describe('signed tokens', () => {

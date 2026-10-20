@@ -17,6 +17,26 @@ export type AccessUser = {
   /** LGPD consent to use the party (sensitive data); null when no party was given. */
   partyConsentAt: number | null;
   onboardedAt: number | null;
+  createdAt: number | null;
+  /** Suspended by a moderator: no panel, no chat, until unpaused. */
+  pausedAt: number | null;
+  pausedReason: string | null;
+  /** Removed at the person's or the moderators' request: personal data is anonymized. */
+  deletedAt: number | null;
+};
+
+export type UserQuery = { query?: string; limit: number; offset: number };
+
+export type AccessStats = {
+  users: number;
+  onboarded: number;
+  paid: number;
+  paused: number;
+  deleted: number;
+  /** Accounts that switched devices at least once (possible sharing). */
+  switchedDevices: number;
+  revenue: number;
+  approvedPayments: number;
 };
 
 export type ProfileInput = { username: string; party: string; partyConsentAt: number | null };
@@ -72,4 +92,10 @@ export interface AccessStore {
   setPaymentStatus(id: string, status: PaymentStatus): Promise<void>;
   latestPayment(userId: string): Promise<PixPayment | null>;
   getPayment(id: string): Promise<PixPayment | null>;
+  /** Suspends (with a reason) or, with null, reactivates the account. */
+  setPaused(id: string, pause: { at: number; reason: string } | null): Promise<boolean>;
+  /** Deletes personal data (e-mail, name, username, party) and ends the session; keeps payments. */
+  anonymize(id: string, at: number): Promise<boolean>;
+  listUsers(query: UserQuery): Promise<{ users: AccessUser[]; total: number }>;
+  stats(): Promise<AccessStats>;
 }

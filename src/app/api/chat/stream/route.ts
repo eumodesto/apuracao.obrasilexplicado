@@ -1,3 +1,4 @@
+import { isAdmin } from '@/lib/access/access';
 import { chatAccess } from '@/lib/chat/access';
 import { connect, history, onlineCount } from '@/lib/chat/service';
 import type { ChatEvent } from '@/lib/chat/types';
@@ -16,6 +17,8 @@ export async function GET(request: Request) {
   const chat = await chatAccess();
   if (chat.problem) return chat.problem;
   const { session } = chat;
+  // Administrators also get a delete button on every message.
+  const moderator = isAdmin(chat.access.user);
   const encoder = new TextEncoder();
   let stop = () => {};
 
@@ -65,6 +68,7 @@ export async function GET(request: Request) {
           online: await onlineCount(),
           me: chat.author.username,
           canWrite: chat.canWrite,
+          moderator,
         });
       } catch (error) {
         console.error('[chat] history unavailable', error);
@@ -73,6 +77,7 @@ export async function GET(request: Request) {
           online: 0,
           me: chat.author.username,
           canWrite: chat.canWrite,
+          moderator,
         });
       }
     },

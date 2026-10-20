@@ -9,6 +9,9 @@ export const metadata: Metadata = { title: 'Entrar — Resultados Brasil', robot
 const errors: Record<string, string> = {
   login: 'Não foi possível entrar com o Google. Tente novamente.',
   config: 'O login ainda não está disponível.',
+  suspensa:
+    'Sua conta está suspensa pela moderação. Se acha que é um engano, fale com a equipe do Resultados Brasil.',
+  excluida: 'Esta conta foi excluída.',
   'outro-aparelho':
     'Sua conta foi conectada em outro aparelho e este foi desconectado. Para continuar aqui, entre de novo: o outro aparelho é que será desconectado.',
 };
@@ -17,7 +20,9 @@ export default async function LoginPage({
 }: {
   searchParams: Promise<{ erro?: string }>;
 }) {
-  if (await activeSession()) redirect('/');
+  const active = await activeSession();
+  // A suspended or deleted account stays here, with the reason, instead of looping back.
+  if (active && !active.user.pausedAt && !active.user.deletedAt) redirect('/');
   const { erro } = await searchParams;
   return (
     <main className="login" id="conteudo">

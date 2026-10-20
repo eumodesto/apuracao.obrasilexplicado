@@ -1,5 +1,8 @@
-import { freeSeconds, paidAccessEndsAt, priceBrl, staffEmails } from './config';
+import { adminEmails, freeSeconds, paidAccessEndsAt, priceBrl, staffEmails } from './config';
 import type { AccessStatus, AccessUser } from './types';
+
+export const isAdmin = (user: Pick<AccessUser, 'email' | 'deletedAt' | 'pausedAt'>) =>
+  !user.deletedAt && !user.pausedAt && adminEmails().has(user.email.toLowerCase());
 
 export const isStaff = (user: AccessUser, staff = staffEmails()) =>
   staff.has(user.email.toLowerCase());

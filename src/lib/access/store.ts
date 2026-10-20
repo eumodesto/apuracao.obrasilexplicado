@@ -2,7 +2,15 @@ import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
 import { watchedSeconds } from './access';
-import type { AccessStore, AccessUser, PaymentStatus, PixPayment, ProfileInput } from './types';
+import type {
+  AccessStats,
+  AccessStore,
+  AccessUser,
+  PaymentStatus,
+  PixPayment,
+  ProfileInput,
+  UserQuery,
+} from './types';
 
 const usernameKey = (username: string) => username.toLowerCase();
 
@@ -23,7 +31,24 @@ const newUser = (id: string): AccessUser => ({
   party: null,
   partyConsentAt: null,
   onboardedAt: null,
+  createdAt: null,
+  pausedAt: null,
+  pausedReason: null,
+  deletedAt: null,
 });
+
+/** What an anonymized account keeps: its id, payments and counters, never personal data. */
+const ANONYMOUS = { email: '', name: 'Conta excluída', username: null, party: null };
+
+const matches = (user: AccessUser, query?: string) => {
+  const q = query?.trim().toLowerCase().replace(/^@/, '');
+  return (
+    !q ||
+    [user.id, user.email, user.username ?? '', user.name].some((field) =>
+      field.toLowerCase().includes(q),
+    )
+  );
+};
 
 /** In-process store, optionally mirrored to a JSON file. For local development and tests only. */
 export class FileAccessStore implements AccessStore {
@@ -65,11 +90,13 @@ export class FileAccessStore implements AccessStore {
 
   async upsertUser({ id, email, name }: Pick<AccessUser, 'id' | 'email' | 'name'>) {
     return this.change((data) => {
+      const existing = data.users[id];
+      // An anonymized account stays anonymous even if the same Google account signs in again.
       const user = (data.users[id] = {
         ...newUser(id),
-        ...data.users[id],
-        email,
-        name,
+        ...existing,
+        createdAt: existing?.createdAt ?? Date.now(),
+        ...(existing?.deletedAt ? {} : { email, name }),
       });
       return { ...user };
     });
@@ -163,6 +190,49 @@ export class FileAccessStore implements AccessStore {
     const payment = this.data.payments[id];
     return payment ? { ...payment } : null;
   }
+
+  async setPaused(id: string, pause: { at: number; reason: string } | null) {
+    return this.change((data) => {
+      const user = data.users[id];
+      if (!user) return false;
+      Object.assign(user, { pausedAt: pause?.at ?? null, pausedReason: pause?.reason ?? null });
+      return true;
+    });
+  }
+
+  async anonymize(id: string, at: number) {
+    return this.change((data) => {
+      const user = data.users[id];
+      if (!user) return false;
+      Object.assign(user, ANONYMOUS, { partyConsentAt: null, sessionId: null, deletedAt: at });
+      return true;
+    });
+  }
+
+  async listUsers({ query, limit, offset }: UserQuery) {
+    await this.load();
+    const found = Object.values(this.data.users)
+      .map((user) => ({ ...newUser(user.id), ...user }))
+      .filter((user) => matches(user, query))
+      .sort((a, b) => (b.lastSeenAt ?? b.createdAt ?? 0) - (a.lastSeenAt ?? a.createdAt ?? 0));
+    return { users: found.slice(offset, offset + limit), total: found.length };
+  }
+
+  async stats(): Promise<AccessStats> {
+    await this.load();
+    const users = Object.values(this.data.users);
+    const approved = Object.values(this.data.payments).filter((p) => p.status === 'approved');
+    return {
+      users: users.length,
+      onboarded: users.filter((u) => u.onboardedAt).length,
+      paid: users.filter((u) => u.paidAt).length,
+      paused: users.filter((u) => u.pausedAt).length,
+      deleted: users.filter((u) => u.deletedAt).length,
+      switchedDevices: users.filter((u) => (u.sessionChanges ?? 0) > 0).length,
+      revenue: Math.round(approved.reduce((sum, p) => sum + p.amount, 0) * 100) / 100,
+      approvedPayments: approved.length,
+    };
+  }
 }
 
 type UserRow = {
@@ -179,6 +249,10 @@ type UserRow = {
   party: string | null;
   party_consent_at: Date | null;
   onboarded_at: Date | null;
+  created_at: Date | null;
+  paused_at: Date | null;
+  paused_reason: string | null;
+  deleted_at: Date | null;
 };
 type PaymentRow = {
   id: string;
@@ -205,6 +279,10 @@ const toUser = (row: UserRow): AccessUser => ({
   party: row.party,
   partyConsentAt: row.party_consent_at?.getTime() ?? null,
   onboardedAt: row.onboarded_at?.getTime() ?? null,
+  createdAt: row.created_at?.getTime() ?? null,
+  pausedAt: row.paused_at?.getTime() ?? null,
+  pausedReason: row.paused_reason,
+  deletedAt: row.deleted_at?.getTime() ?? null,
 });
 const toPayment = (row: PaymentRow): PixPayment => ({
   id: row.id,
@@ -255,7 +333,10 @@ export class PostgresAccessStore implements AccessStore {
         ADD COLUMN IF NOT EXISTS username text,
         ADD COLUMN IF NOT EXISTS party text,
         ADD COLUMN IF NOT EXISTS party_consent_at timestamptz,
-        ADD COLUMN IF NOT EXISTS onboarded_at timestamptz;
+        ADD COLUMN IF NOT EXISTS onboarded_at timestamptz,
+        ADD COLUMN IF NOT EXISTS paused_at timestamptz,
+        ADD COLUMN IF NOT EXISTS paused_reason text,
+        ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
       CREATE UNIQUE INDEX IF NOT EXISTS access_users_username ON access_users (lower(username));
     `
       .simple()
@@ -271,7 +352,9 @@ export class PostgresAccessStore implements AccessStore {
     await this.schema();
     const [row] = await this.sql<UserRow[]>`
       INSERT INTO access_users (id, email, name) VALUES (${id}, ${email}, ${name})
-      ON CONFLICT (id) DO UPDATE SET email = EXCLUDED.email, name = EXCLUDED.name
+      ON CONFLICT (id) DO UPDATE SET
+        email = CASE WHEN access_users.deleted_at IS NULL THEN EXCLUDED.email ELSE access_users.email END,
+        name = CASE WHEN access_users.deleted_at IS NULL THEN EXCLUDED.name ELSE access_users.name END
       RETURNING *`;
     return toUser(row);
   }
@@ -369,6 +452,66 @@ export class PostgresAccessStore implements AccessStore {
     await this.schema();
     const [row] = await this.sql<PaymentRow[]>`SELECT * FROM access_payments WHERE id = ${id}`;
     return row ? toPayment(row) : null;
+  }
+
+  async setPaused(id: string, pause: { at: number; reason: string } | null) {
+    await this.schema();
+    const rows = await this.sql`
+      UPDATE access_users SET
+        paused_at = ${pause ? new Date(pause.at) : null},
+        paused_reason = ${pause?.reason ?? null}
+      WHERE id = ${id} RETURNING id`;
+    return rows.length > 0;
+  }
+
+  async anonymize(id: string, at: number) {
+    await this.schema();
+    const rows = await this.sql`
+      UPDATE access_users SET
+        email = ${ANONYMOUS.email}, name = ${ANONYMOUS.name}, username = NULL, party = NULL,
+        party_consent_at = NULL, session_id = NULL, deleted_at = ${new Date(at)}
+      WHERE id = ${id} RETURNING id`;
+    return rows.length > 0;
+  }
+
+  async listUsers({ query, limit, offset }: UserQuery) {
+    await this.schema();
+    const q = query?.trim().toLowerCase().replace(/^@/, '') ?? '';
+    const pattern = `%${q.replace(/[\\%_]/g, (c) => '\\' + c)}%`;
+    const where = q
+      ? this.sql`WHERE lower(id) LIKE ${pattern} OR lower(email) LIKE ${pattern}
+          OR lower(coalesce(username, '')) LIKE ${pattern} OR lower(name) LIKE ${pattern}`
+      : this.sql``;
+    const [rows, [{ count }]] = await Promise.all([
+      this.sql<UserRow[]>`
+        SELECT * FROM access_users ${where}
+        ORDER BY coalesce(last_seen_at, created_at) DESC NULLS LAST
+        LIMIT ${limit} OFFSET ${offset}`,
+      this.sql<{ count: string }[]>`SELECT count(*) FROM access_users ${where}`,
+    ]);
+    return { users: rows.map(toUser), total: Number(count) };
+  }
+
+  async stats(): Promise<AccessStats> {
+    await this.schema();
+    const [users] = await this.sql<Record<string, string>[]>`
+      SELECT count(*) AS users, count(onboarded_at) AS onboarded, count(paid_at) AS paid,
+        count(paused_at) AS paused, count(deleted_at) AS deleted,
+        count(*) FILTER (WHERE session_changes > 0) AS switched
+      FROM access_users`;
+    const [payments] = await this.sql<Record<string, string | null>[]>`
+      SELECT count(*) AS approved, coalesce(sum(amount), 0) AS revenue
+      FROM access_payments WHERE status = 'approved'`;
+    return {
+      users: Number(users.users),
+      onboarded: Number(users.onboarded),
+      paid: Number(users.paid),
+      paused: Number(users.paused),
+      deleted: Number(users.deleted),
+      switchedDevices: Number(users.switched),
+      revenue: Number(payments.revenue),
+      approvedPayments: Number(payments.approved),
+    };
   }
 }
 

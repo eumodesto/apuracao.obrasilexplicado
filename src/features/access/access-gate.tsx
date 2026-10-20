@@ -73,7 +73,11 @@ export function AccessGate({
             ? '/login?erro=outro-aparelho'
             : body.code === 'onboarding'
               ? '/cadastro'
-              : '/login',
+              : body.code === 'paused'
+                ? '/login?erro=suspensa'
+                : body.code === 'deleted'
+                  ? '/login?erro=excluida'
+                  : '/login',
         );
       }
       if (!response.ok) return;

@@ -43,16 +43,29 @@ export async function currentAccess(
     /** Another device signed in with this account after this session started. */
     replaced: !session.sid || user.sessionId !== session.sid,
     onboarded: user.onboardedAt !== null,
+    /** Suspended or deleted by the moderators. */
+    blocked: user.deletedAt ? ('deleted' as const) : user.pausedAt ? ('paused' as const) : null,
   };
 }
 
 /** API answer for a session that can no longer be used, or null when it can. */
-export function sessionProblem(access: { replaced: boolean; onboarded: boolean } | null) {
+export function sessionProblem(
+  access: { replaced: boolean; onboarded: boolean; blocked: 'paused' | 'deleted' | null } | null,
+) {
   if (!access) return Response.json({ error: 'Faça login para continuar.' }, { status: 401 });
   if (access.replaced)
     return Response.json(
       { error: 'Sua conta foi conectada em outro aparelho.', code: 'replaced' },
       { status: 401 },
+    );
+  if (access.blocked)
+    return Response.json(
+      {
+        error:
+          access.blocked === 'deleted' ? 'Esta conta foi excluída.' : 'Sua conta está suspensa.',
+        code: access.blocked,
+      },
+      { status: 403 },
     );
   if (!access.onboarded)
     return Response.json(
