@@ -90,6 +90,36 @@
 .login form {
   margin: 0;
 }
+.login-dev-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #b6b5ae;
+  font-size: 13px;
+}
+.login-dev-email {
+  display: block;
+  width: 100%;
+  height: 44px;
+  margin-bottom: 12px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: #1d1d1a;
+  color: #eeede8;
+  font: inherit;
+  font-size: 15px;
+}
+.login-returning {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #b6b5ae;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.login-returning b {
+  color: #eeede8;
+}
 .login-error {
   margin: 0 0 16px;
   padding: 10px 12px;

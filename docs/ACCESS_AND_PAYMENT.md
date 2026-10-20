@@ -13,7 +13,8 @@ O painel exige login com Google. Cada conta tem 1 minuto grátis de acompanhamen
    - o **webhook** do Mercado Pago (`POST /api/billing/webhook`);
    - a **consulta** que o popup faz a cada 4 s (`GET /api/billing/status`), que pergunta ao Mercado Pago pelo pagamento pendente. Esse caminho também funciona em `localhost`, onde o webhook não chega.
 7. O acesso só é liberado quando o Mercado Pago informa o pagamento como `approved`, em BRL, com valor maior ou igual ao preço e com `external_reference` igual à conta que abriu a cobrança. O corpo do webhook nunca é usado diretamente: o pagamento é sempre consultado de volta na API do Mercado Pago.
-8. O acesso pago vale até `PAID_ACCESS_ENDS_AT` (padrão: 31/10/2026, 23h59 de Brasília).
+8. O pagamento fica ligado à conta, não ao aparelho. Quem já pagou entra com a mesma conta Google em qualquer aparelho e o acesso é liberado na hora; a tela de login lembra isso em "Já pagou?". Não há envio de e-mail.
+9. O acesso pago vale até `PAID_ACCESS_ENDS_AT` (padrão: 31/10/2026, 23h59 de Brasília).
 
 Rotas públicas, sem verificação de acesso: `/login`, `/api/election/geography`, `/api/election/photo/*` (geografia e fotos não são resultados).
 
@@ -66,7 +67,7 @@ Sem `DATABASE_URL`, contas e pagamentos ficam em `.data/access.json`, o que serv
 
 Com `npm run dev` e sem as credenciais:
 
-- sem `GOOGLE_CLIENT_ID`, a página de login mostra **Entrar como visitante de teste**;
+- sem `GOOGLE_CLIENT_ID`, a página de login mostra **Entrar como visitante de teste**, com um campo de e-mail: cada e-mail simula uma conta Google diferente (útil para testar quem já pagou e volta em outro aparelho);
 - sem `MP_ACCESS_TOKEN`, o popup gera um **Pix simulado** com o botão **Simular pagamento aprovado**.
 
 Os dois atalhos existem só em `next dev` (`NODE_ENV=development`) e desaparecem sozinhos quando a credencial correspondente é configurada. Para testar o popup rapidamente, rode com `FREE_SECONDS=30`. Para recomeçar do zero, pare o servidor e apague `.data/`.

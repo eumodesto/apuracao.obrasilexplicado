@@ -61,12 +61,23 @@ export default async function LoginPage({
           </a>
         ) : devLoginEnabled() ? (
           <form method="post" action="/api/auth/dev">
+            <label className="login-dev-label" htmlFor="dev-email">
+              E-mail da conta de teste
+            </label>
+            <input
+              id="dev-email"
+              className="login-dev-email"
+              name="email"
+              type="email"
+              defaultValue="teste@localhost"
+              required
+            />
             <button className="login-dev" type="submit">
               Entrar como visitante de teste
             </button>
             <p className="login-fine">
-              Modo de desenvolvimento: o login com Google aparece quando GOOGLE_CLIENT_ID e
-              GOOGLE_CLIENT_SECRET estiverem configurados.
+              Modo de desenvolvimento: cada e-mail simula uma conta Google diferente. O login com
+              Google aparece quando GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET estiverem configurados.
             </p>
           </form>
         ) : (
@@ -74,6 +85,10 @@ export default async function LoginPage({
             {errors.config}
           </p>
         )}
+        <p className="login-returning">
+          <b>Já pagou?</b> Entre com a mesma conta usada no pagamento e o acesso é liberado na hora,
+          em qualquer aparelho.
+        </p>
         <p className="login-fine">
           Usamos sua conta apenas para controlar o tempo grátis e o pagamento. Painel independente,
           sem vínculo com o TSE.
