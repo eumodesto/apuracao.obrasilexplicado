@@ -3,11 +3,19 @@ import { AccessGate } from '@/features/access/access-gate';
 import { ChatDock } from '@/features/chat/chat';
 import { FirstAccess } from '@/features/election/first-access/first-access';
 import { emptyBootResult, readBootCache } from '@/features/election/first-access/read-boot-cache';
-import { devPaymentEnabled } from '@/lib/access/config';
+import { Countdown } from '@/features/landing/countdown';
+import { isStaff } from '@/lib/access/access';
+import { activeSession } from '@/lib/access/auth';
+import { countIsOpen, countStartsAt, devPaymentEnabled } from '@/lib/access/config';
 import { currentAccess } from '@/lib/access/guard';
 import { readSession } from '@/lib/access/session';
 export const dynamic = 'force-dynamic';
 export default async function Page() {
+  // Before the count opens, everyone but the team sees the countdown.
+  if (!countIsOpen()) {
+    const active = await activeSession();
+    if (!active || !isStaff(active.user)) return <Countdown startsAt={countStartsAt()} />;
+  }
   const access = await currentAccess(await readSession(), undefined, undefined, { fresh: true });
   if (!access) redirect('/login');
   if (access.replaced) redirect('/login?erro=outro-aparelho');

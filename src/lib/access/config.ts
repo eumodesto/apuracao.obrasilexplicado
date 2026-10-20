@@ -53,6 +53,19 @@ export function priceBrl() {
   return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : 5;
 }
 
+/**
+ * When the 2nd-round count opens to the public (polls close at 17h in Brasília). Before it, the
+ * home page shows a countdown instead of the panel.
+ */
+export function countStartsAt() {
+  const value = Date.parse(process.env.COUNT_STARTS_AT || '2026-10-25T17:00:00-03:00');
+  if (Number.isNaN(value)) throw new Error('COUNT_STARTS_AT must be an ISO date.');
+  return value;
+}
+
+/** Whether the public count has started (the panel replaces the countdown). */
+export const countIsOpen = (now = Date.now()) => now >= countStartsAt();
+
 /** Paid access lasts until the end of the count, not for a fixed duration. */
 export function paidAccessEndsAt() {
   const value = Date.parse(process.env.PAID_ACCESS_ENDS_AT || '2026-10-31T23:59:59-03:00');

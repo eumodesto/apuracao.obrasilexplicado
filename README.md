@@ -2,7 +2,7 @@
 
 Painel independente exclusivo para Presidente da República, 1º turno de 2026. Dados e fotos vêm dos arquivos públicos oficiais do TSE, consultados pelo servidor. Não há resultados fictícios na aplicação.
 
-O acesso exige login com Google: cada conta tem 1 minuto grátis e depois paga R$ 5,00 no Pix (Mercado Pago) para acompanhar até o fim da apuração. Veja [Login, tempo grátis e pagamento Pix](docs/ACCESS_AND_PAYMENT.md).
+O acesso exige login com Google: cada conta tem 1 minuto grátis e depois paga R$ 5,00 no Pix (Mercado Pago) para acompanhar até o fim da apuração. Veja [Login, tempo grátis e pagamento Pix](docs/ACCESS_AND_PAYMENT.md). Antes do início da apuração, a página inicial é uma contagem regressiva com aviso por e-mail, e `/resultado-1-turno` mostra o resultado oficial do 1º turno; veja [Contagem regressiva e resultado do 1º turno](docs/LANDING.md).
 
 ## Executar
 

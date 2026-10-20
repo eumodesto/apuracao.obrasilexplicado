@@ -18,9 +18,8 @@ export function discoverElection(input: unknown, turn = process.env.TSE_TURN): E
         )
         .map((election) => ({ contest, election })),
     )
-    .filter(({ election }) => !turn || election.t === turn)
     .sort((a, b) => Number(b.election.t) - Number(a.election.t));
-  const chosen = options[0];
+  const chosen = options.find(({ election }) => !turn || election.t === turn);
   if (!chosen) throw new Error('Election configuration not published or changed');
   return {
     cycle: chosen.contest.c,
@@ -30,7 +29,19 @@ export function discoverElection(input: unknown, turn = process.env.TSE_TURN): E
     turn: chosen.election.t,
     date: chosen.contest.dt,
     directories: Object.fromEntries(data.arq.map((a) => [a.tp, a.dir])),
+    rounds: options.map(({ contest, election }) => ({
+      contest: contest.cd,
+      election: election.cd,
+      turn: election.t,
+      date: contest.dt,
+    })),
   };
+}
+
+/** The configuration of another round of the same election (e.g. the 1st round during the 2nd). */
+export function roundConfig(config: ElectionConfig, turn: string): ElectionConfig | null {
+  const round = config.rounds?.find((item) => item.turn === turn);
+  return round ? { ...config, ...round } : null;
 }
 export function normalizeGeography(input: unknown): Geography[] {
   return geographySchema.parse(input).abr.map((a) => ({

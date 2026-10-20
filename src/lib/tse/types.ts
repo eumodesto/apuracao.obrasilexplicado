@@ -7,6 +7,8 @@ export type ElectionConfig = {
   /** Election day as published by the TSE (dd/mm/yyyy). */
   date: string;
   directories: Record<string, string>;
+  /** Every round of this presidential election published so far, the chosen one included. */
+  rounds?: { contest: string; election: string; turn: string; date: string }[];
 };
 export type Geography = {
   code: string;
