@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { devLoginEnabled, googleConfig } from '@/lib/access/config';
 import { activeSession } from '@/lib/access/auth';
+import { safeNext } from '@/lib/access/google';
 import { PanelPreview } from './panel-preview';
 import './login.css';
 export const dynamic = 'force-dynamic';
@@ -18,12 +19,14 @@ const errors: Record<string, string> = {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ erro?: string }>;
+  searchParams: Promise<{ erro?: string; next?: string }>;
 }) {
+  const { erro, next: requested } = await searchParams;
+  // Where to go after signing in (e.g. /admin); only paths of this site.
+  const next = safeNext(requested);
   const active = await activeSession();
   // A suspended or deleted account stays here, with the reason, instead of looping back.
-  if (active && !active.user.pausedAt && !active.user.deletedAt) redirect('/');
-  const { erro } = await searchParams;
+  if (active && !active.user.pausedAt && !active.user.deletedAt) redirect(next);
   return (
     <main className="login" id="conteudo">
       <PanelPreview />
@@ -40,7 +43,14 @@ export default async function LoginPage({
           </p>
         )}
         {googleConfig() ? (
-          <a className="login-google" href="/api/auth/google">
+          <a
+            className="login-google"
+            href={
+              next === '/'
+                ? '/api/auth/google'
+                : `/api/auth/google?next=${encodeURIComponent(next)}`
+            }
+          >
             <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true">
               <path
                 fill="#FFC107"
@@ -63,6 +73,7 @@ export default async function LoginPage({
           </a>
         ) : devLoginEnabled() ? (
           <form method="post" action="/api/auth/dev">
+            <input type="hidden" name="next" value={next} />
             <label className="login-dev-label" htmlFor="dev-email">
               E-mail da conta de teste
             </label>

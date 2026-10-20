@@ -10,6 +10,9 @@ ADMIN_EMAILS=okmodesto@gmail.com,daniel@gmail.com
 - Administradores também têm acesso liberado ao painel, como os de `STAFF_EMAILS`.
 - Para tirar alguém: remova o e-mail da variável e reinicie o servidor.
 - Uma conta de administrador suspensa perde a administração.
+- Sem login, `/admin` leva ao login e volta para `/admin` depois de entrar.
+- No modo de desenvolvimento, uma conta que não é de administrador vê o que falta (o e-mail usado e o que está em `ADMIN_EMAILS`). Em produção, continua sendo 404.
+- No PC sem Google configurado, use o login de teste com o seu e-mail de administrador (por exemplo `okmodesto@gmail.com`), e não `teste@localhost`.
 
 ## Abas
 
