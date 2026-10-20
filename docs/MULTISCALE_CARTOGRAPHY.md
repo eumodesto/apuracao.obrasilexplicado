@@ -36,17 +36,17 @@ Cobertura: 27 estados versus 5.571 municípios; zoom 1×/2×/4×; pan sem seleç
 
 Todos em 1440×900, gerados pelo navegador:
 
-| Captura             | Arquivo                                     |
-| ------------------- | ------------------------------------------- |
-| Brasil / Estados    | `outputs/cartography-brasil-estados.png`    |
+| Captura | Arquivo |
+|---|---|
+| Brasil / Estados | `outputs/cartography-brasil-estados.png` |
 | Brasil / Municípios | `outputs/cartography-brasil-municipios.png` |
-| Nordeste 2×         | `outputs/cartography-nordeste-2x.png`       |
-| Nordeste 4×         | `outputs/cartography-nordeste-4x.png`       |
-| Hover estadual      | `outputs/cartography-hover-estadual.png`    |
-| Hover municipal     | `outputs/cartography-hover-municipal.png`   |
-| Candidato Flávio    | `outputs/cartography-candidato-flavio.png`  |
-| Candidato Lula      | `outputs/cartography-candidato-lula.png`    |
-| Apurado             | `outputs/cartography-apurado.png`           |
-| Vantagem            | `outputs/cartography-vantagem.png`          |
+| Nordeste 2× | `outputs/cartography-nordeste-2x.png` |
+| Nordeste 4× | `outputs/cartography-nordeste-4x.png` |
+| Hover estadual | `outputs/cartography-hover-estadual.png` |
+| Hover municipal | `outputs/cartography-hover-municipal.png` |
+| Candidato Flávio | `outputs/cartography-candidato-flavio.png` |
+| Candidato Lula | `outputs/cartography-candidato-lula.png` |
+| Apurado | `outputs/cartography-apurado.png` |
+| Vantagem | `outputs/cartography-vantagem.png` |
 
 Galeria e comparação com os anexos: `outputs/cartography-comparison.html`. Validação reproduzível: `node scripts/verify-multiscale-map.mjs`, com limite de 80 segundos e relatório em `outputs/cartography-validation.json`.

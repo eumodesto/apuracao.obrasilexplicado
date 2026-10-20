@@ -54,10 +54,7 @@ export class TseClient {
   /** Hydrate a durable result without spending an upstream request or clearing backoff. */
   async restore<T>(url: string, parse: (input: unknown) => T): Promise<Resource<T> | null> {
     const parsedUrl = new URL(url);
-    if (
-      parsedUrl.origin !== 'https://resultados.tse.jus.br' ||
-      !parsedUrl.pathname.startsWith('/oficial/')
-    )
+    if (parsedUrl.origin !== 'https://resultados.tse.jus.br' || !parsedUrl.pathname.startsWith('/oficial/'))
       throw new Error('Disallowed source');
     if (this.states.get(url)?.value) return this.peek<T>(url);
     const saved = await this.cache.get(url);
@@ -65,17 +62,10 @@ export class TseClient {
     try {
       const value = parse(JSON.parse(saved.body));
       const previous = this.states.get(url);
-      this.states.set(url, {
-        value,
-        entry: saved,
-        nextAttempt: previous?.nextAttempt ?? 0,
-        failures: previous?.failures ?? 0,
-        issue: previous?.issue ?? null,
-        attemptedAt: previous?.attemptedAt,
-      });
-    } catch {
-      /* Corrupt or incompatible cache cannot color a municipality. */
-    }
+      this.states.set(url, { value, entry: saved, nextAttempt: previous?.nextAttempt ?? 0,
+        failures: previous?.failures ?? 0, issue: previous?.issue ?? null,
+        attemptedAt: previous?.attemptedAt });
+    } catch { /* Corrupt or incompatible cache cannot color a municipality. */ }
     return this.peek<T>(url);
   }
   async read<T>(url: string, parse: (input: unknown) => T, interval: number): Promise<Resource<T>> {
