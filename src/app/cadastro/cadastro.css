@@ -74,57 +74,173 @@
   border: 0;
   min-width: 0;
 }
-.signup-party-grid {
+.signup-sides {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 12px;
 }
-.signup-party {
+.signup-side {
   position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 52px;
-  padding: 8px 14px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 9px;
-  background: #1d1d1a;
-  color: #d8d7d0;
-  font-size: 16px;
-  font-weight: 700;
-  line-height: 1.2;
-  cursor: pointer;
-}
-.signup-party:first-child {
-  grid-column: 1 / -1;
-  order: 1;
-  min-height: 44px;
-  font-size: 14px;
-  font-weight: 400;
-}
-.signup-party:hover {
-  border-color: rgba(255, 255, 255, 0.25);
-}
-.signup-party.is-checked {
-  border-color: #f5c518;
-  background: #2a2617;
+  display: block;
+  aspect-ratio: 5 / 6;
+  overflow: hidden;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in srgb, var(--side) 85%, #fff 15%),
+      transparent 70%
+    ),
+    linear-gradient(160deg, var(--side), color-mix(in srgb, var(--side) 45%, #000));
   color: #fff;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    filter 0.2s ease,
+    opacity 0.2s ease;
 }
-.signup-party input {
+.signup-side:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 40px color-mix(in srgb, var(--side) 45%, transparent);
+}
+.signup-side input {
   position: absolute;
   opacity: 0;
   pointer-events: none;
 }
-.signup-party:focus-within {
+.signup-side:has(input:focus-visible) {
+  outline: 3px solid #f5c518;
+  outline-offset: 3px;
+}
+.signup-side.is-checked {
+  border-color: #fff;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow:
+    0 0 0 4px color-mix(in srgb, var(--side) 55%, transparent),
+    0 18px 50px color-mix(in srgb, var(--side) 60%, transparent);
+}
+.signup-side.is-dimmed {
+  filter: grayscale(0.85) brightness(0.6);
+  opacity: 0.75;
+}
+.signup-side.is-dimmed:hover {
+  filter: grayscale(0.4) brightness(0.8);
+}
+.signup-side-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.signup-side-arrows {
+  transition: transform 0.35s ease;
+}
+.signup-side:hover .signup-side-arrows,
+.signup-side.is-checked .signup-side-arrows {
+  transform: translateX(-12px);
+}
+.signup-side-text {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  padding: 14px 16px 16px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.45));
+}
+.signup-side.is-direita .signup-side-text {
+  align-items: flex-end;
+  text-align: right;
+}
+.signup-side-kicker {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+.signup-side-number {
+  font:
+    800 clamp(56px, 16vw, 84px) / 0.9 Impact,
+    'Arial Black',
+    'Arial Narrow',
+    sans-serif;
+  letter-spacing: -0.02em;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+.signup-side-party {
+  margin-top: 4px;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.signup-side-check {
+  position: absolute;
+  top: 10px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--side);
+  font-size: 16px;
+  font-weight: 900;
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+.signup-side.is-esquerda .signup-side-check {
+  right: 10px;
+}
+.signup-side.is-direita .signup-side-check {
+  left: 10px;
+}
+.signup-side.is-checked .signup-side-check {
+  opacity: 1;
+  transform: scale(1);
+}
+.signup-neutral {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  margin-top: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 9px;
+  background: #1d1d1a;
+  color: #b6b5ae;
+  font-size: 14px;
+  cursor: pointer;
+}
+.signup-neutral:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+.signup-neutral.is-checked {
+  border-color: #f5c518;
+  background: #2a2617;
+  color: #fff;
+}
+.signup-neutral input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.signup-neutral:has(input:focus-visible) {
   outline: 3px solid #f5c518;
   outline-offset: 1px;
 }
-.signup-party-dot {
-  flex: none;
-  width: 12px;
-  height: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 50%;
+@media (prefers-reduced-motion: reduce) {
+  .signup-side,
+  .signup-side-arrows,
+  .signup-side-check {
+    transition: none;
+  }
 }
 .signup-consent {
   margin-top: 18px;

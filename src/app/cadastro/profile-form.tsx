@@ -140,26 +140,27 @@ export function ProfileForm({
         aria-describedby={errors.party ? 'party-error' : undefined}
       >
         <legend className="signup-label">Quem você apoia para Presidente</legend>
-        <div className="signup-party-grid">
-          <PartyOption
-            value={noParty}
-            label="Prefiro não informar"
-            color="transparent"
-            checked={party === noParty}
-            onChange={setParty}
-          />
+        <div className="signup-sides">
           {parties.map((option) => (
-            <PartyOption
+            <SideCard
               key={option.code}
-              value={option.code}
-              label={`${option.number} · ${option.code}`}
-              title={option.name}
-              color={option.color}
+              party={option}
               checked={party === option.code}
+              dimmed={party !== '' && party !== option.code}
               onChange={setParty}
             />
           ))}
         </div>
+        <label className={party === noParty ? 'signup-neutral is-checked' : 'signup-neutral'}>
+          <input
+            type="radio"
+            name="party"
+            value={noParty}
+            checked={party === noParty}
+            onChange={() => setParty(noParty)}
+          />
+          <span>Prefiro não informar</span>
+        </label>
         {errors.party && (
           <p id="party-error" className="signup-status is-error" role="alert">
             {errors.party}
@@ -207,32 +208,71 @@ export function ProfileForm({
   );
 }
 
-function PartyOption({
-  value,
-  label,
-  title,
-  color,
+/** Big image button for one side: color, number and arrows pointing to the side. No faces. */
+function SideCard({
+  party,
   checked,
+  dimmed,
   onChange,
 }: {
-  value: string;
-  label: string;
-  title?: string;
-  color: string;
+  party: Party;
   checked: boolean;
+  dimmed: boolean;
   onChange: (value: string) => void;
 }) {
+  const left = party.side === 'esquerda';
   return (
-    <label className={checked ? 'signup-party is-checked' : 'signup-party'} title={title}>
+    <label
+      className={`signup-side is-${party.side}${checked ? ' is-checked' : ''}${dimmed ? ' is-dimmed' : ''}`}
+      style={{ '--side': party.color } as React.CSSProperties}
+      title={party.name}
+    >
       <input
         type="radio"
         name="party"
-        value={value}
+        value={party.code}
         checked={checked}
-        onChange={() => onChange(value)}
+        onChange={() => onChange(party.code)}
       />
-      <span className="signup-party-dot" style={{ background: color }} aria-hidden="true" />
-      <span>{label}</span>
+      <svg className="signup-side-art" viewBox="0 0 200 240" aria-hidden="true">
+        <defs>
+          <pattern
+            id={`stripes-${party.code}`}
+            width="10"
+            height="10"
+            patternUnits="userSpaceOnUse"
+            patternTransform={`rotate(${left ? 45 : -45})`}
+          >
+            <rect width="4" height="10" fill="#fff" opacity="0.06" />
+          </pattern>
+        </defs>
+        <rect width="200" height="240" fill={`url(#stripes-${party.code})`} />
+        {/* Mirrored for the right side, so both animate the same way: outward. */}
+        <g transform={left ? undefined : 'translate(200 0) scale(-1 1)'}>
+          <g className="signup-side-arrows">
+            {[0, 1, 2].map((i) => (
+              <path
+                key={i}
+                d={`M${78 + i * 34} 64 L${38 + i * 34} 120 L${78 + i * 34} 176`}
+                fill="none"
+                stroke="#fff"
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity={0.1 + i * 0.07}
+              />
+            ))}
+          </g>
+        </g>
+      </svg>
+      <span className="signup-side-check" aria-hidden="true">
+        ✓
+      </span>
+      <span className="signup-side-text">
+        <span className="signup-side-kicker">{left ? '← Esquerda' : 'Direita →'}</span>
+        <span className="signup-side-number">{party.number}</span>
+        <span className="signup-side-party">{party.code}</span>
+      </span>
     </label>
   );
 }
