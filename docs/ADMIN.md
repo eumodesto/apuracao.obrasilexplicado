@@ -3,7 +3,7 @@
 Endereço: **`/admin`**. Só abre para quem entrou com o Google usando um e-mail da lista `ADMIN_EMAILS`. Para qualquer outra pessoa, a página e as APIs respondem 404: a área não se revela.
 
 ```
-ADMIN_EMAILS=okmodesto@gmail.com,daniel@gmail.com
+ADMIN_EMAILS=admin1@example.com,admin2@example.com
 ```
 
 - Não existe senha. O Google só autentica e-mails verificados.
@@ -12,8 +12,8 @@ ADMIN_EMAILS=okmodesto@gmail.com,daniel@gmail.com
 - Uma conta de administrador suspensa perde a administração.
 - Sem login, `/admin` leva ao login e volta para `/admin` depois de entrar.
 - No modo de desenvolvimento, uma conta que não é de administrador vê o que falta (o e-mail usado e o que está em `ADMIN_EMAILS`). Em produção, continua sendo 404.
-- Em desenvolvimento, o arquivo `.env.development` (versionado, sem segredos) já define `ADMIN_EMAILS` e `STAFF_EMAILS`. Um `.env.local` pode sobrescrever esses valores.
-- No PC sem Google configurado, use o login de teste com o seu e-mail de administrador (por exemplo `okmodesto@gmail.com`), e não `teste@localhost`.
+- Os e-mails reais ficam só no `.env.local` (no seu PC) e nas variáveis de ambiente do servidor. Nunca vão para o repositório.
+- No PC sem Google configurado, use o login de teste com o seu e-mail de administrador , e não `teste@localhost`.
 
 ## Abas
 

@@ -27,7 +27,7 @@ E-mails listados em `STAFF_EMAILS` (separados por vírgula, sem diferenciar mai�
 Localmente, crie um arquivo `.env.local` (não vai para o Git) com, por exemplo:
 
 ```sh
-STAFF_EMAILS=okmodesto@gmail.com,daniel@gmail.com
+STAFF_EMAILS=admin1@example.com,admin2@example.com
 ```
 
 e entre no login de teste com um desses e-mails.

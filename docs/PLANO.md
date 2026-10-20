@@ -126,7 +126,7 @@ Pendências conhecidas, fora do escopo destas correções:
 
 ### 4.7 Área de administração (`/admin`)
 
-- **Entrada pelo Google, sem senha:** só os e-mails da lista `ADMIN_EMAILS` (`okmodesto@gmail.com`, `daniel@gmail.com` e outros que você indicar) abrem `/admin`. O Google só autentica e-mails verificados, então não há senha para vazar nem para trocar. Esses e-mails também ficam em `STAFF_EMAILS`, com acesso liberado ao painel.
+- **Entrada pelo Google, sem senha:** só os e-mails da lista `ADMIN_EMAILS` (os e-mails que você indicar, configurados no servidor) abrem `/admin`. O Google só autentica e-mails verificados, então não há senha para vazar nem para trocar. Esses e-mails também ficam em `STAFF_EMAILS`, com acesso liberado ao painel.
 - **Usuários:**
   - busca por nome de usuário, e-mail ou ID, mostrando partido, situação do pagamento, indicações e trocas de aparelho;
   - **Pausar:** bloqueia na hora o chat e o painel, com o motivo registrado; dá para reativar;

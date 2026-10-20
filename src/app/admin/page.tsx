@@ -41,7 +41,7 @@ function AdminHelp({ email, configured }: { email: string; configured: string[] 
       <ol>
         <li>
           No arquivo <code>.env.local</code>, na raiz do projeto, coloque:
-          <pre>ADMIN_EMAILS=okmodesto@gmail.com,daniel@gmail.com</pre>
+          <pre>ADMIN_EMAILS={email}</pre>
         </li>
         <li>
           Pare e inicie de novo o <code>npm run dev</code> (o arquivo só é lido ao iniciar).
