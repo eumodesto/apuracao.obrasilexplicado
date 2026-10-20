@@ -1,0 +1,45 @@
+export type ChatMessage = {
+  id: string;
+  userId: string;
+  /** Snapshot of the author's public name and side when the message was sent. */
+  username: string;
+  party: string | null;
+  text: string;
+  createdAt: number;
+  deletedAt: number | null;
+};
+
+/** What other people see: never the account id or e-mail. */
+export type PublicMessage = Pick<ChatMessage, 'id' | 'username' | 'party' | 'text' | 'createdAt'>;
+
+export type ChatEvent =
+  | { type: 'message'; message: PublicMessage }
+  | { type: 'delete'; id: string };
+
+export const toPublic = ({ id, username, party, text, createdAt }: ChatMessage): PublicMessage => ({
+  id,
+  username,
+  party,
+  text,
+  createdAt,
+});
+
+export interface ChatStore {
+  add(message: ChatMessage): Promise<void>;
+  /** Latest visible messages, oldest first. */
+  recent(limit: number): Promise<ChatMessage[]>;
+  get(id: string): Promise<ChatMessage | null>;
+  remove(id: string, by: string, at: number): Promise<boolean>;
+  /** One report per person per message; returns false when already reported. */
+  report(messageId: string, userId: string, at: number): Promise<boolean>;
+}
+
+/** Fan-out of chat events to every server, plus cross-server counters. */
+export interface ChatBus {
+  publish(event: ChatEvent): Promise<void>;
+  subscribe(listener: (event: ChatEvent) => void): () => void;
+  /** Takes a slot for `key` for `ms`; false when it is still taken (slow mode). */
+  claim(key: string, ms: number): Promise<boolean>;
+  /** Reports how many chat connections this server holds; returns the total across servers. */
+  online(local: number): Promise<number>;
+}

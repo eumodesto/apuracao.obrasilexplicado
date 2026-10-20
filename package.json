@@ -13,6 +13,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "ioredis": "^5.11.1",
     "next": "^16.0.0",
     "postgres": "^3.4.7",
     "react": "^19.2.0",

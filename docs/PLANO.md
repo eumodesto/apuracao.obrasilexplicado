@@ -161,15 +161,15 @@ Pendências conhecidas, fora do escopo destas correções:
 
 O 2º turno é em 5 dias, então o cronograma tem margem pequena. As funções novas param na **sexta à noite**.
 
-| Dia       | Entrega                                                                                                                                    |
-| --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| Ter 20/10 | ✅ Correções acima e este plano                                                                                                            |
-| Qua 21/10 | Sessão única, cadastro (nome de usuário e partido, LGPD) e migração para o Supabase                                                        |
-| Qui 22/10 | Chat (SSE + Valkey), moderação básica e área de administração (login, pausar, excluir e apagar mensagem)                                   |
-| Sex 23/10 | Layout responsivo com o chat, compartilhar no WhatsApp com imagem e indicações (registro e contagem). Docker e implantação na DigitalOcean |
-| Sáb 24/10 | Pix e Google reais em produção, teste de carga com 5 mil pessoas, ajustes e reinício depois da publicação do 2º turno                      |
-| Dom 25/10 | Monitoramento durante a apuração; nenhuma mudança de código, salvo correções urgentes                                                      |
-| Depois    | **Fase 2:** loja de figurinhas, doação, resgate das recompensas por indicação e melhorias da seção 5                                       |
+| Dia       | Entrega                                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ter 20/10 | ✅ Correções acima e este plano                                                                                                               |
+| Qua 21/10 | ✅ Sessão única e cadastro (nome de usuário, lado 13/22, LGPD). Pendente: migração para o Supabase (aguarda credenciais)                      |
+| Qui 22/10 | ✅ Chat (SSE + Valkey, modo lento, filtros, denúncia; ver `docs/CHAT.md`). A seguir: área de administração (pausar, excluir, apagar mensagem) |
+| Sex 23/10 | Layout responsivo com o chat, compartilhar no WhatsApp com imagem e indicações (registro e contagem). Docker e implantação na DigitalOcean    |
+| Sáb 24/10 | Pix e Google reais em produção, teste de carga com 5 mil pessoas, ajustes e reinício depois da publicação do 2º turno                         |
+| Dom 25/10 | Monitoramento durante a apuração; nenhuma mudança de código, salvo correções urgentes                                                         |
+| Depois    | **Fase 2:** loja de figurinhas, doação, resgate das recompensas por indicação e melhorias da seção 5                                          |
 
 **Se algo atrasar,** a ordem de corte é: indicações → compartilhar com imagem → chat. A sessão única, a administração e o 2º turno **não podem ser cortados**.
 

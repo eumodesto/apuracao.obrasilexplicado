@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { AccessGate } from '@/features/access/access-gate';
+import { ChatDock } from '@/features/chat/chat';
 import { FirstAccess } from '@/features/election/first-access/first-access';
 import { emptyBootResult, readBootCache } from '@/features/election/first-access/read-boot-cache';
 import { devPaymentEnabled } from '@/lib/access/config';
@@ -17,6 +18,7 @@ export default async function Page() {
   return (
     <AccessGate initial={access.status} simulatedPayment={devPaymentEnabled()}>
       <FirstAccess initial={locked ? emptyBootResult : initial} regions={regions} />
+      <ChatDock />
     </AccessGate>
   );
 }

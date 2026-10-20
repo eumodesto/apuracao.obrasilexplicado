@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import type { AccessStatus } from '@/lib/access/types';
 import { brl, clock } from './format';
 import './access.css';
@@ -23,6 +23,23 @@ type Phase =
   | { name: 'paid' }
   | { name: 'error'; message: string };
 
+type AccessContextValue = {
+  status: AccessStatus;
+  /** Opens the payment dialog without waiting for the free time to end (e.g. to write in the chat). */
+  offerAccess: () => void;
+};
+const AccessContext = createContext<AccessContextValue | null>(null);
+
+/** Access state for components inside the panel, such as the chat. */
+export function useAccess() {
+  const value = useContext(AccessContext);
+  if (!value) throw new Error('useAccess must be used inside AccessGate');
+  return value;
+}
+
+/** Element inside the floating badge where other features can place a button (chat launcher). */
+export const BADGE_SLOT_ID = 'access-badge-slot';
+
 /** Free time is counted on the server; this only mirrors it and asks for payment when it ends. */
 export function AccessGate({
   initial,
@@ -36,7 +53,14 @@ export function AccessGate({
   const [status, setStatus] = useState(initial);
   const [remaining, setRemaining] = useState(initial.remainingSeconds);
   const left = useRef(initial.remainingSeconds);
+  const [offer, setOffer] = useState(false);
+  const statusRef = useRef(status);
+  useEffect(() => {
+    statusRef.current = status;
+  }, [status]);
   const locked = status.state === 'locked';
+  const offerAccess = useCallback(() => setOffer(true), []);
+  const closeOffer = useCallback(() => setOffer(false), []);
 
   const heartbeat = useCallback(async () => {
     try {
@@ -55,6 +79,9 @@ export function AccessGate({
       if (!response.ok) return;
       const next: AccessStatus = await response.json();
       left.current = next.remainingSeconds;
+      // Paid while locked out: the page was served without results, so load it again.
+      if (statusRef.current.state === 'locked' && next.state === 'paid')
+        return window.location.reload();
       setStatus(next);
       setRemaining(next.remainingSeconds);
     } catch {
@@ -86,20 +113,30 @@ export function AccessGate({
     return () => clearInterval(tick);
   }, [status.state, status.waiting, heartbeat]);
 
+  // An offer stays open until it closes itself, so the buyer sees the confirmation.
+  const paywall = locked || offer;
   return (
-    <>
-      <div className="access-content" inert={locked}>
+    <AccessContext.Provider value={{ status, offerAccess }}>
+      <div className="access-content" inert={paywall}>
         {children}
       </div>
       <AccessBadge status={status} remaining={remaining} />
-      {locked && <Paywall status={status} simulatedPayment={simulatedPayment} />}
-    </>
+      {paywall && (
+        <Paywall
+          status={status}
+          simulatedPayment={simulatedPayment}
+          // Only an offer opened by choice can be dismissed; the end of free time cannot.
+          onClose={locked ? undefined : closeOffer}
+        />
+      )}
+    </AccessContext.Provider>
   );
 }
 
 function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: number }) {
   return (
     <div className="access-badge" role="status">
+      <span id={BADGE_SLOT_ID} className="access-badge-slot" />
       {status.user.username && (
         <span className="access-badge-user" title={status.user.email}>
           @{status.user.username}
@@ -134,9 +171,11 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
 function Paywall({
   status,
   simulatedPayment,
+  onClose,
 }: {
   status: AccessStatus;
   simulatedPayment: boolean;
+  onClose?: () => void;
 }) {
   const [phase, setPhase] = useState<Phase>({ name: 'offer' });
   const [copied, setCopied] = useState(false);
@@ -146,6 +185,13 @@ function Paywall({
   });
 
   useEffect(() => primary.current?.focus(), [phase.name]);
+
+  useEffect(() => {
+    if (!onClose) return;
+    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
 
   const openPix = async () => {
     setPhase({ name: 'loading' });
@@ -186,12 +232,13 @@ function Paywall({
     };
   }, [pixId]);
 
-  // Reload so the panel starts again with the full data.
+  // After paying: a dismissible offer just closes (the panel already has the data);
+  // a locked page reloads so it starts again with the full data.
   useEffect(() => {
     if (phase.name !== 'paid') return;
-    const timer = setTimeout(() => window.location.reload(), 1500);
+    const timer = setTimeout(() => (onClose ? onClose() : window.location.reload()), 1500);
     return () => clearTimeout(timer);
-  }, [phase.name]);
+  }, [phase.name, onClose]);
 
   const copy = async (code: string) => {
     try {
@@ -208,7 +255,10 @@ function Paywall({
   };
 
   return (
-    <div className="paywall-backdrop">
+    <div
+      className="paywall-backdrop"
+      onClick={(event) => onClose && event.target === event.currentTarget && onClose()}
+    >
       <section
         className="paywall"
         role="dialog"
@@ -216,6 +266,11 @@ function Paywall({
         aria-labelledby="paywall-title"
         aria-describedby="paywall-text"
       >
+        {onClose && (
+          <button type="button" className="paywall-close" onClick={onClose} aria-label="Fechar">
+            ×
+          </button>
+        )}
         <p className="paywall-eyebrow">Resultados Brasil · Eleições 2026</p>
         {phase.name === 'paid' ? (
           <>
@@ -274,12 +329,16 @@ function Paywall({
           </>
         ) : (
           <>
-            <h2 id="paywall-title">Seu tempo grátis acabou</h2>
+            <h2 id="paywall-title">
+              {onClose ? 'Libere o chat e a apuração completa' : 'Seu tempo grátis acabou'}
+            </h2>
             <p id="paywall-text" className="paywall-text">
-              Continue acompanhando a apuração em tempo real até o resultado final por{' '}
-              <b>{brl(status.price)}</b>, pago uma única vez no Pix.
+              {onClose ? 'Escreva no chat e acompanhe' : 'Continue acompanhando'} a apuração em
+              tempo real até o resultado final por <b>{brl(status.price)}</b>, pago uma única vez no
+              Pix.
             </p>
             <ul className="paywall-list">
+              <li>Chat ao vivo com quem está acompanhando</li>
               <li>Resultados oficiais do TSE atualizados ao vivo</li>
               <li>Mapa por estado, município e zona eleitoral</li>
               <li>Acesso até o fim da apuração ({until})</li>
