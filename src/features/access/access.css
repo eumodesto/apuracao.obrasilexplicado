@@ -264,11 +264,15 @@
   }
 }
 
-/* Keep the last part of the page clear of the floating badge. */
+/* The panel is dark: never let the light page background show around it. */
 body:has(.access-badge) {
-  padding-bottom: 72px;
+  background: #0b0b0a;
 }
 @media (max-width: 768px) {
+  /* Phones scroll the panel: keep its end clear of the floating badge. */
+  body:has(.access-badge) {
+    padding-bottom: 72px;
+  }
   .access-badge {
     right: 12px;
     bottom: max(12px, env(safe-area-inset-bottom));
@@ -327,5 +331,18 @@ body:has(.access-badge) {
 @media (max-width: 420px) {
   .access-badge-user {
     max-width: 96px;
+  }
+}
+
+.access-badge-wait-short {
+  display: none;
+}
+@media (max-width: 600px) {
+  .access-badge-wait {
+    display: none;
+  }
+  .access-badge-wait-short {
+    display: inline;
+    color: #b6b5ae;
   }
 }

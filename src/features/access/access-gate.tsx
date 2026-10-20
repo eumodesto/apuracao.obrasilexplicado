@@ -107,7 +107,9 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
       )}
       {status.state === 'free' && status.waiting && (
         <span className="access-badge-time">
-          Grátis: <b>{clock(remaining)}</b> · começa a contar com a apuração
+          Grátis: <b>{clock(remaining)}</b>
+          <span className="access-badge-wait"> · começa a contar com a apuração</span>
+          <span className="access-badge-wait-short"> · pausado até a apuração</span>
         </span>
       )}
       {status.state === 'free' && !status.waiting && (
