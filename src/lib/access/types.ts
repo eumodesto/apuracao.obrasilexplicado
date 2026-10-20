@@ -31,6 +31,8 @@ export type AccessStatus = {
   paidUntil: string;
   /** True while the count has not started: free time is not being spent. */
   waiting: boolean;
+  /** Team access (STAFF_EMAILS): always paid, never asked to pay. */
+  staff: boolean;
   user: { name: string; email: string };
 };
 

@@ -1,5 +1,8 @@
-import { freeSeconds, paidAccessEndsAt, priceBrl } from './config';
+import { freeSeconds, paidAccessEndsAt, priceBrl, staffEmails } from './config';
 import type { AccessStatus, AccessUser } from './types';
+
+export const isStaff = (user: AccessUser, staff = staffEmails()) =>
+  staff.has(user.email.toLowerCase());
 
 export function hasPaidAccess(user: AccessUser, now: number, endsAt = paidAccessEndsAt()) {
   return user.paidAt !== null && now < endsAt;
@@ -16,8 +19,9 @@ export function accessStatus(
   now: number,
   limits = { free: freeSeconds(), endsAt: paidAccessEndsAt(), price: priceBrl() },
   waiting = false,
+  staff = isStaff(user),
 ): AccessStatus {
-  const paid = hasPaidAccess(user, now, limits.endsAt),
+  const paid = staff || hasPaidAccess(user, now, limits.endsAt),
     remainingSeconds = paid ? 0 : Math.max(0, Math.ceil(limits.free - user.freeSecondsUsed));
   return {
     state: paid ? 'paid' : remainingSeconds > 0 ? 'free' : 'locked',
@@ -26,6 +30,7 @@ export function accessStatus(
     price: limits.price,
     paidUntil: new Date(limits.endsAt).toISOString(),
     waiting: !paid && waiting,
+    staff,
     user: { name: user.name, email: user.email },
   };
 }

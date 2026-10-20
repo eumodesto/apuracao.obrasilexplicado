@@ -101,7 +101,11 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
           Grátis: <b>{clock(remaining)}</b>
         </span>
       )}
-      {status.state === 'paid' && <span className="access-badge-time">Acesso liberado</span>}
+      {status.state === 'paid' && (
+        <span className="access-badge-time">
+          {status.staff ? 'Acesso da equipe' : 'Acesso liberado'}
+        </span>
+      )}
       <form method="post" action="/api/auth/logout">
         <button type="submit" className="access-badge-logout" title={status.user.email}>
           Sair

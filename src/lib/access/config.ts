@@ -29,6 +29,19 @@ export function mercadoPagoConfig() {
 export const devLoginEnabled = () => isDevelopment() && !googleConfig();
 export const devPaymentEnabled = () => isDevelopment() && !mercadoPagoConfig();
 
+/**
+ * Team members who always have full access, without free time or payment.
+ * Safe in production because Google only signs in verified e-mails.
+ */
+export function staffEmails() {
+  return new Set(
+    (process.env.STAFF_EMAILS ?? '')
+      .split(',')
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
 export function freeSeconds() {
   // An empty variable means "not set", not zero seconds.
   const value = Number(process.env.FREE_SECONDS || NaN);

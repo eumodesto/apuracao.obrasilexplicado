@@ -418,3 +418,29 @@ describe('activity writes at peak', () => {
     expect(fresh!.user.freeSecondsUsed).toBe(40);
   });
 });
+
+describe('team access', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it('gives STAFF_EMAILS full access without free time or payment, ignoring case', async () => {
+    const { staffEmails } = await import('../src/lib/access/config');
+    vi.stubEnv('STAFF_EMAILS', ' Dono@Example.com , outra@example.com,');
+    const staff = staffEmails();
+    expect([...staff]).toEqual(['dono@example.com', 'outra@example.com']);
+    const user = {
+      ...profile,
+      email: 'DONO@example.com',
+      freeSecondsUsed: 9999,
+      lastSeenAt: null,
+      paidAt: null,
+      paymentId: null,
+    };
+    expect(
+      accessStatus(user, T0, limits, false, staff.has(user.email.toLowerCase())),
+    ).toMatchObject({
+      state: 'paid',
+      staff: true,
+    });
+    vi.stubEnv('STAFF_EMAILS', '');
+    expect(accessStatus(user, T0, limits).state).toBe('locked');
+  });
+});

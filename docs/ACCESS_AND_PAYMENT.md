@@ -18,6 +18,18 @@ O painel exige login com Google. Cada conta tem 1 minuto grátis de acompanhamen
 
 Rotas públicas, sem verificação de acesso: `/login`, `/api/election/geography`, `/api/election/photo/*` (geografia e fotos não são resultados).
 
+## Acesso da equipe
+
+E-mails listados em `STAFF_EMAILS` (separados por vírgula, sem diferenciar maiúsculas) entram sempre com acesso completo: sem tempo grátis, sem popup e sem pagamento. O selo mostra "Acesso da equipe". É seguro em produção porque o login com Google só aceita e-mails verificados. Para tirar alguém, remova o e-mail da variável e reinicie o servidor.
+
+Localmente, crie um arquivo `.env.local` (não vai para o Git) com, por exemplo:
+
+```sh
+STAFF_EMAILS=okmodesto@gmail.com,daniel@gmail.com
+```
+
+e entre no login de teste com um desses e-mails.
+
 ## Configuração
 
 Variáveis em `.env.example`:
