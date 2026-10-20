@@ -76,7 +76,7 @@ Os testes de navegador (`npm run test:e2e`) entram com o login de teste. Rode o 
 ## Arquivos
 
 - `src/lib/access/`: configuração, sessão assinada, contagem do tempo, armazenamento (arquivo local e Postgres), Google, Mercado Pago, cobrança e proteção das rotas.
-- `src/app/login/`: página de login.
+- `src/app/login/`: página de login, com uma prévia ilustrativa e desfocada do painel ao fundo (mapa real dos estados, sem resultados).
 - `src/app/api/auth/*`, `src/app/api/access`, `src/app/api/billing/*`: rotas de login, batimento e pagamento.
 - `src/features/access/`: contador, selo e popup do Pix.
 - `src/proxy.ts`: redirecionamento de visitantes sem sessão.

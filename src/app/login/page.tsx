@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { brl, duration } from '@/features/access/format';
 import { devLoginEnabled, freeSeconds, googleConfig, priceBrl } from '@/lib/access/config';
 import { readSession } from '@/lib/access/session';
+import { PanelPreview } from './panel-preview';
 import './login.css';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Entrar — Resultados Brasil', robots: { index: false } };
@@ -19,6 +20,7 @@ export default async function LoginPage({
   const { erro } = await searchParams;
   return (
     <main className="login" id="conteudo">
+      <PanelPreview />
       <section className="login-card" aria-labelledby="login-title">
         <p className="login-eyebrow">Resultados Brasil · Eleições 2026</p>
         <h1 id="login-title">Acompanhe a apuração ao vivo</h1>
