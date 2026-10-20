@@ -1,5 +1,6 @@
 import { randomBytes } from 'node:crypto';
 import { MemoryChatBus, RedisChatBus } from './bus';
+import { stickerById } from './stickers';
 import { MemoryChatStore, PostgresChatStore } from './store';
 import { cleanMessage, SLOW_MODE_MS } from './text';
 import {
@@ -71,7 +72,13 @@ export function history(state = chat()) {
   return state.history;
 }
 
-export type Author = { userId: string; username: string; party: string | null };
+export type Author = {
+  userId: string;
+  username: string;
+  party: string | null;
+  /** Profile photo ("key.version"), or null. */
+  photo: string | null;
+};
 
 export type SendResult =
   | { ok: true; message: PublicMessage }
@@ -85,6 +92,27 @@ export async function sendMessage(
 ): Promise<SendResult> {
   const cleaned = cleanMessage(raw);
   if ('error' in cleaned) return { ok: false, status: 400, error: cleaned.error };
+  return post(author, { text: cleaned.text, sticker: null }, state, now);
+}
+
+/** Sends a sticker from the available packs; same slow mode as text. */
+export async function sendSticker(
+  author: Author,
+  id: unknown,
+  state = chat(),
+  now = Date.now(),
+): Promise<SendResult> {
+  const sticker = typeof id === 'string' ? stickerById(id) : null;
+  if (!sticker) return { ok: false, status: 400, error: 'Figurinha indisponível.' };
+  return post(author, { text: sticker.text, sticker: sticker.id }, state, now);
+}
+
+async function post(
+  author: Author,
+  content: { text: string; sticker: string | null },
+  state: ChatRuntime,
+  now: number,
+): Promise<SendResult> {
   if (!(await state.bus.claim(`slow:${author.userId}`, SLOW_MODE_MS)))
     return {
       ok: false,
@@ -95,7 +123,7 @@ export async function sendMessage(
   const message = {
     id: now.toString(36) + randomBytes(6).toString('hex'),
     ...author,
-    text: cleaned.text,
+    ...content,
     createdAt: now,
     deletedAt: null,
   };

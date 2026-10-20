@@ -1,8 +1,8 @@
 import { chatAccess } from '@/lib/chat/access';
-import { sendMessage } from '@/lib/chat/service';
+import { sendMessage, sendSticker } from '@/lib/chat/service';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-/** Sends a chat message. Only paid (or team) accounts write; free time is read-only. */
+/** Sends a chat message or sticker. Only paid (or team) accounts write; free time is read-only. */
 export async function POST(request: Request) {
   const chat = await chatAccess({ fresh: true });
   if (chat.problem) return chat.problem;
@@ -12,7 +12,10 @@ export async function POST(request: Request) {
       { status: 402 },
     );
   const body = await request.json().catch(() => null);
-  const result = await sendMessage(chat.author, body?.text);
+  const result =
+    body?.sticker !== undefined
+      ? await sendSticker(chat.author, body.sticker)
+      : await sendMessage(chat.author, body?.text);
   if (!result.ok)
     return Response.json(
       { error: result.error, retryAfterMs: result.retryAfterMs },

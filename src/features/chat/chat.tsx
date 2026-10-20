@@ -10,12 +10,18 @@ import {
 import { createPortal } from 'react-dom';
 import { BADGE_SLOT_ID, useAccess } from '@/features/access/access-gate';
 import { brl } from '@/features/access/format';
+import { STICKERS, stickerById, type Sticker } from '@/lib/chat/stickers';
 import { MAX_MESSAGE_LENGTH } from '@/lib/chat/text';
 import type { PublicMessage } from '@/lib/chat/types';
 import { partyByCode } from '@/lib/profile/parties';
+import { Avatar } from './avatar';
+import { PhotoCapture } from './photo-capture';
 import './chat.css';
 
 const KEEP = 200;
+const NO_PARTY_COLOR = '#87877e';
+/** A moment `ms` from now (event handlers only). */
+const fromNow = (ms = 0) => Date.now() + ms;
 /** Wide screens keep the chat docked beside the panel; smaller ones open it over it. */
 const DOCKED_QUERY = '(min-width: 1600px)';
 /** Within this distance from the bottom the list follows new messages. */
@@ -67,6 +73,9 @@ export function ChatDock() {
   const [atBottom, setAtBottom] = useState(true);
   const [report, setReport] = useState<Report | null>(null);
   const [moderator, setModerator] = useState(false);
+  const [myPhoto, setMyPhoto] = useState<string | null>(null);
+  const [myParty, setMyParty] = useState<string | null>(null);
+  const [capturing, setCapturing] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
   const list = useRef<HTMLOListElement>(null);
   const openRef = useRef(open);
@@ -112,6 +121,8 @@ export function ChatDock() {
       setMe(body.me);
       setCanWrite(body.canWrite);
       setModerator(body.moderator === true);
+      setMyPhoto(body.photo ?? null);
+      setMyParty(body.party ?? null);
       setConnected(true);
     });
     source.addEventListener('message', (event) => {
@@ -179,6 +190,15 @@ export function ChatDock() {
     setRemoving(null);
   };
 
+  // A new photo also shows on the messages already on screen.
+  const changePhoto = (photo: string | null) => {
+    setMyPhoto(photo);
+    setMessages((current) =>
+      current.map((message) => (message.username === me ? { ...message, photo } : message)),
+    );
+  };
+  const myColor = partyByCode(myParty)?.color ?? NO_PARTY_COLOR;
+
   const launcher = (
     <button
       type="button"
@@ -215,7 +235,7 @@ export function ChatDock() {
         hidden={!open}
       >
         <header className="chat-header">
-          <div>
+          <div className="chat-title">
             <h2>Chat ao vivo</h2>
             <p className={connected ? 'chat-online' : 'chat-online is-offline'}>
               {connected
@@ -225,6 +245,18 @@ export function ChatDock() {
                 : 'Reconectando…'}
             </p>
           </div>
+          <button
+            type="button"
+            className="chat-me"
+            onClick={() => setCapturing(true)}
+            aria-label={myPhoto ? 'Trocar sua foto de perfil' : 'Tirar sua foto de perfil'}
+            title="Sua foto no chat"
+          >
+            <Avatar photo={myPhoto} name={me ?? '?'} color={myColor} size={40} />
+            <span className="chat-me-plus" aria-hidden="true">
+              +
+            </span>
+          </button>
           <button
             type="button"
             className="chat-close"
@@ -244,93 +276,107 @@ export function ChatDock() {
           {messages.map((message) => {
             const party = partyByCode(message.party);
             const mine = message.username === me;
+            const sticker = stickerById(message.sticker);
             return (
               <li key={message.id} className={mine ? 'chat-message is-mine' : 'chat-message'}>
-                <div className="chat-meta">
-                  <span
-                    className="chat-author"
-                    style={{ '--party': party?.color ?? '#87877e' } as React.CSSProperties}
-                  >
+                <Avatar
+                  photo={message.photo}
+                  name={message.username}
+                  color={party?.color ?? NO_PARTY_COLOR}
+                  size={36}
+                  className="chat-avatar"
+                />
+                <div className="chat-body">
+                  <div className="chat-meta">
                     <span
-                      className="chat-party"
-                      aria-label={party ? `Apoia o ${party.number}` : undefined}
+                      className="chat-author"
+                      style={{ '--party': party?.color ?? NO_PARTY_COLOR } as React.CSSProperties}
                     >
-                      {party?.number ?? ''}
-                    </span>
-                    @{message.username}
-                  </span>
-                  <time dateTime={new Date(message.createdAt).toISOString()}>
-                    {timeOf(message.createdAt)}
-                  </time>
-                  {moderator &&
-                    (removing === message.id ? (
-                      <span className="chat-report-confirm">
-                        Apagar para todos?
-                        <button type="button" onClick={() => removeMessage(message.id)}>
-                          Sim
-                        </button>
-                        <button type="button" onClick={() => setRemoving(null)}>
-                          Não
-                        </button>
-                      </span>
-                    ) : (
-                      <button
-                        type="button"
-                        className="chat-report chat-remove"
-                        onClick={() => setRemoving(message.id)}
-                        aria-label={`Apagar mensagem de @${message.username}`}
-                        title="Apagar (administração)"
+                      <span
+                        className="chat-party"
+                        aria-label={party ? `Apoia o ${party.number}` : undefined}
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                          <path
-                            d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    ))}
-                  {!mine &&
-                    removing !== message.id &&
-                    (report?.id === message.id ? (
-                      report.state === 'confirm' ? (
+                        {party?.number ?? ''}
+                      </span>
+                      @{message.username}
+                    </span>
+                    <time dateTime={new Date(message.createdAt).toISOString()}>
+                      {timeOf(message.createdAt)}
+                    </time>
+                    {moderator &&
+                      (removing === message.id ? (
                         <span className="chat-report-confirm">
-                          Denunciar?
-                          <button type="button" onClick={() => sendReport(message.id)}>
+                          Apagar para todos?
+                          <button type="button" onClick={() => removeMessage(message.id)}>
                             Sim
                           </button>
-                          <button type="button" onClick={() => setReport(null)}>
+                          <button type="button" onClick={() => setRemoving(null)}>
                             Não
                           </button>
                         </span>
                       ) : (
-                        <span className="chat-report-done">
-                          {report.state === 'done' ? 'Denúncia enviada' : 'Enviando…'}
-                        </span>
-                      )
-                    ) : (
-                      <button
-                        type="button"
-                        className="chat-report"
-                        onClick={() => setReport({ id: message.id, state: 'confirm' })}
-                        aria-label={`Denunciar mensagem de @${message.username}`}
-                        title="Denunciar"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
-                          <path
-                            d="M5 21V4m0 0h11l-2 4 2 4H5"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </button>
-                    ))}
+                        <button
+                          type="button"
+                          className="chat-report chat-remove"
+                          onClick={() => setRemoving(message.id)}
+                          aria-label={`Apagar mensagem de @${message.username}`}
+                          title="Apagar (administração)"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      ))}
+                    {!mine &&
+                      removing !== message.id &&
+                      (report?.id === message.id ? (
+                        report.state === 'confirm' ? (
+                          <span className="chat-report-confirm">
+                            Denunciar?
+                            <button type="button" onClick={() => sendReport(message.id)}>
+                              Sim
+                            </button>
+                            <button type="button" onClick={() => setReport(null)}>
+                              Não
+                            </button>
+                          </span>
+                        ) : (
+                          <span className="chat-report-done">
+                            {report.state === 'done' ? 'Denúncia enviada' : 'Enviando…'}
+                          </span>
+                        )
+                      ) : (
+                        <button
+                          type="button"
+                          className="chat-report"
+                          onClick={() => setReport({ id: message.id, state: 'confirm' })}
+                          aria-label={`Denunciar mensagem de @${message.username}`}
+                          title="Denunciar"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
+                            <path
+                              d="M5 21V4m0 0h11l-2 4 2 4H5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </button>
+                      ))}
+                  </div>
+                  {sticker ? (
+                    <StickerCard sticker={sticker} />
+                  ) : (
+                    <p className="chat-text">{message.text}</p>
+                  )}
                 </div>
-                <p className="chat-text">{message.text}</p>
               </li>
             );
           })}
@@ -360,7 +406,34 @@ export function ChatDock() {
           </div>
         )}
       </aside>
+      {capturing && (
+        <PhotoCapture
+          photo={myPhoto}
+          name={me ?? '?'}
+          color={myColor}
+          onClose={() => setCapturing(false)}
+          onChange={changePhoto}
+        />
+      )}
     </>
+  );
+}
+
+function StickerCard({ sticker }: { sticker: Sticker }) {
+  return (
+    <span
+      className="chat-sticker"
+      style={{ '--from': sticker.from, '--to': sticker.to } as React.CSSProperties}
+      role="img"
+      aria-label={`Figurinha: ${sticker.text}`}
+    >
+      <span className="chat-sticker-emoji" aria-hidden="true">
+        {sticker.emoji}
+      </span>
+      <span className="chat-sticker-text" aria-hidden="true">
+        {sticker.text}
+      </span>
+    </span>
   );
 }
 
@@ -370,6 +443,7 @@ function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
   const [sending, setSending] = useState(false);
   const [waitUntil, setWaitUntil] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const [tray, setTray] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
   const waiting = Math.max(0, Math.ceil((waitUntil - now) / 1000));
 
@@ -382,29 +456,28 @@ function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
     return () => clearInterval(timer);
   }, [waitUntil]);
 
-  const submit = async (event?: React.FormEvent) => {
-    event?.preventDefault();
-    const value = text.trim();
-    if (!value || sending || waiting > 0) return;
+  const post = async (content: { text: string } | { sticker: string }) => {
+    if (sending || waiting > 0) return;
     setSending(true);
     setError(null);
     try {
       const response = await fetch('/api/chat/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: value }),
+        body: JSON.stringify(content),
       });
       const body = await response.json().catch(() => ({}));
       if (response.status === 429) {
-        setWaitUntil(Date.now() + (body.retryAfterMs ?? 5000));
-        setNow(Date.now());
+        setWaitUntil(fromNow(body.retryAfterMs ?? 5000));
+        setNow(fromNow());
       }
       if (!response.ok) return setError(body.error ?? 'Não foi possível enviar.');
       onSent(body.message);
-      setText('');
+      if ('text' in content) setText('');
+      setTray(false);
       // Slow mode starts with every message.
-      setWaitUntil(Date.now() + 5000);
-      setNow(Date.now());
+      setWaitUntil(fromNow(5000));
+      setNow(fromNow());
     } catch {
       setError('Falha de conexão. Tente de novo.');
     } finally {
@@ -413,9 +486,35 @@ function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
     }
   };
 
+  const submit = (event?: React.FormEvent) => {
+    event?.preventDefault();
+    const value = text.trim();
+    if (value) post({ text: value });
+  };
+
   const left = MAX_MESSAGE_LENGTH - text.length;
   return (
     <form className="chat-composer" onSubmit={submit}>
+      {tray && (
+        <div id="chat-stickers" className="chat-stickers" role="group" aria-label="Figurinhas">
+          <p>
+            Pacote grátis <small>· toque para enviar</small>
+          </p>
+          <div className="chat-stickers-grid">
+            {STICKERS.map((sticker) => (
+              <button
+                key={sticker.id}
+                type="button"
+                disabled={sending || waiting > 0}
+                onClick={() => post({ sticker: sticker.id })}
+                aria-label={`Enviar figurinha: ${sticker.text}`}
+              >
+                <StickerCard sticker={sticker} />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
       {error && (
         <p className="chat-error" role="alert">
           {error}
@@ -444,9 +543,44 @@ function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
             }
           }}
         />
-        <button type="submit" disabled={!text.trim() || sending || waiting > 0}>
-          {waiting > 0 ? `${waiting}s` : 'Enviar'}
-        </button>
+        {text.trim() ? (
+          <button type="submit" disabled={sending || waiting > 0}>
+            {waiting > 0 ? `${waiting}s` : 'Enviar'}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className={tray ? 'chat-sticker-button is-open' : 'chat-sticker-button'}
+            onClick={() => setTray(!tray)}
+            aria-expanded={tray}
+            aria-controls="chat-stickers"
+            disabled={waiting > 0}
+          >
+            {waiting > 0 ? (
+              `${waiting}s`
+            ) : (
+              <>
+                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M14 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h7l8-8V6a3 3 0 0 0-3-3h-4Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M13 21v-5a3 3 0 0 1 3-3h5M8.5 10h.01M14.5 10h.01M8.5 14.5s1.2 1.5 3 1.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                Figurinha
+              </>
+            )}
+          </button>
+        )}
       </div>
       <p className={left <= 20 ? 'chat-counter is-low' : 'chat-counter'}>
         {waiting > 0 ? 'Modo lento: uma mensagem a cada 5 segundos.' : `${left} caracteres`}

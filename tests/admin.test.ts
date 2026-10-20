@@ -130,6 +130,8 @@ function chatStoreSuite(name: string, make: () => ChatStore) {
       userId,
       username: userId.slice(-6),
       party: null,
+      photo: null,
+      sticker: null,
       text: `mensagem ${n}`,
       createdAt: Date.parse('2100-01-01T00:00:00Z') + Date.now() * 10 + n,
       deletedAt: null,

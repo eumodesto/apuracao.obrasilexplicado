@@ -67,7 +67,9 @@ type MessageRow = {
   user_id: string;
   username: string;
   party: string | null;
+  photo: string | null;
   text: string;
+  sticker: string | null;
   created_at: Date;
   deleted_at: Date | null;
 };
@@ -77,7 +79,9 @@ const toMessage = (row: MessageRow): ChatMessage => ({
   userId: row.user_id,
   username: row.username,
   party: row.party,
+  photo: row.photo ?? null,
   text: row.text,
+  sticker: row.sticker ?? null,
   createdAt: row.created_at.getTime(),
   deletedAt: row.deleted_at?.getTime() ?? null,
 });
@@ -102,6 +106,9 @@ export class PostgresChatStore implements ChatStore {
         deleted_at timestamptz,
         deleted_by text
       );
+      ALTER TABLE chat_messages
+        ADD COLUMN IF NOT EXISTS photo text,
+        ADD COLUMN IF NOT EXISTS sticker text;
       CREATE INDEX IF NOT EXISTS chat_messages_recent ON chat_messages (created_at DESC);
       CREATE INDEX IF NOT EXISTS chat_messages_user ON chat_messages (user_id, created_at DESC);
       CREATE TABLE IF NOT EXISTS chat_reports (
@@ -122,8 +129,9 @@ export class PostgresChatStore implements ChatStore {
   async add(m: ChatMessage) {
     await this.schema();
     await this.sql`
-      INSERT INTO chat_messages (id, user_id, username, party, text, created_at)
-      VALUES (${m.id}, ${m.userId}, ${m.username}, ${m.party}, ${m.text}, ${new Date(m.createdAt)})`;
+      INSERT INTO chat_messages (id, user_id, username, party, photo, text, sticker, created_at)
+      VALUES (${m.id}, ${m.userId}, ${m.username}, ${m.party}, ${m.photo}, ${m.text},
+        ${m.sticker}, ${new Date(m.createdAt)})`;
   }
 
   async recent(limit: number) {

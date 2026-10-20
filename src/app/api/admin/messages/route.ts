@@ -7,14 +7,18 @@ export const GET = withAdmin(async () => {
   const messages = await chat().store.recent(150);
   return Response.json(
     {
-      messages: messages.reverse().map(({ id, userId, username, party, text, createdAt }) => ({
-        id,
-        userId,
-        username,
-        party,
-        text,
-        createdAt,
-      })),
+      messages: messages
+        .reverse()
+        .map(({ id, userId, username, party, photo, text, sticker, createdAt }) => ({
+          id,
+          userId,
+          username,
+          party,
+          photo,
+          text,
+          sticker,
+          createdAt,
+        })),
     },
     { headers: { 'Cache-Control': 'no-store' } },
   );

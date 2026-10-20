@@ -1,6 +1,7 @@
 import { currentAccess, sessionProblem } from '@/lib/access/guard';
 import { readSession, type Session } from '@/lib/access/session';
 import { NO_PARTY } from '@/lib/profile/parties';
+import { photoRef } from '@/lib/profile/photo';
 import type { Author } from './service';
 
 /**
@@ -23,6 +24,7 @@ export async function chatAccess(options: { fresh?: boolean; session?: Session |
     userId: access.user.id,
     username: access.user.username!,
     party: access.user.party && access.user.party !== NO_PARTY ? access.user.party : null,
+    photo: photoRef(access.user),
   };
   return { access, author, session: session!, canWrite: access.status.state === 'paid' };
 }

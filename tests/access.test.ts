@@ -32,6 +32,7 @@ const blankProfile = {
   pausedAt: null,
   pausedReason: null,
   deletedAt: null,
+  photoVersion: null,
 };
 
 describe('signed tokens', () => {

@@ -67,6 +67,8 @@ export async function GET(request: Request) {
           messages: await history(),
           online: await onlineCount(),
           me: chat.author.username,
+          photo: chat.author.photo,
+          party: chat.author.party,
           canWrite: chat.canWrite,
           moderator,
         });
@@ -76,6 +78,8 @@ export async function GET(request: Request) {
           messages: [],
           online: 0,
           me: chat.author.username,
+          photo: chat.author.photo,
+          party: chat.author.party,
           canWrite: chat.canWrite,
           moderator,
         });

@@ -16,7 +16,7 @@ ADMIN_EMAILS=okmodesto@gmail.com,daniel@gmail.com
 | Aba             | O que faz                                                                                                                                                                                                                  |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Visão geral** | Atualiza a cada 15 s. Mostra pessoas online no chat, contas, pagantes, receita, contas suspensas e excluídas, contas que trocaram de aparelho (possível conta dividida) e inscritos no "Me avise". Baixa o CSV dos avisos. |
-| **Usuários**    | Busca por usuário, e-mail, nome ou id. Permite suspender (com motivo), reativar ou excluir.                                                                                                                                |
+| **Usuários**    | Busca por usuário, e-mail, nome ou id. Permite suspender (com motivo), reativar, remover a foto de perfil ou excluir.                                                                                                      |
 | **Moderação**   | Mensagens denunciadas (as mais denunciadas primeiro) e as 150 mais recentes. Apagar remove a mensagem do chat de todo mundo na hora. Clicar no @usuário abre a conta.                                                      |
 | **Registro**    | Toda ação fica registrada: quem fez, o quê, contra quem e quando.                                                                                                                                                          |
 
@@ -43,6 +43,7 @@ Todas exigem sessão de administrador.
 | `GET /api/admin/users?q=&page=`                         | Busca paginada (25 por página) |
 | `POST /api/admin/users/:id` `{action: 'pause', reason}` | Suspender                      |
 | `POST /api/admin/users/:id` `{action: 'unpause'}`       | Reativar                       |
+| `POST /api/admin/users/:id` `{action: 'remove_photo'}`  | Remover a foto de perfil       |
 | `POST /api/admin/users/:id` `{action: 'delete'}`        | Excluir                        |
 | `GET /api/admin/reports`                                | Mensagens denunciadas          |
 | `GET /api/admin/messages`                               | 150 mensagens mais recentes    |

@@ -4,9 +4,10 @@ import { auditStore } from '@/lib/admin/audit';
 import { withAdmin } from '@/lib/admin/guard';
 import { adminUser } from '@/lib/admin/view';
 import { deleteMessagesBy } from '@/lib/chat/service';
+import { photoKey, photoStore } from '@/lib/profile/photo';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-/** Pause (with a reason), reactivate or delete an account. */
+/** Pause (with a reason), reactivate, remove the photo of or delete an account. */
 export const POST = withAdmin<{ params: Promise<{ id: string }> }>(
   async (request, { params }, admin) => {
     const { id } = await params;
@@ -28,9 +29,15 @@ export const POST = withAdmin<{ params: Promise<{ id: string }> }>(
       detail = reason;
     } else if (action === 'unpause') {
       await store.setPaused(id, null);
+    } else if (action === 'remove_photo') {
+      if (user.photoVersion === null)
+        return Response.json({ error: 'A conta não tem foto.' }, { status: 409 });
+      await photoStore().remove(photoKey(id));
+      await store.setPhoto(id, null);
     } else if (action === 'delete') {
       if (user.deletedAt) return Response.json({ error: 'Conta já excluída.' }, { status: 409 });
       const removed = await deleteMessagesBy(id, `admin:${admin.user.email}`);
+      await photoStore().remove(photoKey(id));
       await store.anonymize(id, now);
       detail = `${removed} ${removed === 1 ? 'mensagem apagada' : 'mensagens apagadas'}`;
     } else return Response.json({ error: 'Ação inválida.' }, { status: 400 });
@@ -39,7 +46,8 @@ export const POST = withAdmin<{ params: Promise<{ id: string }> }>(
     await auditStore().add({
       at: now,
       admin: admin.user.email,
-      action: action === 'delete' ? 'delete_user' : action,
+      action:
+        action === 'delete' ? 'delete_user' : (action as 'pause' | 'unpause' | 'remove_photo'),
       target: user.username ? `@${user.username}` : id,
       detail,
     });

@@ -14,8 +14,8 @@ import { cleanMessage, maskInsults, SLOW_MODE_MS } from '../src/lib/chat/text';
 import type { ChatBus, ChatEvent, ChatMessage, ChatStore } from '../src/lib/chat/types';
 
 const T0 = Date.parse('2026-10-25T19:00:00-03:00');
-const ana = { userId: 'google:ana', username: 'ana', party: 'PT' };
-const bia = { userId: 'google:bia', username: 'bia', party: 'PL' };
+const ana = { userId: 'google:ana', username: 'ana', party: 'PT', photo: null };
+const bia = { userId: 'google:bia', username: 'bia', party: 'PL', photo: null };
 
 /** A fresh chat instance, like one server process. */
 const instance = (
@@ -156,6 +156,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('chat history in Postgres', () =
       userId: 'google:pg',
       username: 'pg',
       party: null,
+      photo: null,
+      sticker: null,
       text: `mensagem ${n}`,
       // Far in the future and later on every run, so these are the most recent rows.
       createdAt: Date.parse('2100-01-01T00:00:00Z') + Date.now() * 10 + n,

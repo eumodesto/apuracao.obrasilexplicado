@@ -23,6 +23,8 @@ export type AccessUser = {
   pausedReason: string | null;
   /** Removed at the person's or the moderators' request: personal data is anonymized. */
   deletedAt: number | null;
+  /** When the current profile photo was taken; null without a photo. */
+  photoVersion: number | null;
 };
 
 export type UserQuery = { query?: string; limit: number; offset: number };
@@ -96,6 +98,8 @@ export interface AccessStore {
   setPaused(id: string, pause: { at: number; reason: string } | null): Promise<boolean>;
   /** Deletes personal data (e-mail, name, username, party) and ends the session; keeps payments. */
   anonymize(id: string, at: number): Promise<boolean>;
+  /** Records a new profile photo (its version) or, with null, its removal. */
+  setPhoto(id: string, version: number | null): Promise<boolean>;
   listUsers(query: UserQuery): Promise<{ users: AccessUser[]; total: number }>;
   stats(): Promise<AccessStats>;
 }

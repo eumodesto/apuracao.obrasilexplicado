@@ -35,10 +35,17 @@ const newUser = (id: string): AccessUser => ({
   pausedAt: null,
   pausedReason: null,
   deletedAt: null,
+  photoVersion: null,
 });
 
 /** What an anonymized account keeps: its id, payments and counters, never personal data. */
-const ANONYMOUS = { email: '', name: 'Conta excluída', username: null, party: null };
+const ANONYMOUS = {
+  email: '',
+  name: 'Conta excluída',
+  username: null,
+  party: null,
+  photoVersion: null,
+};
 
 const matches = (user: AccessUser, query?: string) => {
   const q = query?.trim().toLowerCase().replace(/^@/, '');
@@ -209,6 +216,15 @@ export class FileAccessStore implements AccessStore {
     });
   }
 
+  async setPhoto(id: string, version: number | null) {
+    return this.change((data) => {
+      const user = data.users[id];
+      if (!user) return false;
+      user.photoVersion = version;
+      return true;
+    });
+  }
+
   async listUsers({ query, limit, offset }: UserQuery) {
     await this.load();
     const found = Object.values(this.data.users)
@@ -253,6 +269,7 @@ type UserRow = {
   paused_at: Date | null;
   paused_reason: string | null;
   deleted_at: Date | null;
+  photo_version: string | null;
 };
 type PaymentRow = {
   id: string;
@@ -283,6 +300,7 @@ const toUser = (row: UserRow): AccessUser => ({
   pausedAt: row.paused_at?.getTime() ?? null,
   pausedReason: row.paused_reason,
   deletedAt: row.deleted_at?.getTime() ?? null,
+  photoVersion: row.photo_version === null ? null : Number(row.photo_version),
 });
 const toPayment = (row: PaymentRow): PixPayment => ({
   id: row.id,
@@ -336,7 +354,8 @@ export class PostgresAccessStore implements AccessStore {
         ADD COLUMN IF NOT EXISTS onboarded_at timestamptz,
         ADD COLUMN IF NOT EXISTS paused_at timestamptz,
         ADD COLUMN IF NOT EXISTS paused_reason text,
-        ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+        ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
+        ADD COLUMN IF NOT EXISTS photo_version bigint;
       CREATE UNIQUE INDEX IF NOT EXISTS access_users_username ON access_users (lower(username));
     `
       .simple()
@@ -469,8 +488,16 @@ export class PostgresAccessStore implements AccessStore {
     const rows = await this.sql`
       UPDATE access_users SET
         email = ${ANONYMOUS.email}, name = ${ANONYMOUS.name}, username = NULL, party = NULL,
-        party_consent_at = NULL, session_id = NULL, deleted_at = ${new Date(at)}
+        party_consent_at = NULL, session_id = NULL, photo_version = NULL,
+        deleted_at = ${new Date(at)}
       WHERE id = ${id} RETURNING id`;
+    return rows.length > 0;
+  }
+
+  async setPhoto(id: string, version: number | null) {
+    await this.schema();
+    const rows = await this.sql`
+      UPDATE access_users SET photo_version = ${version} WHERE id = ${id} RETURNING id`;
     return rows.length > 0;
   }
 

@@ -1,5 +1,6 @@
 import { hasPaidAccess, isAdmin, isStaff } from '@/lib/access/access';
 import type { AccessUser } from '@/lib/access/types';
+import { photoRef } from '@/lib/profile/photo';
 
 /** What the admin screens show about an account. */
 export function adminUser(user: AccessUser, now = Date.now()) {
@@ -9,6 +10,7 @@ export function adminUser(user: AccessUser, now = Date.now()) {
     name: user.name,
     username: user.username,
     party: user.party,
+    photo: photoRef(user),
     paid: hasPaidAccess(user, now),
     paidAt: user.paidAt,
     staff: isStaff(user),

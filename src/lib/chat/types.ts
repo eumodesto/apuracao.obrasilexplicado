@@ -4,25 +4,34 @@ export type ChatMessage = {
   /** Snapshot of the author's public name and side when the message was sent. */
   username: string;
   party: string | null;
+  /** The author's photo ("key.version") when the message was sent; null without one. */
+  photo: string | null;
   text: string;
+  /** Sticker id when the message is a sticker; `text` then holds its caption. */
+  sticker: string | null;
   createdAt: number;
   deletedAt: number | null;
 };
 
 /** What other people see: never the account id or e-mail. */
-export type PublicMessage = Pick<ChatMessage, 'id' | 'username' | 'party' | 'text' | 'createdAt'>;
+export type PublicMessage = Pick<
+  ChatMessage,
+  'id' | 'username' | 'party' | 'photo' | 'text' | 'sticker' | 'createdAt'
+>;
 
 export type ChatEvent =
   | { type: 'message'; message: PublicMessage }
   | { type: 'delete'; id: string };
 
-export const toPublic = ({ id, username, party, text, createdAt }: ChatMessage): PublicMessage => ({
+export const toPublic = ({
   id,
   username,
   party,
+  photo,
   text,
+  sticker,
   createdAt,
-});
+}: ChatMessage): PublicMessage => ({ id, username, party, photo, text, sticker, createdAt });
 
 export interface ChatStore {
   add(message: ChatMessage): Promise<void>;

@@ -44,3 +44,18 @@ Cada servidor guarda em memória sua cópia das últimas 100 mensagens e a mant�
 
 - Área de administração: apagar mensagens (`deleteMessage` já distribui a exclusão para todos), ver denúncias, pausar e excluir usuários.
 - Figurinhas na conversa (Fase 2).
+
+## Foto de perfil
+
+- No topo do chat fica a sua foto com um **+**. Ao tocar, a câmera abre na hora (a frontal, no celular). A pessoa tira a foto, vê a prévia e escolhe entre "Usar esta foto" e "Tirar outra". Se a câmera não abrir (sem permissão ou sem câmera), dá para escolher uma foto da galeria.
+- O navegador recorta o quadrado central e envia 512 px. O servidor (`POST /api/profile/photo`) decodifica a imagem com `sharp`, recorta em 256×256 e salva como JPEG novo. Metadados como localização e qualquer conteúdo que não seja imagem não passam. O limite é de 8 MB, com uma troca a cada 5 s.
+- O endereço da foto (`/api/chat/photo/<chave>.<versão>`) usa uma chave derivada do id da conta com o `SESSION_SECRET`. Ele não revela o id e não dá para adivinhar o de outra pessoa. Cada foto nova muda a versão, e as mensagens antigas também passam a mostrar a foto atual.
+- Sem foto (ou se ela for removida), aparece a inicial do nome na cor do partido.
+- Armazenamento: tabela `profile_photos` no Postgres (Supabase), com cerca de 15 KB por foto. Em desenvolvimento, fica em `.data/photos/`.
+- Quem está no tempo grátis também pode pôr foto. A moderação remove fotos pela área `/admin`, e excluir a conta apaga a foto.
+
+## Figurinhas
+
+- No lugar do botão de voz fica o botão **Figurinha**. Ele aparece com o campo vazio e vira "Enviar" quando a pessoa digita. Ao tocar, abre o pacote grátis (12 figurinhas, sem rosto de candidatos). Tocar numa figurinha envia na hora.
+- A lista fica em `src/lib/chat/stickers.ts`. O servidor só aceita figurinhas dessa lista, e o modo lento vale igual ao das mensagens.
+- Pacotes pagos, doação e indicação ficam para a fase 2.

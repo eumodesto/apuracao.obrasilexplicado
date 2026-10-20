@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { brl } from '@/features/access/format';
+import { Avatar } from '@/features/chat/avatar';
 import type { AuditEntry } from '@/lib/admin/audit';
 import type { AdminUser } from '@/lib/admin/view';
 import { partyByCode } from '@/lib/profile/parties';
@@ -32,7 +33,9 @@ type Message = {
   userId: string;
   username: string;
   party: string | null;
+  photo: string | null;
   text: string;
+  sticker: string | null;
   createdAt: number;
   reports?: number;
 };
@@ -306,6 +309,12 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
     <li className={user.deletedAt ? 'admin-user is-gone' : 'admin-user'}>
       <div className="admin-user-main">
         <div className="admin-user-name">
+          <Avatar
+            photo={user.photo}
+            name={user.username ?? user.name}
+            color={party?.color ?? '#87877e'}
+            size={40}
+          />
           {party && (
             <span className="admin-party" style={{ background: party.color }}>
               {party.number}
@@ -414,6 +423,16 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
                   Suspender
                 </button>
               )}
+              {user.photo && (
+                <button
+                  type="button"
+                  className="admin-button is-ghost"
+                  disabled={busy}
+                  onClick={() => act({ action: 'remove_photo' })}
+                >
+                  Remover foto
+                </button>
+              )}
               <button
                 type="button"
                 className="admin-button is-danger is-ghost"
@@ -502,6 +521,12 @@ function MessageList({
             <li key={message.id} className="admin-message">
               <div>
                 <div className="admin-message-meta">
+                  <Avatar
+                    photo={message.photo}
+                    name={message.username}
+                    color={party?.color ?? '#87877e'}
+                    size={28}
+                  />
                   {party && (
                     <span className="admin-party" style={{ background: party.color }}>
                       {party.number}
@@ -522,7 +547,9 @@ function MessageList({
                     </span>
                   )}
                 </div>
-                <p className="admin-message-text">{message.text}</p>
+                <p className="admin-message-text">
+                  {message.sticker && <span className="admin-chip">Figurinha</span>} {message.text}
+                </p>
               </div>
               <div className="admin-message-actions">
                 {confirm === message.id ? (
@@ -566,6 +593,7 @@ const ACTIONS: Record<AuditEntry['action'], string> = {
   unpause: 'reativou',
   delete_user: 'excluiu a conta',
   delete_message: 'apagou mensagem de',
+  remove_photo: 'removeu a foto de',
 };
 
 function AuditTab() {
