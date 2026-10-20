@@ -30,8 +30,9 @@ export const devLoginEnabled = () => isDevelopment() && !googleConfig();
 export const devPaymentEnabled = () => isDevelopment() && !mercadoPagoConfig();
 
 export function freeSeconds() {
-  const value = Number(process.env.FREE_SECONDS);
-  return Number.isFinite(value) && value >= 0 ? value : 300;
+  // An empty variable means "not set", not zero seconds.
+  const value = Number(process.env.FREE_SECONDS || NaN);
+  return Number.isFinite(value) && value >= 0 ? value : 60;
 }
 
 export function priceBrl() {

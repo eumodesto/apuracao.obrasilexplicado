@@ -1,6 +1,6 @@
 # Login, tempo grátis e pagamento Pix
 
-O painel exige login com Google. Cada conta tem 5 minutos grátis de acompanhamento. Depois, um popup oferece o acesso até o fim da apuração por R$ 5,00, pago uma única vez no Pix pelo Mercado Pago.
+O painel exige login com Google. Cada conta tem 1 minuto grátis de acompanhamento. Depois, um popup oferece o acesso até o fim da apuração por R$ 5,00, pago uma única vez no Pix pelo Mercado Pago.
 
 ## Fluxo
 
@@ -29,7 +29,7 @@ Variáveis em `.env.example`:
 | `MP_ACCESS_TOKEN`                          | Access Token de produção do Mercado Pago.                                                                                         |
 | `MP_WEBHOOK_SECRET`                        | Assinatura secreta dos webhooks. Opcional, mas recomendada: com ela, avisos sem assinatura válida são recusados.                  |
 | `DATABASE_URL`                             | Postgres (Neon, Supabase etc.). Obrigatória na Vercel. As tabelas `access_users` e `access_payments` são criadas no primeiro uso. |
-| `FREE_SECONDS`                             | Tempo grátis por conta. Padrão: 300.                                                                                              |
+| `FREE_SECONDS`                             | Tempo grátis por conta, em segundos. Padrão: 60.                                                                                  |
 | `ACCESS_PRICE_BRL`                         | Preço. Padrão: 5.00.                                                                                                              |
 | `PAID_ACCESS_ENDS_AT`                      | Fim do acesso pago (ISO 8601).                                                                                                    |
 
@@ -85,6 +85,6 @@ Os testes de navegador (`npm run test:e2e`) entram com o login de teste. Rode o 
 
 ## Limites
 
-- O controle é por conta Google. Quem criar outra conta ganha outros 5 minutos.
+- O controle é por conta Google. Quem criar outra conta ganha outro minuto grátis.
 - Reembolsos e estornos não removem o acesso automaticamente. Um pagamento estornado aparece como `cancelled` na tabela `access_payments`.
 - Não há emissão de nota fiscal nem recibo além do comprovante do próprio Mercado Pago.
