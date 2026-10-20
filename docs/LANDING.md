@@ -12,6 +12,14 @@ Até `COUNT_STARTS_AT` (padrão: 25/10/2026, 17h de Brasília), `/` mostra a con
 
 **O envio dos e-mails ainda não está feito:** a lista é guardada, mas mandar o aviso no dia 25 precisa de um serviço de e-mail (por exemplo, Resend ou Amazon SES), com remetente e domínio verificados. A coluna `notified_at` já existe para marcar quem recebeu.
 
+## Faixa do resultado do 1º turno na página inicial
+
+Acima da contagem regressiva, uma faixa com o resultado oficial do 1º turno (`src/features/landing/round-band*.tsx`), lida do arquivo nacional do TSE (um arquivo só, consultado no máximo a cada 30 min). Ela carrega à parte (Suspense), então a contagem nunca espera o TSE; se o TSE não responder, a faixa simplesmente não aparece.
+
+- **Computador:** fotos oficiais do TSE nas pontas (por `/api/election/photo/:id`, que agora aceita também os candidatos do 1º turno), nomes com partido e número, a frase "Flávio Bolsonaro e Lula vão ao 2º turno" (o mais votado primeiro, com o selo "2º turno" vindo do TSE), uma barra com o percentual dos votos válidos de cada lado e a marca de 50%, "100% apurado" e a linha verde de progresso.
+- **Celular (até 900 px):** cartão sem fotos com "Brasil", "2º turno · definido às 20:55" (horário oficial da totalização), seções apuradas, a frase, os dois percentuais e a barra dividida.
+- O 13 fica à esquerda (vermelho) e o 22 à direita (azul), como nos cartões do cadastro. Os nomes ganham acento só na exibição ("FLAVIO" vira "Flávio").
+
 ## Resultado do 1º turno (`/resultado-1-turno`)
 
 Página pública com o resultado oficial do 1º turno, lido do TSE com o mesmo cliente, cache e limites do painel:

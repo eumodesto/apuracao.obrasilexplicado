@@ -40,6 +40,22 @@ function leaderOf(snapshot: ElectionSnapshot | null): RoundPlace['leader'] {
   };
 }
 
+/** 1st-round configuration derived from the active one, or null before it is published. */
+async function firstRoundConfig() {
+  const active = await client.read(CONFIG_URL, discoverElection, 3_600_000);
+  return active.value && roundConfig(active.value, '1');
+}
+
+/** Only the national 1st-round result (used to validate candidate photos). */
+export async function firstRoundNational() {
+  const config = await firstRoundConfig();
+  if (!config) return null;
+  const url = resultUrl(config, country);
+  return (
+    await client.read(url, (raw) => normalizeResult(raw, config, country, url), FINAL_INTERVAL_MS)
+  ).value;
+}
+
 /**
  * Official 1st-round results (Brazil, 27 states and abroad), read from the TSE with the same
  * client, cache and limits as the live panel. The 1st-round URLs carry their own election code,
@@ -54,8 +70,7 @@ export async function firstRound(): Promise<RoundResult> {
     exterior: null,
     checkedAt: null,
   };
-  const active = await client.read(CONFIG_URL, discoverElection, 3_600_000);
-  const config = active.value && roundConfig(active.value, '1');
+  const config = await firstRoundConfig();
   if (!config) return empty;
   const read = (scope: Scope) => {
     const url = resultUrl(config, scope);

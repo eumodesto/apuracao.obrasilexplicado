@@ -1,4 +1,6 @@
+import { Suspense } from 'react';
 import { BrazilMap } from './brazil-map';
+import { FirstRoundBand } from './round-band';
 import { CountdownClock, NotifyForm } from './countdown-client';
 import { SiteHeader } from './site-header';
 import './landing.css';
@@ -16,6 +18,10 @@ export function Countdown({ startsAt }: { startsAt: number }) {
   return (
     <div className="landing">
       <SiteHeader current="countdown" />
+      {/* Streams in on its own, so the countdown never waits for the TSE. */}
+      <Suspense fallback={null}>
+        <FirstRoundBand />
+      </Suspense>
       <main className="landing-main" id="conteudo">
         <section className="landing-card" aria-labelledby="countdown-title">
           <p className="landing-eyebrow">2º turno · {when}</p>

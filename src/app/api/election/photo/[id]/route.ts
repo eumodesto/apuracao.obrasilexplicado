@@ -1,3 +1,4 @@
+import { firstRoundNational } from '@/lib/tse/first-round';
 import { client, president } from '@/lib/tse/service';
 type Photo = { bytes: ArrayBuffer; type: string };
 const photos = new Map<string, Photo>();
@@ -13,7 +14,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       return new Response(null, { status: 503 });
     const flight = (async () => {
       const data = await president({});
-      const candidate = data.snapshot?.candidates.find((c) => c.id === id);
+      // Candidates of the active round, or of the 1st round (its result band on the home page).
+      const candidate =
+        data.snapshot?.candidates.find((c) => c.id === id) ??
+        (await firstRoundNational().catch(() => null))?.candidates.find((c) => c.id === id);
       if (!candidate) return null;
       const previous = queue;
       let release!: () => void;
