@@ -60,6 +60,7 @@ export function normalizeResult(
     candidates,
     source: 'TSE',
     sourceUrl,
+    turn: config.turn,
     progress: {
       totalSections: r.s.ts,
       countedSections: r.s.st,

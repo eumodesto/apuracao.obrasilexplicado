@@ -39,3 +39,8 @@ export function photoUrl(c: ElectionConfig, id: string) {
   if (!/^\d+$/.test(id)) throw new Error('Invalid candidate');
   return `${directory(c, 'ft', 'br')}/${id}.jpeg`;
 }
+
+/** Election code of an official TSE URL (`/oficial/<cycle>/<election>/…`), e.g. '6257'. */
+export function electionOf(url: string) {
+  return /^https:\/\/resultados\.tse\.jus\.br\/oficial\/ele\d{4}\/(\d+)\//.exec(url)?.[1] ?? null;
+}

@@ -3,7 +3,7 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Brand } from '@/components/brand';
 import { candidateColor } from '@/lib/tse/candidate-colors';
-import { percent, number, time } from '@/lib/format';
+import { percent, number, time, roundLabel } from '@/lib/format';
 import { useElection } from '../use-election';
 import type { CandidateResult, ElectionResponse, Geography } from '@/lib/tse/types';
 import type { CockpitFrame } from '@/lib/tse/cockpit-history';
@@ -80,9 +80,9 @@ export function ElectionCockpit({initial,regions}:{initial:ElectionResponse;regi
   const contextCandidates=local?.candidates.map(c=>({id:c.id,number:c.number,name:c.ballotName,percentage:c.percentage,votes:c.votes,color:candidateColor(c)}))??contextMetric?.candidates??contextState?.candidates??[];
   const currentCandidate=snapshot?.candidates.find(c=>c.number===selection.candidate);
   const contextTimestamp=local?.progress.totaledAt??local?.progress.generatedAt??contextMetric?.updatedAt??contextState?.updatedAt;
-  const finish=snapshot?.candidates.some(c=>c.elected)?'ELEITO NO 1º TURNO':snapshot?.candidates.some(c=>c.status?.toLowerCase().includes('turno'))?'2º TURNO DEFINIDO':snapshot?.status==='finished'?'APURAÇÃO ENCERRADA':'APURAÇÃO EM ANDAMENTO';
+  const finish=snapshot?.candidates.some(c=>c.elected)?(snapshot.turn==='1'?'ELEITO NO 1º TURNO':'ELEITO'):snapshot?.candidates.some(c=>c.status?.toLowerCase().includes('turno'))?'2º TURNO DEFINIDO':snapshot?.status==='finished'?'APURAÇÃO ENCERRADA':'APURAÇÃO EM ANDAMENTO';
   return <div className="election-cockpit" ref={root}>
-    <header className="cockpit-header"><Brand/><div className="office-context">Presidente <span>1º turno · 2026</span></div>
+    <header className="cockpit-header"><Brand/><div className="office-context">Presidente <span>{roundLabel(snapshot?.turn)}</span></div>
       <div className="cockpit-search"><label className="sr-only" htmlFor="territory-search">Buscar estado ou município</label><input id="territory-search" placeholder="Buscar estado ou município" value={query} onChange={e=>{setQuery(e.target.value);setSearchOpen(true);}} onFocus={()=>setSearchOpen(true)} onKeyDown={e=>{if(e.key==='Escape')setSearchOpen(false);if(e.key==='Enter'&&results[0]){const result=results[0];updateSelection({uf:result.uf==='zz'?'':result.uf,town:result.town,exterior:result.uf==='zz'});}}}/>{searchOpen&&search.length>=2&&<div className="search-results" aria-label="Resultados da busca">{results.length?results.map(r=><button key={r.uf+r.town} onClick={()=>{updateSelection({uf:r.uf==='zz'?'':r.uf,town:r.town,exterior:r.uf==='zz'});setQuery('');}}><small>{r.group}</small>{r.name}<span>{r.uf.toUpperCase()}</span></button>):<p>Nenhum território encontrado.</p>}</div>}</div>
       <div className="cockpit-status"><b>{historyId?'VISUALIZANDO HISTÓRICO':stale?'AGUARDANDO TSE':'AO VIVO'}</b><span>Dado oficial: {time(official)} · {percent(snapshot?.progress.percentageCounted)}%</span></div>
       <div className="header-actions"><button onClick={()=>updateSelection({exterior:!selection.exterior,uf:'',town:''})}>Exterior</button><button onClick={share} aria-label="Compartilhar contexto">Compartilhar</button><button onClick={fullscreen} aria-label="Alternar tela cheia">Tela cheia</button><button onClick={()=>setInfo(!info)} aria-label="Informações e transparência">Info</button></div>

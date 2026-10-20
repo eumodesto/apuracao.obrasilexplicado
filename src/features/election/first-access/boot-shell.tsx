@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { Brand } from '@/components/brand';
 import geometry from '../map/geometry.json';
 import { NATIONAL_VIEW } from '../cockpit/map-navigation';
-import { time, percent, number } from '@/lib/format';
+import { time, percent, number, roundLabel } from '@/lib/format';
 import Image from 'next/image';
 import type { ElectionResponse } from '@/lib/tse/types';
 import '../cockpit/cockpit.css';
@@ -75,7 +75,7 @@ export function BootShell({
       <header className="cockpit-header">
         <Brand />
         <div className="office-context">
-          Presidente <span>1º turno · 2026</span>
+          Presidente <span>{roundLabel(snapshot?.turn)}</span>
         </div>
         <div className="cockpit-search">
           <label className="sr-only" htmlFor="boot-search">
@@ -126,7 +126,7 @@ export function BootShell({
           <button onClick={() => setInfo(false)}>Fechar</button>
         </section>
       )}
-      <main className="cockpit-grid" id={fallback?'boot-content':'conteudo'}>
+      <main className="cockpit-grid" id={fallback ? 'boot-content' : 'conteudo'}>
         <section className="race-panel">
           <div className="panel-heading">
             <h1>Presidente · Brasil</h1>

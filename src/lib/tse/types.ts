@@ -4,6 +4,8 @@ export type ElectionConfig = {
   contest: string;
   office: string;
   turn: string;
+  /** Election day as published by the TSE (dd/mm/yyyy). */
+  date: string;
   directories: Record<string, string>;
 };
 export type Geography = {
@@ -55,6 +57,8 @@ export type ElectionSnapshot = {
   candidates: CandidateResult[];
   source: 'TSE';
   sourceUrl: string;
+  /** Round of the election ('1' or '2'). */
+  turn?: string;
 };
 export type ElectionResponse = {
   analysis?: import('./analysis').ValidVoteAnalysis;

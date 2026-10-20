@@ -5,6 +5,8 @@ import path from 'node:path';
 import type { ElectionResponse } from './types';
 import type { ElectionMapSnapshot } from './map-types';
 import type { MunicipalMetric } from './municipal-map';
+import { electionOf } from './urls';
+const electionOfFrame=(f:CockpitFrame)=>electionOf(f.national.snapshot?.sourceUrl??'');
 export type CockpitFrame={id:string;observedAt:string;national:ElectionResponse;map:ElectionMapSnapshot;municipalities:MunicipalMetric[]};
 export class CockpitHistory{
   private frames:CockpitFrame[]=[];
@@ -23,6 +25,9 @@ export class CockpitHistory{
   }
   record(national:ElectionResponse,map:ElectionMapSnapshot,municipalities:MunicipalMetric[]){
     this.queue=this.queue.then(async()=>{await this.load();if(!national.snapshot)return;
+      // A new election (2nd round) starts a new timeline; earlier frames stay on disk only.
+      const election=electionOf(national.snapshot.sourceUrl);
+      this.frames=this.frames.filter(f=>electionOfFrame(f)===election);
       const id=createHash('sha256').update(JSON.stringify([national.snapshot.version,map.states.map(s=>[s.uf,s.version]),municipalities.map(m=>[m.uf,m.code,m.version])])).digest('hex').slice(0,20);
       if(this.frames.at(-1)?.id===id)return;
       const frame={id,observedAt:new Date().toISOString(),national,map,municipalities};

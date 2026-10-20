@@ -21,7 +21,14 @@ function remember(metric:MunicipalMetric){
  if(!previous||Date.parse(metric.updatedAt)>=Date.parse(previous.updatedAt))known.set(metric.uf+metric.code,metric);
 }
 let baselineRestored=false;
-async function restoreBaseline(){if(baselineRestored)return;const results=await municipalBaseline();for(const metric of results)remember(metric);baselineRestored=results.length>0;}
+let knownElection:string|null=null;
+/** Starts over when the active election changes (1st → 2nd round), so results never mix. */
+async function restoreBaseline(){
+ const {config}=await catalog();const election=config.value?.election;
+ if(!election)return;
+ if(knownElection!==election){known.clear();baselineRestored=false;knownElection=election;}
+ if(baselineRestored)return;const results=await municipalBaseline(election);for(const metric of results)remember(metric);baselineRestored=true;
+}
 export const knownMunicipalities=()=>[...known.values()].sort((a,b)=>(a.uf+a.code).localeCompare(b.uf+b.code));
 export async function cachedMunicipalities(){
   await restoreBaseline();
