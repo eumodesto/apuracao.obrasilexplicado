@@ -67,11 +67,11 @@ export class FileAccessStore implements AccessStore {
     return user ? { ...user } : null;
   }
 
-  async touch(id: string, now: number, maxGapSeconds: number) {
+  async touch(id: string, now: number, maxGapSeconds: number, count = true) {
     return this.change((data) => {
       const user = data.users[id];
       if (!user) return null;
-      if (user.paidAt === null)
+      if (user.paidAt === null && count)
         user.freeSecondsUsed += watchedSeconds(user.lastSeenAt, now, maxGapSeconds);
       user.lastSeenAt = now;
       return { ...user };
@@ -209,13 +209,13 @@ export class PostgresAccessStore implements AccessStore {
     return row ? toUser(row) : null;
   }
 
-  async touch(id: string, now: number, maxGapSeconds: number) {
+  async touch(id: string, now: number, maxGapSeconds: number, count = true) {
     await this.schema();
     const at = new Date(now);
     const [row] = await this.sql<UserRow[]>`
       UPDATE access_users SET
         free_seconds_used = free_seconds_used + CASE
-          WHEN paid_at IS NOT NULL OR last_seen_at IS NULL THEN 0
+          WHEN paid_at IS NOT NULL OR last_seen_at IS NULL OR NOT ${count} THEN 0
           ELSE LEAST(GREATEST(EXTRACT(EPOCH FROM (${at}::timestamptz - last_seen_at)), 0), ${maxGapSeconds})
         END,
         last_seen_at = ${at}

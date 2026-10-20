@@ -15,6 +15,7 @@ export function accessStatus(
   user: AccessUser,
   now: number,
   limits = { free: freeSeconds(), endsAt: paidAccessEndsAt(), price: priceBrl() },
+  waiting = false,
 ): AccessStatus {
   const paid = hasPaidAccess(user, now, limits.endsAt),
     remainingSeconds = paid ? 0 : Math.max(0, Math.ceil(limits.free - user.freeSecondsUsed));
@@ -24,6 +25,7 @@ export function accessStatus(
     freeSeconds: limits.free,
     price: limits.price,
     paidUntil: new Date(limits.endsAt).toISOString(),
+    waiting: !paid && waiting,
     user: { name: user.name, email: user.email },
   };
 }

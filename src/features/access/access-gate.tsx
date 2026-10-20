@@ -65,7 +65,8 @@ export function AccessGate({
   }, [status.state, heartbeat]);
 
   useEffect(() => {
-    if (status.state !== 'free') return;
+    // Before the count starts the server does not spend free time, so neither does the clock.
+    if (status.state !== 'free' || status.waiting) return;
     const tick = setInterval(() => {
       if (document.hidden || left.current <= 0) return;
       left.current -= 1;
@@ -74,7 +75,7 @@ export function AccessGate({
       if (left.current === 0) heartbeat();
     }, 1000);
     return () => clearInterval(tick);
-  }, [status.state, heartbeat]);
+  }, [status.state, status.waiting, heartbeat]);
 
   return (
     <>
@@ -90,7 +91,12 @@ export function AccessGate({
 function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: number }) {
   return (
     <div className="access-badge" role="status">
-      {status.state === 'free' && (
+      {status.state === 'free' && status.waiting && (
+        <span className="access-badge-time">
+          Grátis: <b>{clock(remaining)}</b> · começa a contar com a apuração
+        </span>
+      )}
+      {status.state === 'free' && !status.waiting && (
         <span className={remaining <= 60 ? 'access-badge-time is-ending' : 'access-badge-time'}>
           Grátis: <b>{clock(remaining)}</b>
         </span>
@@ -202,20 +208,13 @@ function Paywall({
           <>
             <h2 id="paywall-title">Pague {brl(phase.pix.amount)} com Pix</h2>
             <p id="paywall-text" className="paywall-text">
-              Abra o app do seu banco, escolha Pix e leia o QR Code ou cole o código abaixo.
+              Copie o código e cole no app do seu banco, em <b>Pix Copia e Cola</b>, ou leia o QR
+              Code com outro celular.
             </p>
-            {phase.pix.qrCodeBase64 ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                className="paywall-qr"
-                src={`data:image/png;base64,${phase.pix.qrCodeBase64}`}
-                alt="QR Code do Pix"
-                width={220}
-                height={220}
-              />
-            ) : (
-              <div className="paywall-qr is-simulated">QR Code simulado</div>
-            )}
+            {/* Phones cannot scan their own screen: there the code comes first and the QR folds. */}
+            <div className="paywall-qr-wide">
+              <PixQr pix={phase.pix} />
+            </div>
             <label className="paywall-code-label" htmlFor="pix-code">
               Pix copia e cola
             </label>
@@ -227,9 +226,13 @@ function Paywall({
                 onFocus={(e) => e.target.select()}
               />
               <button ref={primary} type="button" onClick={() => copy(phase.pix.qrCode)}>
-                {copied ? 'Copiado!' : 'Copiar'}
+                {copied ? 'Código copiado!' : 'Copiar código Pix'}
               </button>
             </div>
+            <details className="paywall-qr-narrow">
+              <summary>Mostrar QR Code para pagar em outro aparelho</summary>
+              <PixQr pix={phase.pix} />
+            </details>
             <p className="paywall-waiting" aria-live="polite">
               <span className="paywall-spinner" aria-hidden="true" />
               Aguardando a confirmação do pagamento…
@@ -287,5 +290,20 @@ function Paywall({
         </form>
       </section>
     </div>
+  );
+}
+
+function PixQr({ pix }: { pix: Pix }) {
+  return pix.qrCodeBase64 ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      className="paywall-qr"
+      src={`data:image/png;base64,${pix.qrCodeBase64}`}
+      alt="QR Code do Pix"
+      width={220}
+      height={220}
+    />
+  ) : (
+    <div className="paywall-qr is-simulated">QR Code simulado</div>
   );
 }

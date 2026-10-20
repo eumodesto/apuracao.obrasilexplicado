@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 /** Polled while the Pix screen is open; confirms the payment even if the webhook never arrives. */
 export async function GET() {
   const session = await readSession();
-  const before = await currentAccess(session);
+  const before = await currentAccess(session, undefined, undefined, { fresh: true });
   if (!before) return Response.json({ error: 'Faça login para continuar.' }, { status: 401 });
   let payment = null;
   try {
@@ -15,7 +15,7 @@ export async function GET() {
   } catch (error) {
     console.error('[billing] payment refresh failed', error);
   }
-  const after = await currentAccess(session);
+  const after = await currentAccess(session, undefined, undefined, { fresh: true });
   return Response.json(
     { access: after!.status, paymentStatus: payment?.status ?? null },
     { headers: { 'Cache-Control': 'no-store' } },

@@ -7,7 +7,7 @@ export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 /** Opens (or reuses) the signed-in user's Pix charge. */
 export async function POST() {
-  const access = await currentAccess(await readSession());
+  const access = await currentAccess(await readSession(), undefined, undefined, { fresh: true });
   if (!access) return Response.json({ error: 'Faça login para continuar.' }, { status: 401 });
   if (access.status.state === 'paid') return Response.json({ access: access.status });
   const mp = mercadoPago();

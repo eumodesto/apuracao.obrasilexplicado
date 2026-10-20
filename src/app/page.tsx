@@ -7,7 +7,7 @@ import { currentAccess } from '@/lib/access/guard';
 import { readSession } from '@/lib/access/session';
 export const dynamic = 'force-dynamic';
 export default async function Page() {
-  const access = await currentAccess(await readSession());
+  const access = await currentAccess(await readSession(), undefined, undefined, { fresh: true });
   if (!access) redirect('/login');
   const { initial, regions } = await readBootCache();
   // Without access, the first HTML must not carry results either.

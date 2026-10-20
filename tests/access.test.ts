@@ -331,6 +331,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres store', () => {
     now += 3_600_000;
     const user = await store.touch(id, now, 20);
     expect(user).toMatchObject({ id, freeSecondsUsed: 50, lastSeenAt: now, paidAt: null });
+    // Before the count starts, activity is recorded but no free time is spent.
+    now += 10_000;
+    expect(await store.touch(id, now, 20, false)).toMatchObject({
+      freeSecondsUsed: 50,
+      lastSeenAt: now,
+    });
 
     const payment = {
       id: `pay-${id}`,
@@ -369,5 +375,46 @@ describe('free time setting', () => {
     expect(freeSeconds()).toBe(30);
     vi.stubEnv('FREE_SECONDS', '0');
     expect(freeSeconds()).toBe(0);
+  });
+});
+
+describe('free time before the count starts', () => {
+  it('does not spend free time while results are not published, and resumes once they are', async () => {
+    const store = new FileAccessStore();
+    await store.upsertUser(profile);
+    await store.touch(profile.id, T0, 20, false);
+    await store.touch(profile.id, T0 + 10_000, 20, false);
+    expect((await store.getUser(profile.id))!.freeSecondsUsed).toBe(0);
+    await store.touch(profile.id, T0 + 20_000, 20, true);
+    expect((await store.getUser(profile.id))!.freeSecondsUsed).toBe(10);
+  });
+
+  it('reports the waiting state to the panel, but never for paid users', () => {
+    const user = {
+      ...profile,
+      freeSecondsUsed: 0,
+      lastSeenAt: null,
+      paidAt: null,
+      paymentId: null,
+    };
+    expect(accessStatus(user, T0, limits, true)).toMatchObject({ state: 'free', waiting: true });
+    expect(accessStatus({ ...user, paidAt: T0 }, T0, limits, true).waiting).toBe(false);
+  });
+});
+
+describe('activity writes at peak', () => {
+  it('writes at most once per interval per user and still counts the whole time', async () => {
+    const { currentAccess, TOUCH_INTERVAL_MS } = await import('../src/lib/access/guard');
+    const store = new FileAccessStore(),
+      touch = vi.spyOn(store, 'touch'),
+      session = { sub: 'google:peak', email: 'peak@example.com', name: 'Peak' };
+    await store.upsertUser({ id: session.sub, email: session.email, name: session.name });
+    let now = T0;
+    for (let i = 0; i < 40; i++, now += 1_000)
+      await currentAccess(session, store, now, { started: true });
+    // 40 requests over 40 s: one write per 5 s window instead of 40.
+    expect(touch.mock.calls.length).toBeLessThanOrEqual(40_000 / TOUCH_INTERVAL_MS + 1);
+    const fresh = await currentAccess(session, store, now, { started: true, fresh: true });
+    expect(fresh!.user.freeSecondsUsed).toBe(40);
   });
 });

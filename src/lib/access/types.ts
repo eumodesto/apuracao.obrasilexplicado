@@ -29,14 +29,24 @@ export type AccessStatus = {
   freeSeconds: number;
   price: number;
   paidUntil: string;
+  /** True while the count has not started: free time is not being spent. */
+  waiting: boolean;
   user: { name: string; email: string };
 };
 
 export interface AccessStore {
   upsertUser(user: Pick<AccessUser, 'id' | 'email' | 'name'>): Promise<AccessUser>;
   getUser(id: string): Promise<AccessUser | null>;
-  /** Counts the time since the previous request (capped) as watched, unless already paid. */
-  touch(id: string, now: number, maxGapSeconds: number): Promise<AccessUser | null>;
+  /**
+   * Records activity. Counts the time since the previous request (capped) as watched, unless
+   * already paid or `count` is false (the election count has not started).
+   */
+  touch(
+    id: string,
+    now: number,
+    maxGapSeconds: number,
+    count?: boolean,
+  ): Promise<AccessUser | null>;
   markPaid(id: string, paymentId: string, paidAt: number): Promise<void>;
   savePayment(payment: PixPayment): Promise<void>;
   setPaymentStatus(id: string, status: PaymentStatus): Promise<void>;

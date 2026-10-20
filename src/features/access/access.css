@@ -263,3 +263,53 @@
     font-size: 24px;
   }
 }
+
+/* Keep the last part of the page clear of the floating badge. */
+body:has(.access-badge) {
+  padding-bottom: 72px;
+}
+@media (max-width: 768px) {
+  .access-badge {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    font-size: 12px;
+  }
+}
+
+.paywall-text b {
+  color: #eeede8;
+}
+.paywall-qr-narrow {
+  display: none;
+  margin: -4px 0 16px;
+  color: #b6b5ae;
+  font-size: 13px;
+}
+.paywall-qr-narrow summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.paywall-qr-narrow .paywall-qr {
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .paywall-qr-wide {
+    display: none;
+  }
+  .paywall-qr-narrow {
+    display: block;
+  }
+  .paywall-code {
+    flex-direction: column;
+  }
+  .paywall-code input {
+    line-height: 40px;
+  }
+  .paywall-code button {
+    min-height: 52px;
+    font-size: 16px;
+  }
+}
