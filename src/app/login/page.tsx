@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { brl, duration } from '@/features/access/format';
-import { devLoginEnabled, freeSeconds, googleConfig, priceBrl } from '@/lib/access/config';
+import { devLoginEnabled, googleConfig } from '@/lib/access/config';
 import { activeSession } from '@/lib/access/auth';
 import { PanelPreview } from './panel-preview';
 import './login.css';
@@ -29,10 +28,6 @@ export default async function LoginPage({
         <p className="login-text">
           Resultados oficiais do TSE para Presidente, com mapa por estado, município e zona
           eleitoral.
-        </p>
-        <p className="login-offer">
-          Você tem <b>{duration(freeSeconds())} grátis</b>. Depois, {brl(priceBrl())} no Pix liberam
-          a apuração completa até o resultado final.
         </p>
         {erro && errors[erro] && (
           <p className="login-error" role="alert">
@@ -87,14 +82,6 @@ export default async function LoginPage({
             {errors.config}
           </p>
         )}
-        <p className="login-returning">
-          <b>Já pagou?</b> Entre com a mesma conta usada no pagamento e o acesso é liberado na hora,
-          em qualquer aparelho.
-        </p>
-        <p className="login-fine">
-          Usamos sua conta apenas para controlar o tempo grátis e o pagamento. Painel independente,
-          sem vínculo com o TSE.
-        </p>
       </section>
     </main>
   );

@@ -76,31 +76,31 @@
 }
 .signup-party-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 6px;
-  max-height: 248px;
-  padding: 2px 4px 2px 2px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
 }
 .signup-party {
   position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 44px;
-  padding: 6px 10px;
+  min-height: 52px;
+  padding: 8px 14px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 9px;
   background: #1d1d1a;
   color: #d8d7d0;
-  font-size: 13px;
+  font-size: 16px;
+  font-weight: 700;
   line-height: 1.2;
   cursor: pointer;
 }
 .signup-party:first-child {
   grid-column: 1 / -1;
+  order: 1;
+  min-height: 44px;
+  font-size: 14px;
+  font-weight: 400;
 }
 .signup-party:hover {
   border-color: rgba(255, 255, 255, 0.25);
@@ -159,10 +159,4 @@
 .signup-submit:disabled {
   opacity: 0.7;
   cursor: wait;
-}
-@media (max-width: 480px) {
-  .signup-party-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-height: 220px;
-  }
 }

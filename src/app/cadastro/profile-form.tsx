@@ -139,7 +139,7 @@ export function ProfileForm({
         className="signup-parties"
         aria-describedby={errors.party ? 'party-error' : undefined}
       >
-        <legend className="signup-label">Partido que você apoia</legend>
+        <legend className="signup-label">Quem você apoia para Presidente</legend>
         <div className="signup-party-grid">
           <PartyOption
             value={noParty}
@@ -152,7 +152,7 @@ export function ProfileForm({
             <PartyOption
               key={option.code}
               value={option.code}
-              label={option.number ? `${labelOf(option)} · ${option.number}` : labelOf(option)}
+              label={`${option.number} · ${option.code}`}
               title={option.name}
               color={option.color}
               checked={party === option.code}
@@ -179,8 +179,8 @@ export function ProfileForm({
               }}
             />
             <span>
-              Autorizo o Resultados Brasil a guardar o partido que apoio e mostrá-lo junto do meu
-              nome no chat. Posso trocar ou apagar essa informação quando quiser.
+              Autorizo o Resultados Brasil a guardar o lado que apoio e mostrá-lo junto do meu nome
+              no chat. Posso trocar ou apagar essa informação quando quiser.
             </span>
           </label>
           <p className="signup-help">
@@ -206,10 +206,6 @@ export function ProfileForm({
     </form>
   );
 }
-
-/** How the party writes its own abbreviation. */
-const SPELLING: Record<string, string> = { UNIAO: 'UNIÃO', PCDOB: 'PCdoB' };
-const labelOf = (party: Party) => SPELLING[party.code] ?? party.code;
 
 function PartyOption({
   value,

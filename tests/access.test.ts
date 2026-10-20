@@ -614,10 +614,12 @@ describe('sign-up profile', () => {
     expect((await store.getUser(profile.id))!.freeSecondsUsed).toBe(0);
   });
 
-  it('offers only known parties, plus "Prefiro não informar"', () => {
+  it('offers only the two 2nd-round parties, 13 and 22, plus "Prefiro não informar"', () => {
+    expect(PARTIES.map((p) => p.number)).toEqual(['13', '22']);
     expect(validPartyChoice(NO_PARTY)).toBe(true);
     expect(validPartyChoice('PT')).toBe(true);
-    expect(validPartyChoice('XYZ')).toBe(false);
+    expect(validPartyChoice('PL')).toBe(true);
+    expect(validPartyChoice('MDB')).toBe(false);
     expect(new Set(PARTIES.map((p) => p.code)).size).toBe(PARTIES.length);
     expect(PARTIES.every((p) => /^#[0-9a-f]{6}$/i.test(p.color))).toBe(true);
   });

@@ -51,15 +51,6 @@
   font-size: 15px;
   line-height: 1.5;
 }
-.login-offer {
-  margin: 0 0 24px;
-  padding: 12px 14px;
-  border-left: 3px solid #f5c518;
-  border-radius: 0 9px 9px 0;
-  background: #1d1d1a;
-  font-size: 14px;
-  line-height: 1.5;
-}
 .login-google,
 .login-dev {
   display: flex;
@@ -108,17 +99,6 @@
   color: #eeede8;
   font: inherit;
   font-size: 15px;
-}
-.login-returning {
-  margin: 20px 0 0;
-  padding-top: 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  color: #b6b5ae;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.login-returning b {
-  color: #eeede8;
 }
 .login-error {
   margin: 0 0 16px;
