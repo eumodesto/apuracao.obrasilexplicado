@@ -44,6 +44,7 @@ services:
       - '443:443/udp'
     environment:
       DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      EXTRA_DOMAINS: ${EXTRA_DOMAINS:-}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
