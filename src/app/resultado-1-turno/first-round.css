@@ -5,10 +5,7 @@
 }
 .round-hero h1 {
   margin: 0 0 10px;
-  font:
-    400 clamp(28px, 4vw, 40px) / 1.1 Georgia,
-    'Times New Roman',
-    serif;
+  font: 400 clamp(28px, 4vw, 40px) / 1.1 var(--font-sans);
 }
 .round-source {
   margin: 0 0 28px;

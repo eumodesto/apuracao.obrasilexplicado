@@ -15,6 +15,8 @@ import {candidateColor} from '@/lib/tse/candidate-colors';
 import {percent,number} from '@/lib/format';
 import {municipalGeometry,mapFill,type MapMode,type Shape} from './map-resources';
 import {MUNICIPAL_ZOOM,LOCAL_ZOOM,NATIONAL_VIEW,SpatialIndex,collisionFreeLabels,fitBounds,interpolateView,zoomView,type View,type Bounds} from './map-navigation';
+/** The site's font (loaded by next/font) for labels drawn on the canvas. */
+let labelFont='';const fontFamily=()=>(labelFont||=getComputedStyle(document.documentElement).getPropertyValue('--font-sans').trim()||'Arial');
 const states=new SpatialIndex<Shape>(national.states);
 type Hover={shape:Shape;x:number;y:number};
 type Props={candidateRegistry?:CandidateResult[];snapshot:ElectionMapSnapshot|null;metrics:MunicipalMetric[];uf:string;town:string;mode:MapMode;candidate:string;onSelect:(uf:string,town?:string)=>void;selectedName:string;onVisibleStates?:(states:string[])=>void;zones?:ZoneResult[];zone?:string;hoveredZone?:string;historical?:boolean;onZoneSelect?:(zone:string)=>void;onZoneHover?:(zone:string)=>void};
@@ -68,10 +70,10 @@ export const CockpitMap=memo(function CockpitMap({candidateRegistry=[],snapshot,
       const x=offset[0]+(s.label[0]-view[0])*scale,y=offset[1]+(s.label[1]-view[1])*scale;
       if(x<18||x>size[0]-18||y<65||y>size[1]-57)return null;
       if(!s.code&&level==='national'&&['rn','pb','pe','al','se','es','rj','df'].includes(s.uf))return null;
-      ctx.font=`${s.code?11:12}px Arial`;
+      ctx.font=`${s.code?11:12}px ${fontFamily()}`;
       return {key:s.uf+(s.code??''),x,y,width:ctx.measureText(text).width,height:s.code?16:32,priority:selected?1e12:!s.code?1e11:(m?.validVotes??area),shape:s,text};
     }).filter((l):l is NonNullable<typeof l>=>!!l);
-    const accepted=collisionFreeLabels(labels,level==='local'?60:35),byKey=new Map(labels.map(l=>[l.key,l]));ctx.textAlign='center';ctx.textBaseline='middle';for(const box of accepted){const l=byKey.get(box.key)!;ctx.font=`${l.shape.code?'500':'600'} ${(l.shape.code?11:12)/scale}px Arial`;ctx.lineWidth=1.5/scale;ctx.strokeStyle=theme.canvas;ctx.fillStyle=theme.text;ctx.strokeText(l.text,l.shape.label[0],l.shape.label[1]);ctx.fillText(l.text,l.shape.label[0],l.shape.label[1]);if(!l.shape.code){const m=lookup(l.shape),v=mode==='counted'?m?.counted:mode==='candidate'?m?.candidates.find(c=>c.number===candidate)?.percentage:m?.candidates[0]?.percentage,text=v==null?'—':`${percent(v)}%`;ctx.font=`600 ${11/scale}px Arial`;ctx.strokeText(text,l.shape.label[0],l.shape.label[1]+15/scale);ctx.fillText(text,l.shape.label[0],l.shape.label[1]+15/scale);}}
+    const accepted=collisionFreeLabels(labels,level==='local'?60:35),byKey=new Map(labels.map(l=>[l.key,l]));ctx.textAlign='center';ctx.textBaseline='middle';for(const box of accepted){const l=byKey.get(box.key)!;ctx.font=`${l.shape.code?'500':'600'} ${(l.shape.code?11:12)/scale}px ${fontFamily()}`;ctx.lineWidth=1.5/scale;ctx.strokeStyle=theme.canvas;ctx.fillStyle=theme.text;ctx.strokeText(l.text,l.shape.label[0],l.shape.label[1]);ctx.fillText(l.text,l.shape.label[0],l.shape.label[1]);if(!l.shape.code){const m=lookup(l.shape),v=mode==='counted'?m?.counted:mode==='candidate'?m?.candidates.find(c=>c.number===candidate)?.percentage:m?.candidates[0]?.percentage,text=v==null?'—':`${percent(v)}%`;ctx.font=`600 ${11/scale}px ${fontFamily()}`;ctx.strokeText(text,l.shape.label[0],l.shape.label[1]+15/scale);ctx.fillText(text,l.shape.label[0],l.shape.label[1]+15/scale);}}
     node.dataset.labelCount=String(accepted.length);node.dataset.visibleShapes=String(displayed.length);node.dataset.drawMs=(performance.now()-started).toFixed(2);paintHover();
   },[displayed,visibleStates,lookup,mode,candidate,uf,town,size,scale,offset,view,municipal,level,path,paintHover,index]);
   useEffect(()=>{const frame=requestAnimationFrame(paintHover);return()=>cancelAnimationFrame(frame);},[hover,paintHover]);

@@ -1,9 +1,13 @@
+import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { AccessGate } from '@/features/access/access-gate';
 import { ChatDock } from '@/features/chat/chat';
 import { FirstAccess } from '@/features/election/first-access/first-access';
 import { emptyBootResult, readBootCache } from '@/features/election/first-access/read-boot-cache';
 import { Countdown } from '@/features/landing/countdown';
+import { FirstRoundRace } from '@/features/election/race/first-round-race';
+import { FirstRoundRegions } from '@/features/election/regions/first-round-regions';
+import { FirstRoundBand } from '@/features/landing/round-band';
 import { isStaff } from '@/lib/access/access';
 import { activeSession } from '@/lib/access/auth';
 import { countIsOpen, countStartsAt, devPaymentEnabled } from '@/lib/access/config';
@@ -27,7 +31,32 @@ export default async function Page() {
   const locked = access.status.state === 'locked';
   return (
     <AccessGate initial={access.status} simulatedPayment={devPaymentEnabled()}>
-      <FirstAccess initial={locked ? emptyBootResult : initial} regions={regions} />
+      <FirstAccess
+        initial={locked ? emptyBootResult : initial}
+        regions={regions}
+        band={
+          // Streams in on its own, so the panel never waits for the TSE.
+          <Suspense key="first-round-band" fallback={null}>
+            <FirstRoundBand />
+          </Suspense>
+        }
+        regionBoard={
+          // Until the 2nd-round count opens, "Por região" shows the official 1st round.
+          countIsOpen() ? undefined : (
+            <Suspense key="first-round-regions" fallback={null}>
+              <FirstRoundRegions />
+            </Suspense>
+          )
+        }
+        raceBoard={
+          // Same for the left column; the empty column keeps the grid in place while it loads.
+          countIsOpen() ? undefined : (
+            <Suspense key="first-round-race" fallback={<div className="race-column" />}>
+              <FirstRoundRace />
+            </Suspense>
+          )
+        }
+      />
       <ChatDock />
     </AccessGate>
   );

@@ -28,8 +28,8 @@
   --space-xl: 20px;
   --space-2xl: 24px;
   --space-3xl: 32px;
-  --font-editorial: Georgia, 'Times New Roman', serif;
-  --font-ui: Arial, Helvetica, sans-serif;
+  --font-editorial: var(--font-sans);
+  --font-ui: var(--font-sans);
   --map-empty: #242421;
   --map-tie: #4d4d47;
   --map-border: #10100f;

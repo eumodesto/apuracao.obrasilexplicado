@@ -15,10 +15,7 @@
   border-radius: 999px;
   background: rgba(18, 18, 16, 0.92);
   color: #eeede8;
-  font:
-    13px/1 Arial,
-    Helvetica,
-    sans-serif;
+  font: 13px/1 var(--font-sans);
   box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
   backdrop-filter: blur(6px);
 }
@@ -62,7 +59,7 @@
   border-radius: 14px;
   background: #121210;
   color: #eeede8;
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
 }
 .paywall-eyebrow {
@@ -75,10 +72,7 @@
 }
 .paywall h2 {
   margin: 0 0 10px;
-  font:
-    400 28px/1.15 Georgia,
-    'Times New Roman',
-    serif;
+  font: 400 28px/1.15 var(--font-sans);
 }
 .paywall-text {
   margin: 0 0 18px;
@@ -372,4 +366,29 @@ body:has(.access-badge) {
 }
 .access-badge-slot {
   display: contents;
+}
+
+/* Desktop: the badge is no longer a floating pill; it sits inside the panel's black footer. */
+@media (min-width: 769px) {
+  body:has(.cockpit-footer) .election-cockpit .cockpit-footer {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    padding: 0 18px;
+    text-align: left;
+  }
+  body:has(.cockpit-footer) .access-badge {
+    right: 18px;
+    bottom: 0;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 12px;
+  }
+  body:has(.cockpit-footer) .access-badge .chat-launcher {
+    min-height: 28px;
+  }
 }
