@@ -124,14 +124,25 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 const jitter = (ms) => ms * (0.8 + Math.random() * 0.4);
 let running = true;
 
-async function call(name, path, cookie, init = {}) {
+/**
+ * Keeps the session cookie plus the load balancer cookie (rb_lb), like a browser: each person stays
+ * on one app process. Without it every request lands on a random process and misses its caches.
+ */
+function remember(jar, response) {
+  const lb = response.headers.getSetCookie?.().find((c) => c.startsWith('rb_lb='));
+  if (lb) jar.lb = lb.split(';')[0];
+}
+const cookieOf = (jar) => (jar.lb ? jar.session + '; ' + jar.lb : jar.session);
+
+async function call(name, path, jar, init = {}) {
   const started = performance.now();
   try {
     const response = await fetch(BASE + path, {
       ...init,
-      headers: { cookie, ...(init.headers ?? {}) },
+      headers: { cookie: cookieOf(jar), ...(init.headers ?? {}) },
       signal: AbortSignal.timeout(30_000),
     });
+    remember(jar, response);
     const body = response.status === 304 ? '' : await response.text();
     record(name, response.status, performance.now() - started);
     return { response, body };
@@ -143,7 +154,10 @@ async function call(name, path, cookie, init = {}) {
 
 /** One person: chat stream, result polling (honoring X-Poll-After and ETag), heartbeat, messages. */
 async function person(i) {
-  const cookie = `rb_session=${sign({ sub: id(i), email: `carga${i}@example.invalid`, name: `Carga ${i}`, sid: `load${i}` })}`;
+  const jar = {
+    lb: null,
+    session: `rb_session=${sign({ sub: id(i), email: `carga${i}@example.invalid`, name: `Carga ${i}`, sid: `load${i}` })}`,
+  };
   people++;
   const loops = [];
   // Chat stream.
@@ -151,7 +165,10 @@ async function person(i) {
     (async () => {
       while (running) {
         try {
-          const response = await fetch(`${BASE}/api/chat/stream`, { headers: { cookie } });
+          const response = await fetch(`${BASE}/api/chat/stream`, {
+            headers: { cookie: cookieOf(jar) },
+          });
+          remember(jar, response);
           if (!response.ok) throw new Error(String(response.status));
           streamsOpen++;
           const decoder = new TextDecoder();
@@ -180,7 +197,7 @@ async function person(i) {
     (async () => {
       let etag = '';
       while (running) {
-        const result = await call('president', '/api/election/president', cookie, {
+        const result = await call('president', '/api/election/president', jar, {
           headers: etag ? { 'if-none-match': etag } : {},
         });
         etag = result?.response.headers.get('etag') ?? etag;
@@ -196,7 +213,7 @@ async function person(i) {
       let etag = '';
       await sleep(Math.random() * 20_000);
       while (running) {
-        const result = await call('map', '/api/election/president/map', cookie, {
+        const result = await call('map', '/api/election/president/map', jar, {
           headers: etag ? { 'if-none-match': etag } : {},
         });
         etag = result?.response.headers.get('etag') ?? etag;
@@ -209,7 +226,7 @@ async function person(i) {
     (async () => {
       await sleep(Math.random() * 20_000);
       while (running) {
-        await call('heartbeat', '/api/access', cookie, { method: 'POST' });
+        await call('heartbeat', '/api/access', jar, { method: 'POST' });
         await sleep(jitter(20_000));
       }
     })(),
@@ -221,7 +238,7 @@ async function person(i) {
         const uf = ['sp', 'mg', 'rj', 'ba', 'pr', 'rs', 'pe', 'ce'][i % 8];
         await sleep(Math.random() * 20_000);
         while (running) {
-          await call('municipal', `/api/election/president/municipalities?state=${uf}`, cookie);
+          await call('municipal', `/api/election/president/municipalities?state=${uf}`, jar);
           await sleep(jitter(20_000));
         }
       })(),
@@ -233,7 +250,7 @@ async function person(i) {
         while (running) {
           await sleep(5_000 + Math.random() * 55_000);
           if (!running) break;
-          const result = await call('chat-post', '/api/chat/messages', cookie, {
+          const result = await call('chat-post', '/api/chat/messages', jar, {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ text: `carga ${Date.now()}` }),
