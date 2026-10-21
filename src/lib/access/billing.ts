@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
-import { mercadoPagoConfig, PIX_EXPIRATION_MINUTES, priceBrl, siteUrl } from './config';
-import { MercadoPago, paymentStatus, type MercadoPagoPayment } from './mercadopago';
+import { mercadoPagoConfig, PIX_EXPIRATION_MINUTES, siteUrl } from './config';
+import { forgetAccess } from './guard';
+import { MercadoPago, paymentStatus, type CardInput, type MercadoPagoPayment } from './mercadopago';
+import { accessProduct, type Product } from './products';
 import type { AccessStore, AccessUser, PixPayment } from './types';
 
 export const mercadoPago = () => {
@@ -14,7 +16,7 @@ export function webhookUrl(base = siteUrl()) {
 }
 
 /**
- * Returns the user's open Pix charge or creates a new one.
+ * Returns the user's open Pix charge for this product or creates a new one.
  * Without Mercado Pago (`mp` null) it creates a simulated charge; callers allow that only in dev.
  */
 export async function openPix(
@@ -22,40 +24,104 @@ export async function openPix(
   store: AccessStore,
   mp: MercadoPago | null,
   now = Date.now(),
-  amount = priceBrl(),
+  product: Product = accessProduct(),
 ): Promise<PixPayment> {
   const latest = await store.latestPayment(user.id);
-  // Keep at least two minutes to pay before reusing an existing code.
-  if (latest?.status === 'pending' && latest.expiresAt - now > 2 * 60_000) return latest;
+  // Keep at least two minutes to pay before reusing an existing code for the same purchase.
+  if (
+    latest?.status === 'pending' &&
+    latest.method === 'pix' &&
+    latest.purpose === product.purpose &&
+    latest.amount === product.amount &&
+    latest.expiresAt - now > 2 * 60_000
+  )
+    return latest;
   const expiresAt = now + PIX_EXPIRATION_MINUTES * 60_000;
+  const base = { purpose: product.purpose, method: 'pix' as const, credits: product.credits };
   const payment: PixPayment = mp
-    ? fromMercadoPago(
-        await mp.createPix({
-          amount,
-          email: user.email,
-          userId: user.id,
-          description: 'Resultados Brasil — acesso à apuração até o resultado final',
+    ? {
+        ...fromMercadoPago(
+          await mp.createPix({
+            amount: product.amount,
+            email: user.email,
+            userId: user.id,
+            description: product.description,
+            expiresAt,
+            notificationUrl: webhookUrl(),
+          }),
+          user.id,
           expiresAt,
-          notificationUrl: webhookUrl(),
-        }),
-        user.id,
-        expiresAt,
-        now,
-      )
+          now,
+        ),
+        ...base,
+      }
     : {
         id: `dev-${randomUUID()}`,
         userId: user.id,
         status: 'pending',
-        amount,
+        amount: product.amount,
         qrCode:
           '00020126580014br.gov.bcb.pix0136PIX-SIMULADO-APENAS-DESENVOLVIMENTO5204000053039865405' +
-          amount.toFixed(2),
+          product.amount.toFixed(2),
         qrCodeBase64: null,
         expiresAt,
         createdAt: now,
+        ...base,
       };
   await store.savePayment(payment);
   return payment;
+}
+
+/**
+ * Charges a card tokenized in the browser by Mercado Pago's form (the card number never reaches
+ * this server). The amount comes from the product, never from the browser. Without Mercado Pago
+ * (dev only) the charge is simulated and approved.
+ */
+export async function payWithCard(
+  user: AccessUser,
+  store: AccessStore,
+  mp: MercadoPago | null,
+  card: Omit<CardInput, 'amount' | 'userId' | 'description' | 'notificationUrl' | 'email'> & {
+    email?: string;
+  },
+  product: Product = accessProduct(),
+  now = Date.now(),
+) {
+  const remote: MercadoPagoPayment = mp
+    ? await mp.createCard({
+        ...card,
+        amount: product.amount,
+        email: user.email || card.email || '',
+        userId: user.id,
+        description: product.description,
+        notificationUrl: webhookUrl(),
+      })
+    : {
+        id: `dev-card-${randomUUID()}`,
+        status: 'approved',
+        statusDetail: 'accredited',
+        amount: product.amount,
+        currency: 'BRL',
+        externalReference: user.id,
+        qrCode: null,
+        qrCodeBase64: null,
+        expiresAt: null,
+      };
+  await store.savePayment({
+    id: remote.id,
+    userId: user.id,
+    status: 'pending',
+    amount: product.amount,
+    qrCode: '',
+    qrCodeBase64: null,
+    expiresAt: now,
+    createdAt: now,
+    purpose: product.purpose,
+    method: 'card',
+    credits: product.credits,
+  });
+  await applyPayment(remote, store, now);
+  return { status: paymentStatus(remote.status), detail: remote.statusDetail };
 }
 
 const fromMercadoPago = (
@@ -63,7 +129,7 @@ const fromMercadoPago = (
   userId: string,
   expiresAt: number,
   now: number,
-): PixPayment => ({
+) => ({
   id: payment.id,
   userId,
   status: paymentStatus(payment.status),
@@ -75,26 +141,34 @@ const fromMercadoPago = (
 });
 
 /**
- * Applies Mercado Pago's current view of a payment. Access is granted only when the payment is
- * approved, in BRL, for at least the price, and belongs to the user who opened the charge.
+ * Applies Mercado Pago's current view of a payment. Its effect (access, or a sticker pack) is
+ * granted only when the payment is approved, in BRL, for at least the amount charged, belongs to
+ * the user who opened it, and only once even if the webhook and the polling both see it.
  */
 export async function applyPayment(
   remote: MercadoPagoPayment,
   store: AccessStore,
   now = Date.now(),
-  price = priceBrl(),
 ) {
   const local = await store.getPayment(remote.id);
   if (!local) return false;
   const status = paymentStatus(remote.status);
-  if (status !== local.status) await store.setPaymentStatus(local.id, status);
   const valid =
     status === 'approved' &&
     remote.currency === 'BRL' &&
-    remote.amount >= price &&
+    remote.amount >= local.amount &&
     remote.externalReference === local.userId;
-  if (valid) await store.markPaid(local.userId, local.id, now);
-  return valid;
+  if (!valid) {
+    if (status !== local.status) await store.setPaymentStatus(local.id, status);
+    return false;
+  }
+  if (await store.approvePayment(local.id)) {
+    if (local.purpose === 'stickers')
+      await store.addStickerCredits(local.userId, local.credits ?? 0);
+    else await store.markPaid(local.userId, local.id, now);
+    forgetAccess(local.userId);
+  }
+  return true;
 }
 
 /** Checks the user's latest pending charge with Mercado Pago (covers missed or local webhooks). */

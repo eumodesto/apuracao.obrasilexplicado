@@ -2,7 +2,31 @@
 
 O painel exige login com e-mail (ou nome de usuário) e senha. Cada conta tem 1 minuto grátis de acompanhamento. Depois, um popup oferece o acesso até o fim da apuração por R$ 5,00, pago uma única vez no Pix pelo Mercado Pago.
 
-## Fluxo
+## Jornada (a partir de 21/10/2026)
+
+1. `https://portaleleicao.com.br/` abre o painel **sem login**. Quem chega sem sessão vira um visitante (`guest:<uuid>`, aparece no chat como "Visitante 1234", avatar cinza) por `POST /api/guest`. O cookie `rb_guest` (1 ano) lembra o visitante deste navegador: sair e voltar não dá outro minuto; uma aba anônima dá (aceito).
+2. O visitante tem o **tempo grátis** (`FREE_SECONDS`, padrão 60 s) para ver o painel e **escrever no chat** (texto; figurinhas não).
+3. Quando acaba, o popup pede **Criar conta** (aba aberta por padrão) ou **Entrar**. Ao criar a conta ou entrar, o tempo já usado pelo visitante passa para a conta (`inheritFreeTime`): não há segundo minuto.
+4. Conta nova → `/cadastro` (nome de usuário e partido) → painel com o popup de **pagamento**: **Pix** (QR Code e copia e cola, como antes) ou **Cartão**, com o formulário do Mercado Pago (Card Payment Brick) dentro do site. O número do cartão vai do navegador para o Mercado Pago, que devolve um token; só o token chega ao servidor (`POST /api/billing/card`). O valor cobrado é sempre o do servidor.
+5. Pagamento aprovado → acesso até `PAID_ACCESS_ENDS_AT`.
+
+O tempo grátis só corre depois que o TSE publica o primeiro resultado. Para testar antes, `FREE_TIME_BEFORE_COUNT=true`.
+
+## Figurinhas (pacotes)
+
+- Só para quem liberou o acesso. Cada figurinha enviada gasta 1 do saldo (`sticker_credits`); com saldo zero, o envio é recusado (`402`, `code: "no_stickers"`) e a loja abre.
+- Pacotes (`src/lib/access/packs.ts`): **R$ 2 = 5**, **R$ 5 = 20**, **R$ 10 = 50**. Compra por Pix ou cartão, com `{ "pack": "s5" | "s20" | "s50" }` em `/api/billing/pix` e `/api/billing/card`.
+- O saldo é somado **uma única vez** por pagamento, mesmo que o webhook e a consulta vejam a aprovação (`approvePayment`). Uma figurinha recusada (modo lento, sala cheia) não gasta saldo. A equipe envia sem gastar.
+
+## Variáveis novas
+
+| Variável                 | Para quê                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| `MP_PUBLIC_KEY`          | Chave pública do Mercado Pago para o formulário de cartão. Sem ela, só Pix.    |
+| `FREE_TIME_BEFORE_COUNT` | `true` para o tempo grátis correr antes de o TSE publicar resultados (testes). |
+| `OPEN_ACCESS`            | `true` libera tudo para todos (testes). Desligue antes da apuração.            |
+
+## Fluxo (detalhes)
 
 1. `/` sem cookie de sessão redireciona para `/login` (`src/proxy.ts`). A página também valida a assinatura do cookie.
 2. Em `/login`, a aba **Criar conta** pede e-mail e senha (mínimo de 8 caracteres, repetida); a aba **Entrar** aceita o e-mail ou o nome de usuário e a senha (`POST /api/auth/password`). Cada e-mail é uma conta (`email:<e-mail>`). As senhas ficam só como hash scrypt, na tabela `access_passwords`, separada da conta. Erros de login têm sempre a mesma mensagem, e uma conta inexistente leva o mesmo tempo para responder, para não revelar quais e-mails existem. Limite de tentativas: 60 por minuto por IP e 8 a cada 5 minutos por conta. O e-mail não é confirmado, por isso os e-mails da equipe e da administração não podem ser cadastrados pelo site (veja abaixo). Não há "esqueci a senha": a equipe troca a senha no servidor com `scripts/set-password.mjs`. A sessão é um cookie `HttpOnly` assinado com HMAC (`SESSION_SECRET`), válido por 30 dias.

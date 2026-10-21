@@ -24,7 +24,15 @@ const RESERVED = [
   'presidente',
 ];
 /** Parts that mark a name as official anywhere inside it. */
-const RESERVED_PARTS = ['admin', 'moderador', 'suporte', 'oficial', 'resultadosbrasil'];
+// "visitante" is how people without an account appear in the chat ("Visitante 1234").
+const RESERVED_PARTS = [
+  'admin',
+  'moderador',
+  'suporte',
+  'oficial',
+  'resultadosbrasil',
+  'visitante',
+];
 /** Offensive terms that are never part of an innocent word, matched anywhere in the name. */
 const OFFENSIVE_PARTS = [
   'caralho',

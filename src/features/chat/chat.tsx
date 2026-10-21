@@ -54,7 +54,7 @@ const merge = (list: PublicMessage[], incoming: PublicMessage[]) => {
 
 /** Live chat beside the election panel. Everyone signed in reads; paid accounts write. */
 export function ChatDock() {
-  const { status, offerAccess } = useAccess();
+  const { status, offerAccess, buyStickers, setStickers } = useAccess();
   // Open by default where it docks beside the panel; afterwards the reader decides.
   const docked = useSyncExternalStore(subscribeDocked, isDocked, () => false);
   const [choice, setChoice] = useState<boolean | null>(null);
@@ -67,7 +67,8 @@ export function ChatDock() {
   // Paid accounts write; the access state updates the moment a payment is confirmed, while the
   // stream's own report can lag behind it.
   const [serverCanWrite, setCanWrite] = useState(false);
-  const canWrite = status.state === 'paid' || serverCanWrite;
+  // The free minute (visitors included) writes too; only a locked page cannot.
+  const canWrite = status.state !== 'locked' || serverCanWrite;
   const [connected, setConnected] = useState(false);
   const [unread, setUnread] = useState(0);
   const [atBottom, setAtBottom] = useState(true);
@@ -392,12 +393,18 @@ export function ChatDock() {
             party={partyByCode(myParty)}
             onPhoto={() => setCapturing(true)}
             onSent={(message) => setMessages((current) => merge(current, [message]))}
+            paid={status.state === 'paid'}
+            staff={status.staff}
+            stickers={status.stickers}
+            onStickers={setStickers}
+            onBuy={buyStickers}
+            onNeedAccess={offerAccess}
           />
         ) : (
           <div className="chat-locked">
-            <p>Você está no tempo grátis: dá para ler o chat, mas não escrever.</p>
+            <p>Seu tempo grátis acabou.</p>
             <button type="button" onClick={offerAccess}>
-              Liberar para escrever · {brl(status.price)}
+              Liberar o acesso · {brl(status.price)}
             </button>
           </div>
         )}
@@ -440,6 +447,12 @@ function Composer({
   party,
   onSent,
   onPhoto,
+  paid,
+  staff,
+  stickers,
+  onStickers,
+  onBuy,
+  onNeedAccess,
 }: {
   me: string;
   photo: string | null;
@@ -447,6 +460,17 @@ function Composer({
   onSent: (message: PublicMessage) => void;
   /** Opens the camera / upload to change the profile photo. */
   onPhoto: () => void;
+  /** Paid access: may use stickers. */
+  paid: boolean;
+  /** Team: stickers without spending. */
+  staff: boolean;
+  /** Stickers left in the packs. */
+  stickers: number;
+  onStickers: (stickers: number) => void;
+  /** Opens the sticker shop. */
+  onBuy: () => void;
+  /** Opens the access offer (stickers need paid access). */
+  onNeedAccess: () => void;
 }) {
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -489,8 +513,17 @@ function Composer({
         setWaitUntil(fromNow(body.retryAfterMs ?? 5000));
         setNow(fromNow());
       }
+      if (response.status === 402 && body.code === 'no_stickers') {
+        onStickers(0);
+        setTray(false);
+        onBuy();
+      } else if (response.status === 402 && body.code === 'payment_required') {
+        setTray(false);
+        onNeedAccess();
+      }
       if (!response.ok) return setError(body.error ?? 'Não foi possível enviar.');
       onSent(body.message);
+      if (typeof body.stickers === 'number') onStickers(body.stickers);
       if ('text' in content) setText('');
       setTray(false);
       // Slow mode starts with every message.
@@ -524,15 +557,33 @@ function Composer({
     <form className="chat-composer" onSubmit={submit}>
       {tray && (
         <div id="chat-stickers" className="chat-stickers" role="group" aria-label="Figurinhas">
-          <p>
-            Pacote grátis <small>· toque para enviar</small>
-          </p>
+          <div className="chat-stickers-head">
+            <p>
+              {!paid
+                ? 'Figurinhas são para quem liberou o acesso'
+                : staff
+                  ? 'Figurinhas da equipe · à vontade'
+                  : stickers > 0
+                    ? `Você tem ${stickers} ${stickers === 1 ? 'figurinha' : 'figurinhas'}`
+                    : 'Suas figurinhas acabaram'}
+              {(staff || stickers > 0) && paid && <small> · toque para enviar</small>}
+            </p>
+            {paid && !staff ? (
+              <button type="button" className="chat-stickers-buy" onClick={onBuy}>
+                Comprar
+              </button>
+            ) : !paid ? (
+              <button type="button" className="chat-stickers-buy" onClick={onNeedAccess}>
+                Liberar acesso
+              </button>
+            ) : null}
+          </div>
           <div className="chat-stickers-grid">
             {STICKERS.map((sticker) => (
               <button
                 key={sticker.id}
                 type="button"
-                disabled={sending || waiting > 0}
+                disabled={sending || waiting > 0 || !paid || (!staff && stickers <= 0)}
                 onClick={() => post({ sticker: sticker.id })}
                 aria-label={`Enviar figurinha: ${sticker.text}`}
               >

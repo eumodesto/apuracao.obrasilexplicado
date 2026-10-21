@@ -4,7 +4,14 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accessStatus, watchedSeconds } from '../src/lib/access/access';
-import { applyPayment, openPix, refreshPayment, webhookUrl } from '../src/lib/access/billing';
+import {
+  applyPayment,
+  openPix,
+  payWithCard,
+  refreshPayment,
+  webhookUrl,
+} from '../src/lib/access/billing';
+import { stickerProduct } from '../src/lib/access/products';
 import { safeNext } from '../src/lib/access/next';
 import { NO_PARTY, PARTIES, validPartyChoice } from '../src/lib/profile/parties';
 import { cleanUsername, usernameProblem } from '../src/lib/profile/username';
@@ -33,6 +40,7 @@ const blankProfile = {
   pausedReason: null,
   deletedAt: null,
   photoVersion: null,
+  stickerCredits: 0,
 };
 
 describe('signed tokens', () => {
@@ -148,21 +156,24 @@ const fakeMercadoPago = (payment: MercadoPagoPayment) =>
     getPayment: ReturnType<typeof vi.fn>;
   };
 
+/** Access for R$ 5, the price these tests use. */
+const P5 = { purpose: 'access' as const, amount: 5, credits: null, description: 'Acesso' };
+
 describe('Pix payment', () => {
   it('creates one charge and reuses it while it is still payable', async () => {
     const store = new FileAccessStore(),
       user = await store.upsertUser(profile),
       mp = fakeMercadoPago(remote());
-    const first = await openPix(user, store, mp, T0, 5);
+    const first = await openPix(user, store, mp, T0, P5);
     expect(first).toMatchObject({ id: '123', status: 'pending', qrCode: '000201pix' });
     expect(mp.createPix).toHaveBeenCalledWith(
       expect.objectContaining({ amount: 5, email: 'ana@example.com', userId: profile.id }),
     );
-    expect((await openPix(user, store, mp, T0 + 60_000, 5)).id).toBe('123');
+    expect((await openPix(user, store, mp, T0 + 60_000, P5)).id).toBe('123');
     expect(mp.createPix).toHaveBeenCalledTimes(1);
     mp.createPix.mockResolvedValueOnce(remote({ id: '456' }));
     // Less than two minutes left: issue a fresh code.
-    expect((await openPix(user, store, mp, T0 + 29 * 60_000, 5)).id).toBe('456');
+    expect((await openPix(user, store, mp, T0 + 29 * 60_000, P5)).id).toBe('456');
   });
 
   it('grants access only for an approved BRL payment of the full price by the same user', async () => {
@@ -175,8 +186,8 @@ describe('Pix payment', () => {
     ] as const) {
       const store = new FileAccessStore(),
         user = await store.upsertUser(profile);
-      await openPix(user, store, fakeMercadoPago(remote()), T0, 5);
-      expect(await applyPayment(remote(overrides), store, T0, 5)).toBe(granted);
+      await openPix(user, store, fakeMercadoPago(remote()), T0, P5);
+      expect(await applyPayment(remote(overrides), store, T0)).toBe(granted);
       expect((await store.getUser(profile.id))!.paidAt).toBe(granted ? T0 : null);
     }
   });
@@ -184,14 +195,14 @@ describe('Pix payment', () => {
   it('ignores payments it did not create', async () => {
     const store = new FileAccessStore();
     await store.upsertUser(profile);
-    expect(await applyPayment(remote({ status: 'approved' }), store, T0, 5)).toBe(false);
+    expect(await applyPayment(remote({ status: 'approved' }), store, T0)).toBe(false);
     expect((await store.getUser(profile.id))!.paidAt).toBeNull();
   });
 
   it('confirms a pending charge by asking Mercado Pago (no webhook needed)', async () => {
     const store = new FileAccessStore(),
       user = await store.upsertUser(profile);
-    await openPix(user, store, fakeMercadoPago(remote()), T0, 5);
+    await openPix(user, store, fakeMercadoPago(remote()), T0, P5);
     const payment = await refreshPayment(
       user,
       store,
@@ -205,7 +216,7 @@ describe('Pix payment', () => {
   it('simulates a charge without Mercado Pago', async () => {
     const store = new FileAccessStore(),
       user = await store.upsertUser(profile);
-    const payment = await openPix(user, store, null, T0, 5);
+    const payment = await openPix(user, store, null, T0, P5);
     expect(payment.id).toMatch(/^dev-/);
     expect(payment.qrCodeBase64).toBeNull();
   });
@@ -319,6 +330,8 @@ describe('election data guard', () => {
         session && { sub: session.id, email: session.email, name: session.name, sid },
     }));
     (globalThis as { __accessStore?: unknown }).__accessStore = store;
+    // Each call is a fresh request: no cached account from the previous one.
+    delete (globalThis as { __recentAccess?: unknown }).__recentAccess;
     const { withAccess } = await import('../src/lib/access/guard');
     return withAccess(async () => Response.json({ data: true }))(new Request('http://x/'), {});
   }
@@ -402,6 +415,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres store', () => {
       qrCodeBase64: null,
       expiresAt: now + 1_800_000,
       createdAt: now,
+      purpose: 'access' as const,
+      method: 'pix' as const,
+      credits: null,
     };
     await store.savePayment(payment);
     expect(await store.latestPayment(id)).toEqual(payment);
@@ -664,5 +680,119 @@ describe('sign-up profile', () => {
     expect(validPartyChoice('MDB')).toBe(false);
     expect(new Set(PARTIES.map((p) => p.code)).size).toBe(PARTIES.length);
     expect(PARTIES.every((p) => /^#[0-9a-f]{6}$/i.test(p.color))).toBe(true);
+  });
+});
+
+describe('sticker packs and card payments', () => {
+  it('adds a pack once, even when the webhook and the polling both see the approval', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    const pack = stickerProduct('s20')!;
+    expect(pack).toMatchObject({ purpose: 'stickers', amount: 5, credits: 20 });
+    expect(stickerProduct('s999')).toBeNull();
+    await openPix(user, store, fakeMercadoPago(remote({ amount: 5 })), T0, pack);
+    const approved = remote({ status: 'approved', amount: 5 });
+    expect(await applyPayment(approved, store, T0)).toBe(true);
+    expect(await applyPayment(approved, store, T0 + 1)).toBe(true);
+    const after = (await store.getUser(profile.id))!;
+    expect(after.stickerCredits).toBe(20);
+    // A sticker pack does not pay for access.
+    expect(after.paidAt).toBeNull();
+  });
+
+  it('refuses a pack paid with less than its price', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    await openPix(user, store, fakeMercadoPago(remote({ amount: 10 })), T0, stickerProduct('s50')!);
+    expect(await applyPayment(remote({ status: 'approved', amount: 2 }), store, T0)).toBe(false);
+    expect((await store.getUser(profile.id))!.stickerCredits).toBe(0);
+  });
+
+  it('spends stickers one by one and stops at zero', async () => {
+    const store = new FileAccessStore();
+    await store.upsertUser(profile);
+    await store.addStickerCredits(profile.id, 2);
+    expect(await store.useStickerCredit(profile.id)).toBe(1);
+    expect(await store.useStickerCredit(profile.id)).toBe(0);
+    expect(await store.useStickerCredit(profile.id)).toBeNull();
+    expect((await store.getUser(profile.id))!.stickerCredits).toBe(0);
+  });
+
+  it('charges the product price on the card, never an amount from the browser', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    const createCard = vi.fn(async () =>
+      remote({ id: 'card-1', status: 'approved', amount: 5, qrCode: null }),
+    );
+    const mp = { createCard } as unknown as MercadoPago;
+    const card = {
+      token: 'tok',
+      installments: 1,
+      paymentMethodId: 'visa',
+      issuerId: null,
+      identification: null,
+    };
+    expect(await payWithCard(user, store, mp, card, P5, T0)).toMatchObject({ status: 'approved' });
+    expect(createCard).toHaveBeenCalledWith(
+      expect.objectContaining({ amount: 5, userId: profile.id }),
+    );
+    expect((await store.getUser(profile.id))!.paidAt).toBe(T0);
+    expect(await store.getPayment('card-1')).toMatchObject({ method: 'card', status: 'approved' });
+  });
+
+  it('keeps a declined card unpaid', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    const mp = {
+      createCard: vi.fn(async () =>
+        remote({
+          id: 'card-2',
+          status: 'rejected',
+          statusDetail: 'cc_rejected_insufficient_amount',
+        }),
+      ),
+    } as unknown as MercadoPago;
+    const result = await payWithCard(
+      user,
+      store,
+      mp,
+      {
+        token: 't',
+        installments: 1,
+        paymentMethodId: 'visa',
+        issuerId: null,
+        identification: null,
+      },
+      P5,
+      T0,
+    );
+    expect(result).toMatchObject({ status: 'rejected', detail: 'cc_rejected_insufficient_amount' });
+    expect((await store.getUser(profile.id))!.paidAt).toBeNull();
+  });
+});
+
+describe('visitors without an account', () => {
+  it('creates visitors with unique names and carries their free time into an account', async () => {
+    const { guestName } = await import('../src/lib/access/guest');
+    const { isGuest } = await import('../src/lib/access/access');
+    expect(guestName()).toMatch(/^Visitante \d{4}$/);
+    const store = new FileAccessStore();
+    expect(await store.createGuest('guest:a', 'Visitante 1234', T0)).toBe('ok');
+    expect(await store.createGuest('guest:b', 'visitante 1234', T0)).toBe('taken');
+    const visitor = (await store.getUser('guest:a'))!;
+    expect(isGuest(visitor)).toBe(true);
+    expect(visitor).toMatchObject({ name: 'Visitante', onboardedAt: T0, paidAt: null });
+    // The visitor watched the whole minute, then creates an account: no second minute.
+    await store.upsertUser(profile);
+    await store.inheritFreeTime(profile.id, 60);
+    await store.inheritFreeTime(profile.id, 10);
+    expect((await store.getUser(profile.id))!.freeSecondsUsed).toBe(60);
+    expect(
+      accessStatus((await store.getUser(profile.id))!, T0, { ...limits, free: 60 }).state,
+    ).toBe('locked');
+  });
+
+  it('keeps people from taking a name that looks like a visitor', () => {
+    expect(usernameProblem('visitante1234')).not.toBeNull();
   });
 });

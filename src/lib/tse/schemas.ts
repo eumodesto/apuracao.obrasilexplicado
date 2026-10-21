@@ -34,7 +34,14 @@ export const geographySchema = z.object({
     z.object({
       cd: z.string().regex(/^[a-z]{2}$/),
       ds: z.string().min(1),
-      mu: z.array(z.object({ cd: z.string().regex(/^\d{5}$/), nm: z.string().min(1), cdi: z.string().optional(), z: z.array(z.string()).optional() })),
+      mu: z.array(
+        z.object({
+          cd: z.string().regex(/^\d{5}$/),
+          nm: z.string().min(1),
+          cdi: z.string().optional(),
+          z: z.array(z.string()).optional(),
+        }),
+      ),
     }),
   ),
 });

@@ -6,6 +6,8 @@ const API = 'https://api.mercadopago.com/v1/payments';
 export type MercadoPagoPayment = {
   id: string;
   status: string;
+  /** Why a card was declined (e.g. cc_rejected_insufficient_amount); null for Pix. */
+  statusDetail?: string | null;
   amount: number;
   currency: string;
   externalReference: string | null;
@@ -15,6 +17,20 @@ export type MercadoPagoPayment = {
 };
 
 type Transport = typeof fetch;
+
+/** What Mercado Pago's card form returns in the browser, plus what the server decides. */
+export type CardInput = {
+  token: string;
+  installments: number;
+  paymentMethodId: string;
+  issuerId: string | null;
+  identification: { type: string; number: string } | null;
+  email: string;
+  amount: number;
+  userId: string;
+  description: string;
+  notificationUrl: string | null;
+};
 
 /** Maps Mercado Pago's payment status to ours. Anything still in progress stays pending. */
 export function paymentStatus(status: string): PaymentStatus {
@@ -63,6 +79,38 @@ export class MercadoPago {
     return payment;
   }
 
+  /** Card payment with a token created in the browser; the answer says approved or why not. */
+  async createCard(input: CardInput) {
+    const response = await this.transport(API, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${this.accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Idempotency-Key': randomUUID(),
+      },
+      body: JSON.stringify({
+        transaction_amount: input.amount,
+        token: input.token,
+        description: input.description,
+        installments: input.installments,
+        payment_method_id: input.paymentMethodId,
+        ...(input.issuerId ? { issuer_id: input.issuerId } : {}),
+        payer: {
+          email: input.email,
+          ...(input.identification ? { identification: input.identification } : {}),
+        },
+        external_reference: input.userId,
+        statement_descriptor: 'RESULTADOS BR',
+        ...(input.notificationUrl ? { notification_url: input.notificationUrl } : {}),
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+    const body = await response.json().catch(() => null);
+    if (!response.ok || !body?.id)
+      throw new Error(`Mercado Pago recusou o cartão (${response.status}).`);
+    return toPayment(body);
+  }
+
   async getPayment(id: string) {
     const response = await this.transport(`${API}/${encodeURIComponent(id)}`, {
       headers: { Authorization: `Bearer ${this.accessToken}` },
@@ -77,6 +125,7 @@ export class MercadoPago {
 type RawPayment = {
   id: number | string;
   status: string;
+  status_detail?: string | null;
   transaction_amount: number;
   currency_id: string;
   external_reference?: string | null;
@@ -89,6 +138,7 @@ function toPayment(raw: RawPayment): MercadoPagoPayment {
   return {
     id: String(raw.id),
     status: raw.status,
+    statusDetail: raw.status_detail ?? null,
     amount: Number(raw.transaction_amount),
     currency: raw.currency_id,
     externalReference: raw.external_reference ?? null,

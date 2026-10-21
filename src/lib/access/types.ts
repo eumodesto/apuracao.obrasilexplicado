@@ -25,6 +25,8 @@ export type AccessUser = {
   deletedAt: number | null;
   /** When the current profile photo was taken; null without a photo. */
   photoVersion: number | null;
+  /** Stickers this account can still send (bought in packs). */
+  stickerCredits: number;
 };
 
 export type UserQuery = { query?: string; limit: number; offset: number };
@@ -45,16 +47,26 @@ export type ProfileInput = { username: string; party: string; partyConsentAt: nu
 
 export type PaymentStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' | 'expired';
 
+/** What a payment buys: access to the count, or a pack of stickers. */
+export type PaymentPurpose = 'access' | 'stickers';
+export type PaymentMethod = 'pix' | 'card';
+
 export type PixPayment = {
   id: string;
   userId: string;
   status: PaymentStatus;
   amount: number;
+  /** Pix copy-and-paste code; empty for card payments. */
   qrCode: string;
   qrCodeBase64: string | null;
   expiresAt: number;
   createdAt: number;
+  purpose: PaymentPurpose;
+  method: PaymentMethod;
+  /** Stickers added when a sticker pack is approved; null for access. */
+  credits: number | null;
 };
+export type Payment = PixPayment;
 
 export type AccessState = 'free' | 'paid' | 'locked';
 
@@ -68,6 +80,10 @@ export type AccessStatus = {
   waiting: boolean;
   /** Team access (STAFF_EMAILS): always paid, never asked to pay. */
   staff: boolean;
+  /** Visitor without an account ("Visitante 1234"): asked to sign up when the free time ends. */
+  guest: boolean;
+  /** Stickers left; staff send without spending. */
+  stickers: number;
   user: { name: string; email: string; username: string | null };
 };
 
@@ -104,4 +120,13 @@ export interface AccessStore {
   setPhoto(id: string, version: number | null): Promise<boolean>;
   listUsers(query: UserQuery): Promise<{ users: AccessUser[]; total: number }>;
   stats(): Promise<AccessStats>;
+  /** Marks a payment approved; true only the first time, so its effect is applied once. */
+  approvePayment(id: string): Promise<boolean>;
+  addStickerCredits(id: string, credits: number): Promise<void>;
+  /** Spends one sticker and returns how many are left; null when there was none. */
+  useStickerCredit(id: string): Promise<number | null>;
+  /** Carries the free time a visitor already used into the account they sign in to. */
+  inheritFreeTime(id: string, seconds: number): Promise<void>;
+  /** New visitor account with this display name; 'taken' when the name is in use. */
+  createGuest(id: string, username: string, now: number): Promise<'ok' | 'taken'>;
 }

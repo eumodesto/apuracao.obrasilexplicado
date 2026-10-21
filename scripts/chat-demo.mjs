@@ -68,13 +68,13 @@ if (command === 'seed') {
   const rows = Array.from({ length: BOTS }, (_, i) => {
     const b = bot(i);
     const consent = b.party === 'none' ? 'NULL' : 'now()';
-    return `('${b.id}','${b.username}@example.invalid','${b.username}','${b.username}','${b.party}',${consent},now(),now(),'${b.id}')`;
+    return `('${b.id}','${b.username}@example.invalid','${b.username}','${b.username}','${b.party}',${consent},now(),now(),'${b.id}',1000)`;
   });
-  console.log(`INSERT INTO access_users (id,email,name,username,party,party_consent_at,onboarded_at,paid_at,session_id) VALUES
+  console.log(`INSERT INTO access_users (id,email,name,username,party,party_consent_at,onboarded_at,paid_at,session_id,sticker_credits) VALUES
 ${rows.join(',\n')}
 ON CONFLICT (id) DO UPDATE SET username=EXCLUDED.username, party=EXCLUDED.party,
   party_consent_at=EXCLUDED.party_consent_at, onboarded_at=now(), paid_at=now(),
-  session_id=EXCLUDED.session_id, deleted_at=NULL, paused_at=NULL;`);
+  session_id=EXCLUDED.session_id, sticker_credits=1000, deleted_at=NULL, paused_at=NULL;`);
   await flushed();
   process.exit(0);
 }

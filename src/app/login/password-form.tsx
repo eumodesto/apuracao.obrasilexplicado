@@ -4,8 +4,15 @@ import { useState } from 'react';
 type Mode = 'entrar' | 'criar';
 
 /** E-mail (or username) and password. "Criar conta" goes on to /cadastro for username and party. */
-export function PasswordForm({ next }: { next: string }) {
-  const [mode, setMode] = useState<Mode>('entrar');
+export function PasswordForm({
+  next,
+  initialMode = 'entrar',
+}: {
+  next: string;
+  /** Visitors whose free minute ended start on "Criar conta". */
+  initialMode?: Mode;
+}) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
 

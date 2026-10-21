@@ -14,6 +14,9 @@ export function sessionSecret() {
   throw new Error('SESSION_SECRET must be set with at least 32 characters.');
 }
 
+/** Public key for Mercado Pago's card form in the browser (not a secret). */
+export const mercadoPagoPublicKey = () => process.env.MP_PUBLIC_KEY || null;
+
 export function mercadoPagoConfig() {
   const accessToken = process.env.MP_ACCESS_TOKEN;
   return accessToken ? { accessToken, webhookSecret: process.env.MP_WEBHOOK_SECRET || null } : null;

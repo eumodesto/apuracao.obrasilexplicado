@@ -1,6 +1,8 @@
 import { Suspense } from 'react';
 import { redirect } from 'next/navigation';
 import { AccessGate } from '@/features/access/access-gate';
+import { GuestStart } from '@/features/access/guest-start';
+import '@/features/access/access.css';
 import { ChatDock } from '@/features/chat/chat';
 import { FirstAccess } from '@/features/election/first-access/first-access';
 import { emptyBootResult, readBootCache } from '@/features/election/first-access/read-boot-cache';
@@ -10,7 +12,12 @@ import { FirstRoundRegions } from '@/features/election/regions/first-round-regio
 import { FirstRoundBand } from '@/features/landing/round-band';
 import { isStaff } from '@/lib/access/access';
 import { activeSession } from '@/lib/access/auth';
-import { countIsOpen, countStartsAt, devPaymentEnabled } from '@/lib/access/config';
+import {
+  countIsOpen,
+  countStartsAt,
+  devPaymentEnabled,
+  mercadoPagoPublicKey,
+} from '@/lib/access/config';
 import { currentAccess } from '@/lib/access/guard';
 import { readSession } from '@/lib/access/session';
 export const dynamic = 'force-dynamic';
@@ -21,7 +28,8 @@ export default async function Page() {
     if (!active || !isStaff(active.user)) return <Countdown startsAt={countStartsAt()} />;
   }
   const access = await currentAccess(await readSession(), undefined, undefined, { fresh: true });
-  if (!access) redirect('/login');
+  // No account yet: the panel opens for a visitor with the free minute (no login first).
+  if (!access) return <GuestStart />;
   if (access.replaced) redirect('/login?erro=outro-aparelho');
   if (access.blocked)
     redirect(`/login?erro=${access.blocked === 'deleted' ? 'excluida' : 'suspensa'}`);
@@ -30,7 +38,11 @@ export default async function Page() {
   // Without access, the first HTML must not carry results either.
   const locked = access.status.state === 'locked';
   return (
-    <AccessGate initial={access.status} simulatedPayment={devPaymentEnabled()}>
+    <AccessGate
+      initial={access.status}
+      simulatedPayment={devPaymentEnabled()}
+      publicKey={mercadoPagoPublicKey()}
+    >
       <FirstAccess
         initial={locked ? emptyBootResult : initial}
         regions={regions}

@@ -728,3 +728,31 @@
 .photo-dialog .chat-error {
   margin: 0 0 10px;
 }
+
+/* Sticker balance and purchase above the stickers. */
+.chat-stickers-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.chat-stickers-head p {
+  margin: 0;
+}
+.chat-stickers-buy {
+  flex: none;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #f5c518;
+  color: #151a17;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chat-stickers-grid button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

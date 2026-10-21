@@ -11,6 +11,9 @@ import type { AccessStatus, AccessUser } from './types';
 export const isAdmin = (user: Pick<AccessUser, 'email' | 'deletedAt' | 'pausedAt'>) =>
   !user.deletedAt && !user.pausedAt && adminEmails().has(user.email.toLowerCase());
 
+/** Visitor without an account, created on the first visit ("Visitante 1234"). */
+export const isGuest = (user: Pick<AccessUser, 'id'>) => user.id.startsWith('guest:');
+
 export const isStaff = (user: AccessUser, staff = staffEmails()) =>
   staff.has(user.email.toLowerCase());
 
@@ -41,6 +44,8 @@ export function accessStatus(
     paidUntil: new Date(limits.endsAt).toISOString(),
     waiting: !paid && waiting,
     staff,
+    guest: isGuest(user),
+    stickers: user.stickerCredits ?? 0,
     user: { name: user.name, email: user.email, username: user.username },
   };
 }

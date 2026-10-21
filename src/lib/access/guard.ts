@@ -18,7 +18,12 @@ export const TOUCH_INTERVAL_MS = 5_000;
  */
 export const PAID_CHECK_MS = 30_000;
 export const PAID_TOUCH_MS = 5 * 60_000;
-const recent = new Map<string, { user: AccessUser; store: AccessStore; checkedAt: number }>();
+// On globalThis: pages and route handlers may load this module separately, and a payment or a
+// moderation step that forgets an account must reach every copy.
+const shared = globalThis as {
+  __recentAccess?: Map<string, { user: AccessUser; store: AccessStore; checkedAt: number }>;
+};
+const recent = (shared.__recentAccess ??= new Map());
 
 /** Records activity for the signed-in user and returns their access, or null without a session. */
 export async function currentAccess(

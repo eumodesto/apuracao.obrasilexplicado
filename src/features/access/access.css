@@ -392,3 +392,121 @@ body:has(.access-badge) {
     min-height: 28px;
   }
 }
+
+/* First visit, while the visitor session opens. */
+.guest-start {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  background: #0b0b0a;
+  color: #eeede8;
+}
+.guest-start-brand {
+  margin: 0;
+  color: #87877e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.guest-start p {
+  margin: 0;
+}
+.guest-start button {
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 9px;
+  background: #fff;
+  color: #1f1f1f;
+  font-weight: 700;
+}
+
+/* Pix or card. */
+.checkout {
+  margin-top: 4px;
+}
+.checkout-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #1d1d1a;
+}
+.checkout-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #b6b5ae;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.checkout-tabs button.is-active {
+  background: #0b6b3a;
+  color: #fff;
+}
+.checkout-pane {
+  display: grid;
+  gap: 10px;
+}
+.checkout-card {
+  min-height: 40px;
+}
+/* Sign up or in inside the dialog (visitors). */
+.paywall-auth {
+  margin-top: 8px;
+}
+/* Sticker packs. */
+.shop-packs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.shop-pack {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 14px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: #1d1d1a;
+  color: #eeede8;
+  font: inherit;
+  cursor: pointer;
+}
+.shop-pack:hover {
+  border-color: #0b6b3a;
+}
+.shop-pack b {
+  font-size: 26px;
+  line-height: 1;
+}
+.shop-pack span {
+  color: #b6b5ae;
+  font-size: 12px;
+}
+.shop-pack em {
+  margin-top: 6px;
+  font-style: normal;
+  font-weight: 700;
+  color: #f5c518;
+}
+.shop-back {
+  margin-top: 12px;
+  border: 0;
+  background: none;
+  color: #b6b5ae;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}

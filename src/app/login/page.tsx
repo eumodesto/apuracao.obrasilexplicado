@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { devLoginEnabled } from '@/lib/access/config';
+import { isGuest } from '@/lib/access/access';
 import { activeSession } from '@/lib/access/auth';
 import { safeNext } from '@/lib/access/next';
 import { PanelPreview } from './panel-preview';
@@ -25,7 +26,9 @@ export default async function LoginPage({
   const next = safeNext(requested);
   const active = await activeSession();
   // A suspended or deleted account stays here, with the reason, instead of looping back.
-  if (active && !active.user.pausedAt && !active.user.deletedAt) redirect(next);
+  // A visitor (no account yet) stays here to sign in or sign up.
+  if (active && !isGuest(active.user) && !active.user.pausedAt && !active.user.deletedAt)
+    redirect(next);
   return (
     <main className="login" id="conteudo">
       <PanelPreview />

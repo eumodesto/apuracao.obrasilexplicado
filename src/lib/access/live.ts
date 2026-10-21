@@ -13,6 +13,8 @@ let memo: { at: number; value: Promise<boolean> } | null = null;
  * Free time is not spent while the panel can only say "waiting for the TSE".
  */
 export function countStarted(now = Date.now()): Promise<boolean> {
+  // Testing switch: spend free time before the TSE publishes anything (journey tests).
+  if (process.env.FREE_TIME_BEFORE_COUNT === 'true') return Promise.resolve(true);
   if (memo && now - memo.at < CHECK_MS) return memo.value;
   const value = (async () => {
     try {

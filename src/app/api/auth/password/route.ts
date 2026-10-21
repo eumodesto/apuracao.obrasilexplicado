@@ -1,4 +1,6 @@
-import { signIn } from '@/lib/access/auth';
+import { isGuest } from '@/lib/access/access';
+import { activeSession, signIn } from '@/lib/access/auth';
+import { accessStore } from '@/lib/access/store';
 import { logIn, signUp } from '@/lib/access/credentials';
 import { safeNext } from '@/lib/access/next';
 import { allow, clientIp } from '@/lib/access/rate-limit';
@@ -33,6 +35,10 @@ export async function POST(request: Request) {
       ? await signUp({ email: body?.email, password: body?.password })
       : await logIn({ login: body?.login, password: body?.password });
   if (!result.ok) return Response.json({ error: result.error }, { status: result.status });
+  // A visitor who used the free minute does not get another one by signing up or in.
+  const before = await activeSession();
+  if (before && isGuest(before.user))
+    await accessStore().inheritFreeTime(result.profile.sub, before.user.freeSecondsUsed);
   await signIn(result.profile);
   return Response.json(
     { next: safeNext(typeof body?.next === 'string' ? body.next : null) },

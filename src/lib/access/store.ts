@@ -16,6 +16,14 @@ const usernameKey = (username: string) => username.toLowerCase();
 
 type Data = { users: Record<string, AccessUser>; payments: Record<string, PixPayment> };
 
+/** Payments saved before purpose, method and credits existed were Pix charges for access. */
+const withPaymentDefaults = (payment: PixPayment): PixPayment => ({
+  ...payment,
+  purpose: payment.purpose ?? 'access',
+  method: payment.method ?? 'pix',
+  credits: payment.credits ?? null,
+});
+
 /** Defaults for a new account (and for records saved before these fields existed). */
 const newUser = (id: string): AccessUser => ({
   id,
@@ -36,6 +44,7 @@ const newUser = (id: string): AccessUser => ({
   pausedReason: null,
   deletedAt: null,
   photoVersion: null,
+  stickerCredits: 0,
 });
 
 /** What an anonymized account keeps: its id, payments and counters, never personal data. */
@@ -199,13 +208,64 @@ export class FileAccessStore implements AccessStore {
     const latest = Object.values(this.data.payments)
       .filter((payment) => payment.userId === userId)
       .sort((a, b) => b.createdAt - a.createdAt)[0];
-    return latest ? { ...latest } : null;
+    return latest ? withPaymentDefaults(latest) : null;
   }
 
   async getPayment(id: string) {
     await this.load();
     const payment = this.data.payments[id];
-    return payment ? { ...payment } : null;
+    return payment ? withPaymentDefaults(payment) : null;
+  }
+
+  async approvePayment(id: string) {
+    return this.change((data) => {
+      const payment = data.payments[id];
+      if (!payment || payment.status === 'approved') return false;
+      payment.status = 'approved';
+      return true;
+    });
+  }
+
+  async addStickerCredits(id: string, credits: number) {
+    await this.change((data) => {
+      const user = data.users[id];
+      if (user) user.stickerCredits = (user.stickerCredits ?? 0) + credits;
+    });
+  }
+
+  async useStickerCredit(id: string) {
+    return this.change((data) => {
+      const user = data.users[id];
+      if (!user || (user.stickerCredits ?? 0) <= 0) return null;
+      user.stickerCredits -= 1;
+      return user.stickerCredits;
+    });
+  }
+
+  async inheritFreeTime(id: string, seconds: number) {
+    await this.change((data) => {
+      const user = data.users[id];
+      if (user) user.freeSecondsUsed = Math.max(user.freeSecondsUsed, seconds);
+    });
+  }
+
+  async createGuest(id: string, username: string, now: number) {
+    return this.change((data) => {
+      const key = usernameKey(username);
+      if (
+        data.users[id] ||
+        Object.values(data.users).some((u) => u.username && usernameKey(u.username) === key)
+      )
+        return 'taken' as const;
+      data.users[id] = {
+        ...newUser(id),
+        name: 'Visitante',
+        username,
+        onboardedAt: now,
+        createdAt: now,
+      };
+      return 'ok' as const;
+    });
   }
 
   async setPaused(id: string, pause: { at: number; reason: string } | null) {
@@ -280,6 +340,7 @@ type UserRow = {
   paused_reason: string | null;
   deleted_at: Date | null;
   photo_version: string | null;
+  sticker_credits: number | null;
 };
 type PaymentRow = {
   id: string;
@@ -290,6 +351,9 @@ type PaymentRow = {
   qr_code_base64: string | null;
   expires_at: Date;
   created_at: Date;
+  purpose: PixPayment['purpose'] | null;
+  method: PixPayment['method'] | null;
+  credits: number | null;
 };
 
 const toUser = (row: UserRow): AccessUser => ({
@@ -311,6 +375,7 @@ const toUser = (row: UserRow): AccessUser => ({
   pausedReason: row.paused_reason,
   deletedAt: row.deleted_at?.getTime() ?? null,
   photoVersion: row.photo_version === null ? null : Number(row.photo_version),
+  stickerCredits: Number(row.sticker_credits ?? 0),
 });
 const toPayment = (row: PaymentRow): PixPayment => ({
   id: row.id,
@@ -321,6 +386,9 @@ const toPayment = (row: PaymentRow): PixPayment => ({
   qrCodeBase64: row.qr_code_base64,
   expiresAt: row.expires_at.getTime(),
   createdAt: row.created_at.getTime(),
+  purpose: row.purpose ?? 'access',
+  method: row.method ?? 'pix',
+  credits: row.credits === null || row.credits === undefined ? null : Number(row.credits),
 });
 
 /** Postgres store. Creates its tables on first use; each change is a single atomic statement. */
@@ -365,7 +433,12 @@ export class PostgresAccessStore implements AccessStore {
         ADD COLUMN IF NOT EXISTS paused_at timestamptz,
         ADD COLUMN IF NOT EXISTS paused_reason text,
         ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
-        ADD COLUMN IF NOT EXISTS photo_version bigint;
+        ADD COLUMN IF NOT EXISTS photo_version bigint,
+        ADD COLUMN IF NOT EXISTS sticker_credits integer NOT NULL DEFAULT 0;
+      ALTER TABLE access_payments
+        ADD COLUMN IF NOT EXISTS purpose text NOT NULL DEFAULT 'access',
+        ADD COLUMN IF NOT EXISTS method text NOT NULL DEFAULT 'pix',
+        ADD COLUMN IF NOT EXISTS credits integer;
       CREATE UNIQUE INDEX IF NOT EXISTS access_users_username ON access_users (lower(username));
     `
       .simple()
@@ -467,9 +540,11 @@ export class PostgresAccessStore implements AccessStore {
     await this.schema();
     await this.sql`
       INSERT INTO access_payments
-        (id, user_id, status, amount, qr_code, qr_code_base64, expires_at, created_at)
+        (id, user_id, status, amount, qr_code, qr_code_base64, expires_at, created_at,
+          purpose, method, credits)
       VALUES (${p.id}, ${p.userId}, ${p.status}, ${p.amount}, ${p.qrCode}, ${p.qrCodeBase64},
-        ${new Date(p.expiresAt)}, ${new Date(p.createdAt)})
+        ${new Date(p.expiresAt)}, ${new Date(p.createdAt)}, ${p.purpose}, ${p.method},
+        ${p.credits})
       ON CONFLICT (id) DO UPDATE SET status = EXCLUDED.status`;
   }
 
@@ -490,6 +565,44 @@ export class PostgresAccessStore implements AccessStore {
     await this.schema();
     const [row] = await this.sql<PaymentRow[]>`SELECT * FROM access_payments WHERE id = ${id}`;
     return row ? toPayment(row) : null;
+  }
+
+  async approvePayment(id: string) {
+    await this.schema();
+    const rows = await this.sql`
+      UPDATE access_payments SET status = 'approved'
+      WHERE id = ${id} AND status <> 'approved' RETURNING id`;
+    return rows.length > 0;
+  }
+
+  async addStickerCredits(id: string, credits: number) {
+    await this.schema();
+    await this.sql`
+      UPDATE access_users SET sticker_credits = sticker_credits + ${credits} WHERE id = ${id}`;
+  }
+
+  async useStickerCredit(id: string) {
+    await this.schema();
+    const [row] = await this.sql<{ sticker_credits: number }[]>`
+      UPDATE access_users SET sticker_credits = sticker_credits - 1
+      WHERE id = ${id} AND sticker_credits > 0 RETURNING sticker_credits`;
+    return row ? Number(row.sticker_credits) : null;
+  }
+
+  async inheritFreeTime(id: string, seconds: number) {
+    await this.schema();
+    await this.sql`
+      UPDATE access_users SET free_seconds_used = GREATEST(free_seconds_used, ${seconds})
+      WHERE id = ${id}`;
+  }
+
+  async createGuest(id: string, username: string, now: number) {
+    await this.schema();
+    const rows = await this.sql`
+      INSERT INTO access_users (id, email, name, username, onboarded_at, created_at)
+      VALUES (${id}, '', 'Visitante', ${username}, ${new Date(now)}, ${new Date(now)})
+      ON CONFLICT DO NOTHING RETURNING id`;
+    return rows.length > 0 ? ('ok' as const) : ('taken' as const);
   }
 
   async setPaused(id: string, pause: { at: number; reason: string } | null) {

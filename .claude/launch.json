@@ -52,6 +52,21 @@
         "COUNT_STARTS_AT": "2026-10-01T00:00:00-03:00",
         "OPEN_ACCESS": "true"
       }
+    },
+    {
+      "name": "dev-jornada",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "COUNT_STARTS_AT": "2026-10-01T00:00:00-03:00",
+        "FREE_TIME_BEFORE_COUNT": "true",
+        "FREE_SECONDS": "20"
+      }
     }
   ]
 }

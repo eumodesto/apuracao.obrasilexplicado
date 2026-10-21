@@ -6,7 +6,7 @@ import type { Author } from './service';
 
 /**
  * Who may use the chat: signed-in, signed-up, on their active session and not locked out.
- * Reading is open to free time; writing needs paid (or team) access.
+ * Free time (visitors included) reads and writes; stickers need paid access and a pack.
  */
 export async function chatAccess(options: { fresh?: boolean; session?: Session | null } = {}) {
   const session = options.session === undefined ? await readSession() : options.session;
@@ -26,5 +26,12 @@ export async function chatAccess(options: { fresh?: boolean; session?: Session |
     party: access.user.party && access.user.party !== NO_PARTY ? access.user.party : null,
     photo: photoRef(access.user),
   };
-  return { access, author, session: session!, canWrite: access.status.state === 'paid' };
+  return {
+    access,
+    author,
+    session: session!,
+    canWrite: true,
+    /** Paid or team access: may use stickers (team without spending). */
+    paid: access.status.state === 'paid',
+  };
 }

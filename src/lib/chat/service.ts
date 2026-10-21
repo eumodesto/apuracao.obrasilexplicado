@@ -93,7 +93,7 @@ export type Author = {
 
 export type SendResult =
   | { ok: true; message: PublicMessage }
-  | { ok: false; status: number; error: string; retryAfterMs?: number };
+  | { ok: false; status: number; error: string; retryAfterMs?: number; code?: string };
 
 export async function sendMessage(
   author: Author,
@@ -106,16 +106,20 @@ export async function sendMessage(
   return post(author, { text: cleaned.text, sticker: null }, state, now);
 }
 
-/** Sends a sticker from the available packs; same slow mode as text. */
+/**
+ * Sends a sticker; same slow mode as text. `charge` spends one from the sender's packs and runs
+ * only after every other check passed, so a refused sticker costs nothing.
+ */
 export async function sendSticker(
   author: Author,
   id: unknown,
   state = chat(),
   now = Date.now(),
+  charge?: () => Promise<boolean>,
 ): Promise<SendResult> {
   const sticker = typeof id === 'string' ? stickerById(id) : null;
   if (!sticker) return { ok: false, status: 400, error: 'Figurinha indisponível.' };
-  return post(author, { text: sticker.text, sticker: sticker.id }, state, now);
+  return post(author, { text: sticker.text, sticker: sticker.id }, state, now, charge);
 }
 
 async function post(
@@ -123,6 +127,7 @@ async function post(
   content: { text: string; sticker: string | null },
   state: ChatRuntime,
   now: number,
+  charge?: () => Promise<boolean>,
 ): Promise<SendResult> {
   if (!(await state.bus.claim(`slow:${author.userId}`, SLOW_MODE_MS)))
     return {
@@ -142,6 +147,13 @@ async function post(
     const repeated = await repeatedText(state, author.userId, content.text);
     if (repeated) return { ok: false, status: 409, error: repeated };
   }
+  if (charge && !(await charge()))
+    return {
+      ok: false,
+      status: 402,
+      code: 'no_stickers',
+      error: 'Suas figurinhas acabaram. Compre um pacote para enviar mais.',
+    };
   const message = {
     id: now.toString(36) + randomBytes(6).toString('hex'),
     ...author,
