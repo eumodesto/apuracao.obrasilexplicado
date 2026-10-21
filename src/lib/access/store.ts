@@ -98,7 +98,7 @@ export class FileAccessStore implements AccessStore {
   async upsertUser({ id, email, name }: Pick<AccessUser, 'id' | 'email' | 'name'>) {
     return this.change((data) => {
       const existing = data.users[id];
-      // An anonymized account stays anonymous even if the same Google account signs in again.
+      // An anonymized account stays anonymous even if the same person signs in again.
       const user = (data.users[id] = {
         ...newUser(id),
         ...existing,
@@ -151,6 +151,16 @@ export class FileAccessStore implements AccessStore {
     const key = usernameKey(username);
     return Object.values(this.data.users).some(
       (user) => user.id !== exceptId && !!user.username && usernameKey(user.username) === key,
+    );
+  }
+
+  async userIdByUsername(username: string) {
+    await this.load();
+    const key = usernameKey(username);
+    return (
+      Object.values(this.data.users).find(
+        (user) => !user.deletedAt && !!user.username && usernameKey(user.username) === key,
+      )?.id ?? null
     );
   }
 
@@ -420,6 +430,15 @@ export class PostgresAccessStore implements AccessStore {
       WHERE lower(username) = ${usernameKey(username)} AND id <> ${exceptId ?? ''}
       LIMIT 1`;
     return rows.length > 0;
+  }
+
+  async userIdByUsername(username: string) {
+    await this.schema();
+    const [row] = await this.sql<{ id: string }[]>`
+      SELECT id FROM access_users
+      WHERE lower(username) = ${usernameKey(username)} AND deleted_at IS NULL
+      LIMIT 1`;
+    return row?.id ?? null;
   }
 
   async touch(id: string, now: number, maxGapSeconds: number, count = true) {

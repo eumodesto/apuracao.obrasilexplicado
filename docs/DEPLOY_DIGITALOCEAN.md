@@ -42,7 +42,7 @@ git clone <url-do-repositorio> /opt/apuracao
 cd /opt/apuracao && cp deploy/env.production.example .env.production && nano .env.production
 ```
 
-Preencha pelo menos `DOMAIN`, `SITE_URL`, `POSTGRES_PASSWORD`, `SESSION_SECRET`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` e `MP_ACCESS_TOKEN`. Gere senhas e o segredo com:
+Preencha pelo menos `DOMAIN`, `SITE_URL`, `POSTGRES_PASSWORD`, `SESSION_SECRET`, `MP_ACCESS_TOKEN`, `STAFF_EMAILS` e `ADMIN_EMAILS`. Gere senhas e o segredo com:
 
 ```bash
 openssl rand -base64 32
@@ -50,7 +50,6 @@ openssl rand -base64 32
 
 Depois, atualize nos serviços externos:
 
-- **Google Cloud Console** → credencial OAuth → URI de redirecionamento autorizado: `https://portaleleicao.com.br/api/auth/google/callback`.
 - **Mercado Pago** → Webhooks → URL: `https://portaleleicao.com.br/api/billing/webhook`.
 
 ## 4. Subir

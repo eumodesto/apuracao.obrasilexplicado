@@ -26,6 +26,10 @@ COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
 # Read from disk at runtime (src/lib/tse/municipal-baseline.ts), not bundled.
 COPY --from=build --chown=node:node /app/data/tse ./data/tse
+# Server command to set a password (team and administrator accounts, forgotten passwords).
+COPY --from=build --chown=node:node /app/scripts/set-password.mjs ./scripts/set-password.mjs
+# The app bundles postgres into its chunks; the command needs the package itself (no dependencies).
+COPY --from=deps --chown=node:node /app/node_modules/postgres ./node_modules/postgres
 
 # Writable, persistent state: TSE snapshots/history and, without DATABASE_URL, the JSON stores.
 RUN mkdir -p .cache/tse .data && chown -R node:node .cache .data

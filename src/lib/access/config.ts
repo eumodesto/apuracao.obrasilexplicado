@@ -14,24 +14,18 @@ export function sessionSecret() {
   throw new Error('SESSION_SECRET must be set with at least 32 characters.');
 }
 
-export function googleConfig() {
-  const clientId = process.env.GOOGLE_CLIENT_ID,
-    clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  return clientId && clientSecret ? { clientId, clientSecret } : null;
-}
-
 export function mercadoPagoConfig() {
   const accessToken = process.env.MP_ACCESS_TOKEN;
   return accessToken ? { accessToken, webhookSecret: process.env.MP_WEBHOOK_SECRET || null } : null;
 }
 
 /** Local shortcuts (test login, simulated Pix) exist only in `next dev` without real credentials. */
-export const devLoginEnabled = () => isDevelopment() && !googleConfig();
+export const devLoginEnabled = () => isDevelopment();
 export const devPaymentEnabled = () => isDevelopment() && !mercadoPagoConfig();
 
 /**
  * Team members who always have full access, without free time or payment.
- * Safe in production because Google only signs in verified e-mails.
+ * Safe because these e-mails cannot sign up on the site: their password is set only on the server.
  */
 const emailList = (value: string | undefined) =>
   (value ?? '')
@@ -44,7 +38,7 @@ export function staffEmails() {
   return new Set([...emailList(process.env.STAFF_EMAILS), ...emailList(process.env.ADMIN_EMAILS)]);
 }
 
-/** Who may open /admin (Google sign-in only accepts verified e-mails). */
+/** Who may open /admin (reserved e-mails, with the password set on the server). */
 export function adminEmails() {
   return new Set(emailList(process.env.ADMIN_EMAILS));
 }

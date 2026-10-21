@@ -35,7 +35,7 @@ export default async function SignUpPage() {
   );
 }
 
-/** A starting point from the Google name: "Maria Souza" → "mariasouza". */
+/** A starting point from the account name (the e-mail before the @): "maria.souza" → "mariasouza". */
 function suggestUsername(name: string) {
   const base = name
     .normalize('NFD')

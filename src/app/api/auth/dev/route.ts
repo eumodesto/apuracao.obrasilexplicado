@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { devLoginEnabled } from '@/lib/access/config';
 import { signIn } from '@/lib/access/auth';
-import { safeNext } from '@/lib/access/google';
+import { safeNext } from '@/lib/access/next';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 /**

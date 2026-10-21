@@ -79,6 +79,8 @@ export interface AccessStore {
   /** Saves the sign-up profile. 'taken' when another account has the username. */
   saveProfile(id: string, profile: ProfileInput, now: number): Promise<'ok' | 'taken' | 'missing'>;
   usernameTaken(username: string, exceptId?: string): Promise<boolean>;
+  /** The account with this username (case-insensitive), for signing in by username. */
+  userIdByUsername(username: string): Promise<string | null>;
   /**
    * Records activity. Counts the time since the previous request (capped) as watched, unless
    * already paid or `count` is false (the election count has not started).

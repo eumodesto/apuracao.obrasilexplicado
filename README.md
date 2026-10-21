@@ -2,7 +2,7 @@
 
 Painel independente exclusivo para Presidente da República, 1º turno de 2026. Dados e fotos vêm dos arquivos públicos oficiais do TSE, consultados pelo servidor. Não há resultados fictícios na aplicação.
 
-O acesso exige login com Google: cada conta tem 1 minuto grátis e depois paga R$ 5,00 no Pix (Mercado Pago) para acompanhar até o fim da apuração. Veja [Login, tempo grátis e pagamento Pix](docs/ACCESS_AND_PAYMENT.md). Antes do início da apuração, a página inicial é uma contagem regressiva com aviso por e-mail, e `/resultado-1-turno` mostra o resultado oficial do 1º turno; veja [Contagem regressiva e resultado do 1º turno](docs/LANDING.md).
+O acesso exige login com e-mail (ou nome de usuário) e senha: cada conta tem 1 minuto grátis e depois paga R$ 5,00 no Pix (Mercado Pago) para acompanhar até o fim da apuração. Veja [Login, tempo grátis e pagamento Pix](docs/ACCESS_AND_PAYMENT.md). Antes do início da apuração, a página inicial é uma contagem regressiva com aviso por e-mail, e `/resultado-1-turno` mostra o resultado oficial do 1º turno; veja [Contagem regressiva e resultado do 1º turno](docs/LANDING.md).
 
 ## Executar
 
@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Abra http://127.0.0.1:3000. Sem credenciais do Google e do Mercado Pago, o modo de desenvolvimento oferece um login de teste e um Pix simulado. Para produção: `npm run build` e `npm start`, ou a imagem Docker descrita em [Publicar na DigitalOcean](docs/DEPLOY_DIGITALOCEAN.md). Configure `SITE_URL` com o domínio público e as variáveis de login e pagamento descritas em `.env.example`; nenhuma credencial do TSE é necessária.
+Abra http://127.0.0.1:3000. O modo de desenvolvimento oferece também um login de teste sem senha e, sem credenciais do Mercado Pago, um Pix simulado. Para produção: `npm run build` e `npm start`, ou a imagem Docker descrita em [Publicar na DigitalOcean](docs/DEPLOY_DIGITALOCEAN.md). Configure `SITE_URL` com o domínio público e as variáveis de login e pagamento descritas em `.env.example`; nenhuma credencial do TSE é necessária.
 
 ## Verificar
 
@@ -73,9 +73,9 @@ Veja [relatório de implementação](docs/IMPLEMENTATION.md) e [proveniência do
 O mapa vetorial das 27 UFs, a legenda e os resultados regionais estão documentados em [Mapa eleitoral](docs/ELECTORAL_MAP.md). O agregado reutiliza o cache e o cliente existentes, acompanha EA14 e revalida UFs alteradas, com segurança a cada 60 segundos. A cartografia do IBGE está incorporada localmente em `data/geography/`.
 
 A homepage presidencial agora apresenta o resultado nacional primeiro, análise dos 50%, tabela estadual, peso eleitoral e histórico observado. Veja [relatório da homepage](docs/PRESIDENTIAL_HOMEPAGE.md) para métodos, arquivos e limites da persistência na hospedagem atual.
+
 ## Site publicado
 
 Produção: https://resultados-brasil-2026.vercel.app — projeto Vercel `resultados-brasil-2026`, publicado em 04/10/2026. Acesso público verificado sem login, com 27 UFs e seleção estadual por toque em viewport 390×844. Captura em `outputs/public-mobile.png`.
 
 Configuração em `vercel.json`: região São Paulo (`gru1`), duração máxima de 60 segundos e cache de arquivos em `/tmp/tse-cache`. Nesse ambiente o disco é temporário e os singletons são por instância; a persistência após reciclagem e a coordenação entre múltiplas instâncias não são garantidas. O desenho de cache distribuído descrito abaixo continua necessário para tráfego em escala. Não há fixtures no deploy; os dados públicos foram conferidos diretamente nas APIs publicadas.
-

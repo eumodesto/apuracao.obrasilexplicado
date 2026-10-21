@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { safeNext } from '@/lib/access/google';
+import { safeNext } from '@/lib/access/next';
 import { endSession } from '@/lib/access/session';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

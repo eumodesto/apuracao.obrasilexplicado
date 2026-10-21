@@ -5,7 +5,7 @@ import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { accessStatus, watchedSeconds } from '../src/lib/access/access';
 import { applyPayment, openPix, refreshPayment, webhookUrl } from '../src/lib/access/billing';
-import { safeNext } from '../src/lib/access/google';
+import { safeNext } from '../src/lib/access/next';
 import { NO_PARTY, PARTIES, validPartyChoice } from '../src/lib/profile/parties';
 import { cleanUsername, usernameProblem } from '../src/lib/profile/username';
 import {
