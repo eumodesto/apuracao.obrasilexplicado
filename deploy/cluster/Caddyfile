@@ -10,6 +10,10 @@
 		# A process that is restarting (deploys) refuses connections: try another one instead of
 		# answering 502.
 		lb_try_duration 5s
+		# A process that refuses connections (restarting) is skipped right away; slow answers do
+		# not count, so a busy process at peak stays in.
+		fail_duration 15s
+		max_fails 1
 		lb_try_interval 250ms
 		flush_interval -1
 	}
