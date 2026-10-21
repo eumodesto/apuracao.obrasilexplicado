@@ -558,3 +558,8 @@
     margin: 16px;
   }
 }
+
+/* "+ Novo usuário" above the search. */
+.admin-new {
+  margin: 0 0 16px;
+}

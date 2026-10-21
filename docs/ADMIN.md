@@ -6,7 +6,7 @@ Endereço: **`/admin`**. Só abre para quem entrou com um e-mail da lista `ADMIN
 ADMIN_EMAILS=admin1@example.com,admin2@example.com
 ```
 
-- A senha dos administradores é definida só no servidor (`scripts/set-password.mjs`, veja [Acesso da equipe](ACCESS_AND_PAYMENT.md#acesso-da-equipe)). Esses e-mails não podem ser cadastrados pelo site.
+- Contas da equipe e de outros administradores são criadas em **Usuários → + Novo usuário** (esses e-mails não podem ser cadastrados pelo site). A primeira conta de administrador, e a senha da própria conta, são definidas no servidor com `scripts/set-password.mjs` (veja [Acesso da equipe](ACCESS_AND_PAYMENT.md#acesso-da-equipe)).
 - Administradores também têm acesso liberado ao painel, como os de `STAFF_EMAILS`.
 - Para tirar alguém: remova o e-mail da variável e reinicie o servidor.
 - Uma conta de administrador suspensa perde a administração.
@@ -17,12 +17,12 @@ ADMIN_EMAILS=admin1@example.com,admin2@example.com
 
 ## Abas
 
-| Aba             | O que faz                                                                                                                                                                                                                  |
-| --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Visão geral** | Atualiza a cada 15 s. Mostra pessoas online no chat, contas, pagantes, receita, contas suspensas e excluídas, contas que trocaram de aparelho (possível conta dividida) e inscritos no "Me avise". Baixa o CSV dos avisos. |
-| **Usuários**    | Busca por usuário, e-mail, nome ou id. Permite suspender (com motivo), reativar, remover a foto de perfil ou excluir.                                                                                                      |
-| **Moderação**   | Mensagens denunciadas (as mais denunciadas primeiro) e as 150 mais recentes. Apagar remove a mensagem do chat de todo mundo na hora. Clicar no @usuário abre a conta.                                                      |
-| **Registro**    | Toda ação fica registrada: quem fez, o quê, contra quem e quando.                                                                                                                                                          |
+| Aba             | O que faz                                                                                                                                                                                                                                                                                                                                                  |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Visão geral** | Atualiza a cada 15 s. Mostra pessoas online no chat, contas, pagantes, receita, contas suspensas e excluídas, contas que trocaram de aparelho (possível conta dividida) e inscritos no "Me avise". Baixa o CSV dos avisos.                                                                                                                                 |
+| **Usuários**    | **+ Novo usuário** cria uma conta com e-mail e senha (inclusive da equipe e da administração, que não podem se cadastrar pelo site); a pessoa escolhe o nome de usuário no primeiro acesso. Busca por usuário, e-mail, nome ou id. Permite suspender (com motivo), reativar, **trocar a senha** (para quem esqueceu), remover a foto de perfil ou excluir. |
+| **Moderação**   | Mensagens denunciadas (as mais denunciadas primeiro) e as 150 mais recentes. Apagar remove a mensagem do chat de todo mundo na hora. Clicar no @usuário abre a conta.                                                                                                                                                                                      |
+| **Registro**    | Toda ação fica registrada: quem fez, o quê, contra quem e quando.                                                                                                                                                                                                                                                                                          |
 
 No próprio chat do painel, administradores veem uma lixeira em cada mensagem para apagar na hora.
 

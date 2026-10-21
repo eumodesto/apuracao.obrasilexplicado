@@ -194,6 +194,87 @@ function OverviewTab({ onModerate }: { onModerate: () => void }) {
 
 type UsersPage = { users: AdminUser[]; total: number; page: number; pageSize: number };
 
+/** Creates an account with e-mail and password; team e-mails included (they cannot sign up). */
+function NewUserForm({ onCreated }: { onCreated: (email: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<{ error: boolean; text: string } | null>(null);
+  if (!open)
+    return (
+      <div className="admin-new">
+        <button type="button" className="admin-button" onClick={() => setOpen(true)}>
+          + Novo usuário
+        </button>
+        {message && !message.error && <p className="admin-hint">{message.text}</p>}
+      </div>
+    );
+  return (
+    <form
+      className="admin-new admin-inline"
+      onSubmit={async (event) => {
+        event.preventDefault();
+        setBusy(true);
+        setMessage(null);
+        const result = await send('/api/admin/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
+        });
+        setBusy(false);
+        if (!result.ok) return setMessage({ error: true, text: result.error ?? 'Erro.' });
+        setMessage({
+          error: false,
+          text: `Conta ${email.trim().toLowerCase()} criada. No primeiro acesso, a pessoa escolhe o nome de usuário.`,
+        });
+        onCreated(email.trim().toLowerCase());
+        setEmail('');
+        setPassword('');
+        setOpen(false);
+      }}
+    >
+      <label className="sr-only" htmlFor="new-email">
+        E-mail
+      </label>
+      <input
+        id="new-email"
+        type="email"
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        placeholder="E-mail"
+        autoComplete="off"
+        required
+        autoFocus
+      />
+      <label className="sr-only" htmlFor="new-password">
+        Senha
+      </label>
+      <input
+        id="new-password"
+        type="text"
+        value={password}
+        onChange={(event) => setPassword(event.target.value)}
+        placeholder="Senha (mínimo 8)"
+        autoComplete="new-password"
+        minLength={8}
+        required
+      />
+      <button type="submit" className="admin-button" disabled={busy}>
+        Criar conta
+      </button>
+      <button type="button" className="admin-button is-ghost" onClick={() => setOpen(false)}>
+        Cancelar
+      </button>
+      {message?.error && (
+        <p className="admin-error" role="alert">
+          {message.text}
+        </p>
+      )}
+    </form>
+  );
+}
+
 function UsersTab({ initialQuery }: { initialQuery: string }) {
   const [draft, setDraft] = useState(initialQuery);
   const [query, setQuery] = useState(initialQuery);
@@ -207,6 +288,14 @@ function UsersTab({ initialQuery }: { initialQuery: string }) {
       <h2 id="users-title" className="admin-title">
         Usuários
       </h2>
+      <NewUserForm
+        onCreated={(email) => {
+          setDraft(email);
+          setQuery(email);
+          setPage(1);
+          setVersion((v) => v + 1);
+        }}
+      />
       <form
         className="admin-search"
         role="search"
@@ -286,7 +375,8 @@ function StatusChip({ user }: { user: AdminUser }) {
 }
 
 function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) {
-  const [mode, setMode] = useState<'idle' | 'pause' | 'delete'>('idle');
+  const [mode, setMode] = useState<'idle' | 'pause' | 'delete' | 'password'>('idle');
+  const [password, setPassword] = useState('');
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -303,6 +393,7 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
     if (!result.ok) return setError(result.error);
     setMode('idle');
     setReason('');
+    setPassword('');
     onChange();
   };
   return (
@@ -384,6 +475,38 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
                 Cancelar
               </button>
             </form>
+          ) : mode === 'password' ? (
+            <form
+              className="admin-inline"
+              onSubmit={(event) => {
+                event.preventDefault();
+                act({ action: 'set_password', password });
+              }}
+            >
+              <label className="sr-only" htmlFor={`password-${user.id}`}>
+                Nova senha
+              </label>
+              <input
+                id={`password-${user.id}`}
+                type="text"
+                value={password}
+                minLength={8}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Nova senha (mínimo 8)"
+                autoComplete="new-password"
+                autoFocus
+              />
+              <button type="submit" className="admin-button" disabled={busy || password.length < 8}>
+                Salvar senha
+              </button>
+              <button
+                type="button"
+                className="admin-button is-ghost"
+                onClick={() => setMode('idle')}
+              >
+                Cancelar
+              </button>
+            </form>
           ) : mode === 'delete' ? (
             <div className="admin-inline">
               <span>Excluir a conta e apagar as mensagens dela? Não dá para desfazer.</span>
@@ -423,6 +546,13 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
                   Suspender
                 </button>
               )}
+              <button
+                type="button"
+                className="admin-button is-ghost"
+                onClick={() => setMode('password')}
+              >
+                Trocar senha
+              </button>
               {user.photo && (
                 <button
                   type="button"
@@ -594,6 +724,8 @@ const ACTIONS: Record<AuditEntry['action'], string> = {
   delete_user: 'excluiu a conta',
   delete_message: 'apagou mensagem de',
   remove_photo: 'removeu a foto de',
+  create_user: 'criou a conta',
+  set_password: 'trocou a senha de',
 };
 
 function AuditTab() {

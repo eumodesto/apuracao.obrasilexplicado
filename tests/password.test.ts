@@ -90,3 +90,38 @@ describe('sign up and sign in with e-mail and password', () => {
     );
   });
 });
+
+describe('accounts created by an administrator', () => {
+  const saved = process.env.ADMIN_EMAILS;
+  afterEach(() => {
+    process.env.ADMIN_EMAILS = saved;
+  });
+
+  it('creates team accounts the public sign-up refuses, and resets passwords', async () => {
+    process.env.ADMIN_EMAILS = 'equipe@example.com';
+    const { adminCreateAccount, adminSetPassword } = await import('../src/lib/access/credentials');
+    const s = stores();
+    expect(
+      await signUp({ email: 'equipe@example.com', password: 'senha-forte-1' }, s),
+    ).toMatchObject({ ok: false, status: 403 });
+    expect(
+      await adminCreateAccount({ email: 'Equipe@Example.com', password: 'senha-forte-1' }, s),
+    ).toEqual({ ok: true, id: 'email:equipe@example.com', email: 'equipe@example.com' });
+    expect(
+      await adminCreateAccount({ email: 'equipe@example.com', password: 'outra-senha-2' }, s),
+    ).toMatchObject({ ok: false, status: 409 });
+    expect(
+      await logIn({ login: 'equipe@example.com', password: 'senha-forte-1' }, s),
+    ).toMatchObject({ ok: true });
+    expect(await adminSetPassword('email:equipe@example.com', 'curta', s.passwords)).toMatchObject({
+      ok: false,
+    });
+    await adminSetPassword('email:equipe@example.com', 'nova-senha-3', s.passwords);
+    expect(
+      await logIn({ login: 'equipe@example.com', password: 'senha-forte-1' }, s),
+    ).toMatchObject({ ok: false });
+    expect(await logIn({ login: 'equipe@example.com', password: 'nova-senha-3' }, s)).toMatchObject(
+      { ok: true },
+    );
+  });
+});

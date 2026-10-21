@@ -67,3 +67,38 @@ export async function logIn(
   if (!user || user.deletedAt) return fail(401, WRONG);
   return { ok: true, profile: { sub: id, email: user.email, name: user.name } };
 }
+
+/**
+ * Account created by an administrator (/admin): any e-mail, including team and administrator
+ * e-mails, which cannot sign up on the site. The person completes the sign-up on first login.
+ */
+export async function adminCreateAccount(
+  input: { email: unknown; password: unknown },
+  stores: { access?: AccessStore; passwords?: PasswordStore } = {},
+): Promise<{ ok: true; id: string; email: string } | { ok: false; status: number; error: string }> {
+  const access = stores.access ?? accessStore(),
+    passwords = stores.passwords ?? passwordStore();
+  const email = cleanEmail(input.email);
+  if (!email) return { ok: false, status: 400, error: 'Digite um e-mail válido.' };
+  const problem = passwordProblem(String(input.password ?? ''));
+  if (problem) return { ok: false, status: 400, error: problem };
+  const id = emailAccountId(email);
+  if ((await access.getUser(id))?.deletedAt)
+    return { ok: false, status: 409, error: 'Esta conta foi excluída.' };
+  if (!(await passwords.create(id, await hashPassword(String(input.password)))))
+    return { ok: false, status: 409, error: 'Já existe uma conta com este e-mail.' };
+  await access.upsertUser({ id, email, name: email.split('@')[0] });
+  return { ok: true, id, email };
+}
+
+/** New password for an existing account, set by an administrator. */
+export async function adminSetPassword(
+  id: string,
+  password: unknown,
+  passwords: PasswordStore = passwordStore(),
+): Promise<{ ok: true } | { ok: false; status: number; error: string }> {
+  const problem = passwordProblem(String(password ?? ''));
+  if (problem) return { ok: false, status: 400, error: problem };
+  await passwords.set(id, await hashPassword(String(password)));
+  return { ok: true };
+}

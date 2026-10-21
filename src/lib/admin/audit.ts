@@ -5,7 +5,14 @@ import postgres from 'postgres';
 export type AuditEntry = {
   at: number;
   admin: string;
-  action: 'pause' | 'unpause' | 'delete_user' | 'delete_message' | 'remove_photo';
+  action:
+    | 'pause'
+    | 'unpause'
+    | 'delete_user'
+    | 'delete_message'
+    | 'remove_photo'
+    | 'create_user'
+    | 'set_password';
   target: string;
   detail: string | null;
 };
