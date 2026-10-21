@@ -17,7 +17,7 @@ const ONLINE_CACHE_MS = 5_000;
 /** Messages the whole room accepts per second, across servers; beyond it the sender waits. */
 export const ROOM_PER_SECOND = 10;
 /** Live events are grouped and encoded once per interval for every open connection. */
-export const BATCH_MS = 500;
+export const BATCH_MS = 1_500;
 
 export type ChatRuntime = {
   bus: ChatBus;

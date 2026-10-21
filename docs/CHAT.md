@@ -15,7 +15,7 @@ Sala única para todos que estão no painel. Quem está no tempo grátis lê; qu
 - Até 280 caracteres, uma linha; caracteres invisíveis e de inversão de texto são removidos.
 - **Modo lento:** uma mensagem a cada 5 s por pessoa, controlado no servidor (vale entre servidores via Redis). Mensagens recusadas não gastam a vez.
 - **Limite da sala:** no máximo 10 mensagens por segundo no total (`ROOM_PER_SECOND`). Acima disso, quem envia recebe 429 ("O chat está muito movimentado") e espera a vez do modo lento.
-- **Envio em lotes:** as mensagens novas são agrupadas a cada 0,5 s e codificadas uma única vez para todas as conexões abertas (`connectStream`).
+- **Envio em lotes:** as mensagens novas são agrupadas a cada 1,5 s e codificadas uma única vez para todas as conexões abertas (`connectStream`).
 - **Links proibidos:** endereços (`http`, `www.`, domínios comuns), `wa.me`, `t.me`.
 - Palavrões listados viram asteriscos (palavra inteira; "computador" e "disputa" não são afetados).
 - Repetição de um mesmo caractere 10 vezes ou mais é recusada.
