@@ -403,6 +403,7 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
           <Avatar
             photo={user.photo}
             name={user.username ?? user.name}
+            label={party?.number}
             color={party?.color ?? '#87877e'}
             size={40}
           />
@@ -654,6 +655,7 @@ function MessageList({
                   <Avatar
                     photo={message.photo}
                     name={message.username}
+                    label={party?.number}
                     color={party?.color ?? '#87877e'}
                     size={28}
                   />

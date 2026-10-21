@@ -198,6 +198,7 @@ export function ChatDock() {
     );
   };
   const myColor = partyByCode(myParty)?.color ?? NO_PARTY_COLOR;
+  const myNumber = partyByCode(myParty)?.number;
 
   const launcher = (
     <button
@@ -406,6 +407,7 @@ export function ChatDock() {
           photo={myPhoto}
           name={me ?? '?'}
           color={myColor}
+          label={myNumber}
           onClose={() => setCapturing(false)}
           onChange={changePhoto}
         />

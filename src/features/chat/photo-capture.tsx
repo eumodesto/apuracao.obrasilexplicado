@@ -103,12 +103,15 @@ export function PhotoCapture({
   photo,
   name,
   color,
+  label,
   onClose,
   onChange,
 }: {
   photo: string | null;
   name: string;
   color: string;
+  /** Party number shown while there is no photo. */
+  label?: string;
   onClose: () => void;
   onChange: (photo: string | null) => void;
 }) {
@@ -229,7 +232,7 @@ export function PhotoCapture({
               />
               {camera !== 'on' && (
                 <div className="photo-placeholder">
-                  <Avatar photo={photo} name={name} color={color} size={120} />
+                  <Avatar photo={photo} name={name} label={label} color={color} size={120} />
                   <p>
                     {camera === 'starting'
                       ? 'Abrindo a câmera…'

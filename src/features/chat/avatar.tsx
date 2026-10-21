@@ -3,8 +3,8 @@ import { useState } from 'react';
 import './avatar.css';
 
 /**
- * Round profile photo, or the name's first letter on the party color when there is none (or it
- * was removed). `photo` is the "key.version" reference that chat messages carry.
+ * Round profile photo or, while there is none (or it was removed), the party number (13, 22) on
+ * the party color; the name's first letter only for "Prefiro não informar". `photo` is the "key.version" reference that chat messages carry.
  */
 export function Avatar({
   photo,

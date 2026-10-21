@@ -4,7 +4,7 @@
  * stickers, to check the chat, the stickers and photo saving with traffic. Node 20+, no packages.
  *
  *   node scripts/chat-demo.mjs seed --bots 30                  > bots.sql   (accounts, for psql)
- *   node scripts/chat-demo.mjs run --base https://site --secret "$SESSION_SECRET" --minutes 10
+ *   node scripts/chat-demo.mjs run --base https://site --secret "$SESSION_SECRET" --minutes 10 [--photos 0.3]
  *   node scripts/chat-demo.mjs cleanup --bots 30 --secret "$SESSION_SECRET" > clean.sql
  *
  * Accounts have ids "bot:N" and usernames starting with "teste_", so nobody mistakes them for
@@ -58,8 +58,8 @@ const NAMES = [
 const bot = (i) => ({
   id: `bot:${i}`,
   username: `teste_${NAMES[i % NAMES.length]}${i >= NAMES.length ? i : ''}`,
-  // A third each: PT, PL and "Prefiro não informar".
-  party: ['PT', 'PL', 'none'][i % 3],
+  // Half PT (13), half PL (22): without a photo, the avatar shows the party number.
+  party: ['PT', 'PL'][i % 2],
 });
 const photoKey = (id) =>
   createHmac('sha256', SECRET).update(`photo:${id}`).digest('hex').slice(0, 24);
@@ -102,6 +102,8 @@ const BASE = option('base', 'http://127.0.0.1:3000').replace(/\/$/, '');
 const MINUTES = Number(option('minutes', 10));
 // Messages per second in the whole room (the room accepts up to 10).
 const RATE = Number(option('rate', 1));
+// Share of bots that upload a profile photo (0 to 1); the others keep the 13/22 avatar.
+const PHOTOS = Number(option('photos', 0));
 
 const cookieFor = (b) => {
   const payload = Buffer.from(
@@ -224,9 +226,10 @@ const pick = (list) => list[Math.floor(Math.random() * list.length)];
 const bots = Array.from({ length: BOTS }, (_, i) => ({ ...bot(i), cookie: cookieFor(bot(i)) }));
 const origin = new URL(BASE).origin;
 
-console.log(`Enviando fotos de ${bots.length} contas de teste…`);
+const withPhoto = bots.filter((_, i) => i < Math.round(bots.length * PHOTOS));
+console.log(`Enviando fotos de ${withPhoto.length} de ${bots.length} contas de teste…`);
 let photos = 0;
-for (const [i, b] of bots.entries()) {
+for (const [i, b] of withPhoto.entries()) {
   const response = await fetch(`${BASE}/api/profile/photo`, {
     method: 'POST',
     headers: { cookie: b.cookie, origin, 'content-type': 'image/png' },
@@ -235,7 +238,9 @@ for (const [i, b] of bots.entries()) {
   if (response.ok) photos++;
   else console.warn(`  ${b.username}: foto ${response.status} ${await response.text()}`);
 }
-console.log(`Fotos salvas: ${photos}/${bots.length}. Conversa por ${MINUTES} min, ~${RATE} msg/s.`);
+console.log(
+  `Fotos salvas: ${photos}/${withPhoto.length}. Conversa por ${MINUTES} min, ~${RATE} msg/s.`,
+);
 
 const stats = { text: 0, sticker: 0, slow: 0, full: 0, other: 0 };
 const ready = new Map(); // bot id -> time its slow mode ends
