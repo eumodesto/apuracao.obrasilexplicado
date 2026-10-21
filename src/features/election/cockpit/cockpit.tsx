@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Brand } from '@/components/brand';
 import { WhatsAppShare } from '../whatsapp-share';
+import { GovernorBoard } from '../governors/governor-board';
 import { candidateColor } from '@/lib/tse/candidate-colors';
 import { percent, number, time, roundLabel } from '@/lib/format';
 import { useElection } from '../use-election';
@@ -372,7 +373,8 @@ export function ElectionCockpit({
           );
       } finally {
         index++;
-        if (!stopped) timer = setTimeout(poll, 1000);
+        // One UF refreshes every 10 s; several visible UFs take turns every 3 s.
+        if (!stopped) timer = setTimeout(poll, states.length > 1 ? 3000 : 10000);
       }
     };
     void poll();
@@ -1110,11 +1112,14 @@ export function ElectionCockpit({
                 ))}
             </section>
           ) : (
-            <RegionBoard
-              regions={regionRows}
-              exterior={abroadRow}
-              onExterior={() => updateSelection({ exterior: true, uf: '', town: '' })}
-            />
+            <>
+              <RegionBoard
+                regions={regionRows}
+                exterior={abroadRow}
+                onExterior={() => updateSelection({ exterior: true, uf: '', town: '' })}
+              />
+              <GovernorBoard />
+            </>
           )}
           <section className="update-feed">
             <h2>Últimas atualizações</h2>

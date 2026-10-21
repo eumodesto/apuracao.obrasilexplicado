@@ -27,15 +27,19 @@ export class MapCoordinator {
     private now = Date.now,
   ) {}
   async read(): Promise<ElectionMapResponse> {
-    if (this.pending) return this.pending;
     if (this.result && this.now() < this.nextRefresh) return this.result;
-    this.pending = this.refresh();
-    try {
-      return await this.pending;
-    } finally {
-      this.pending = null;
+    this.pending ??= this.refresh().finally(() => (this.pending = null));
+    // Once a map exists, everyone gets it at once while the next one is built (27 UF reads).
+    if (this.result && this.serveStale) {
+      this.pending.catch((error) =>
+        console.warn('[TSE] map refresh failed; keeping the previous map', error?.message ?? error),
+      );
+      return this.result;
     }
+    return this.pending;
   }
+  /** Answer from the previous map while a refresh runs (production server). */
+  serveStale = false;
   private async refresh(): Promise<ElectionMapResponse> {
     const [geography, national, tracking] = await Promise.all([
       this.dependencies.geography(),

@@ -1,0 +1,43 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000"
+    },
+    {
+      "name": "dev-turno1",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "TSE_TURN": "1",
+        "TSE_CACHE_DIR": ".cache/tse-turno1"
+      }
+    },
+    {
+      "name": "dev-simulacao",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "TSE_SIMULATION": "1",
+        "TSE_SIMULATION_MINUTES": "10"
+      }
+    }
+  ]
+}

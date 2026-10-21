@@ -14,7 +14,8 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ref
   return new Response(new Uint8Array(data), {
     headers: {
       'Content-Type': 'image/jpeg',
-      'Cache-Control': 'public, max-age=86400',
+      // The address changes with every new photo, so each version never changes.
+      'Cache-Control': 'public, max-age=31536000, immutable',
       'X-Content-Type-Options': 'nosniff',
       'Content-Security-Policy': "default-src 'none'; sandbox",
     },

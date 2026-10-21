@@ -1,0 +1,17 @@
+.git
+.next
+node_modules
+.cache
+.data
+.claude
+.vercel
+outputs
+coverage
+test-results
+playwright-report
+*.tsbuildinfo
+.env*
+!.env.example
+Dockerfile
+docker-compose.yml
+deploy

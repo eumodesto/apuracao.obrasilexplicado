@@ -1,3 +1,4 @@
+import { tseCacheDir } from './simulation';
 import { mkdir, readFile, appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
@@ -126,5 +127,5 @@ export class ElectionHistory {
 }
 const runtime = globalThis as typeof globalThis & { tseHistory?: ElectionHistory };
 export const history = (runtime.tseHistory ??= new ElectionHistory(
-  path.resolve(/* turbopackIgnore: true */ process.env.TSE_CACHE_DIR || '.cache/tse'),
+  path.resolve(/* turbopackIgnore: true */ tseCacheDir()),
 ));

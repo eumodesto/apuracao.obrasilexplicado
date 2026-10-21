@@ -1,5 +1,5 @@
 import type { BandSide } from '@/features/landing/round-band-model';
-import type { RaceModel } from './race-model';
+import type { RaceCandidate, RaceModel } from './race-model';
 import './race.css';
 
 const decimal = (value: number, digits: number) =>
@@ -52,6 +52,17 @@ export function RaceCards({
   allCandidates?: boolean;
   note?: string;
 }) {
+  // With only the two finalists (the 2nd round), they are the rows of the card.
+  const rows: RaceCandidate[] = model.others.length
+    ? model.others
+    : model.finalists.map((side) => ({
+        id: side.id,
+        name: side.name,
+        party: `${side.party} ${side.number}`,
+        color: side.color,
+        percentage: side.percentage,
+        votes: side.votes,
+      }));
   return (
     <div className="race-column">
       <section className="race-card" aria-labelledby="race-title">
@@ -75,9 +86,9 @@ export function RaceCards({
             </dd>
           </div>
         </dl>
-        {model.others.length > 0 && (
+        {rows.length > 0 && (
           <ul className="race-others">
-            {model.others.map((candidate) => (
+            {rows.map((candidate) => (
               <li key={candidate.id} style={{ '--side': candidate.color } as React.CSSProperties}>
                 <span className="race-photo">
                   {/* Decorative: the name is written next to it. */}
@@ -94,7 +105,10 @@ export function RaceCards({
                   <b>{candidate.name}</b>
                   <small>{candidate.party}</small>
                 </span>
-                <strong>{decimal(candidate.percentage, 1)}%</strong>
+                <span className="race-share">
+                  <strong>{decimal(candidate.percentage, rows === model.others ? 1 : 2)}%</strong>
+                  {candidate.votes != null && <small>{whole(candidate.votes)} votos</small>}
+                </span>
               </li>
             ))}
           </ul>

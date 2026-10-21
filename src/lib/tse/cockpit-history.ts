@@ -1,3 +1,4 @@
+import { tseCacheDir } from './simulation';
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, appendFile } from 'node:fs/promises';
 import { gzipSync, gunzipSync } from 'node:zlib';
@@ -38,4 +39,4 @@ export class CockpitHistory{
   async read(){await this.queue;await this.load();return [...this.frames];}
 }
 const runtime=globalThis as typeof globalThis &{cockpitHistory?:CockpitHistory};
-export const cockpitHistory=runtime.cockpitHistory??=new CockpitHistory(path.resolve(/* turbopackIgnore: true */process.env.TSE_CACHE_DIR||'.cache/tse'));
+export const cockpitHistory=runtime.cockpitHistory??=new CockpitHistory(path.resolve(/* turbopackIgnore: true */tseCacheDir()));

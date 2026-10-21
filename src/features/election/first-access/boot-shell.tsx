@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { Brand } from '@/components/brand';
 import { WhatsAppShare } from '../whatsapp-share';
+import { GovernorBoard } from '../governors/governor-board';
 import geometry from '../map/geometry.json';
 import { NATIONAL_VIEW } from '../cockpit/map-navigation';
 import { time, percent, number, roundLabel } from '@/lib/format';
@@ -250,6 +251,7 @@ export function BootShell({
               </button>
             </section>
           )}
+          {regionBoard && <GovernorBoard />}
           <section className="update-feed">
             <h2>Últimas atualizações</h2>
             <p role="status">

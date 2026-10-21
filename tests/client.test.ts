@@ -36,7 +36,7 @@ describe('Conditional requests and resilient snapshots', () => {
     client.pause(60000);
     await cache.set(url, { body: '{"votes":42}', checkedAt: 999999, etag: null, modified: null });
     const result = await client.restore(url, parse);
-    expect(result?.value).toEqual({votes:42});
+    expect(result?.value).toEqual({ votes: 42 });
     expect(result?.nextAttempt).toBe(1060000);
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
@@ -46,7 +46,9 @@ describe('Conditional requests and resilient snapshots', () => {
     const client = new TseClient(cache, fetcher, Date.now, 0);
     await cache.set(url, { body: '{"votes":"wrong"}', checkedAt: 1, etag: null, modified: null });
     expect(await client.restore(url, parse)).toBeNull();
-    await expect(client.restore('https://example.com/result.json', parse)).rejects.toThrow('Disallowed');
+    await expect(client.restore('https://example.com/result.json', parse)).rejects.toThrow(
+      'Disallowed',
+    );
     expect(fetcher).not.toHaveBeenCalled();
   });
   it('shares an upstream cooldown with photo requests', async () => {
@@ -139,5 +141,29 @@ describe('Conditional requests and resilient snapshots', () => {
   it('rejects arbitrary origins', async () => {
     const { client } = setup([]);
     await expect(client.read('https://example.com', parse, 3000)).rejects.toThrow('Disallowed');
+  });
+});
+describe('Serving the last value while refreshing (production)', () => {
+  it('answers from the validated value at once and refreshes in the background', async () => {
+    let release: (response: Response) => void = () => {};
+    const responses: Promise<Response>[] = [
+      Promise.resolve(success()),
+      new Promise((resolve) => (release = resolve)),
+    ];
+    const fetcher = vi.fn(() => responses.shift()!);
+    let now = 1000000;
+    const client = new TseClient(new MemoryCache(), fetcher as typeof fetch, () => now, 0);
+    client.serveStale = true;
+    // Nothing validated yet: the first read waits for the TSE.
+    expect((await client.read(url, parse, 3000)).value).toEqual({ votes: 0 });
+    now += 3001;
+    // The refresh is pending, but readers get the previous value immediately.
+    expect((await client.read(url, parse, 3000)).value).toEqual({ votes: 0 });
+    expect((await client.read(url, parse, 3000)).value).toEqual({ votes: 0 });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    release(new Response('{"votes":7}', { headers: { etag: '"two"' } }));
+    await vi.waitFor(async () =>
+      expect((await client.read(url, parse, 3000)).value).toEqual({ votes: 7 }),
+    );
   });
 });

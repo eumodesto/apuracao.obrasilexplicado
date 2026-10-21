@@ -295,3 +295,13 @@
     overflow: visible;
   }
 }
+.race-share {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.election-cockpit .race-share small,
+.race-share small {
+  color: #87877e;
+  font-size: 10px;
+}

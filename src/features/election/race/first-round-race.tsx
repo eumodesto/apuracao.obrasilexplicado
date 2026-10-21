@@ -5,7 +5,8 @@ import { raceModel } from './race-model';
 
 /** Left column with the official 1st-round result, shown until the 2nd-round count opens. */
 export async function FirstRoundRace() {
-  const model = raceModel(await firstRoundNational().catch(() => null));
+  // Only the two finalists, as the 2nd round will show.
+  const model = raceModel(await firstRoundNational().catch(() => null), 0);
   const startsAt = new Date(countStartsAt());
   const hour = startsAt.toLocaleTimeString('pt-BR', {
     hour: 'numeric',

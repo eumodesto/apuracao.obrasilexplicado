@@ -1,12 +1,15 @@
-import { afterAll, describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it, vi } from 'vitest';
 import { MemoryChatBus, RedisChatBus } from '../src/lib/chat/bus';
 import {
   type ChatRuntime,
+  BATCH_MS,
   connect,
+  connectStream,
   deleteMessage,
   history,
   onlineCount,
   reportMessage,
+  ROOM_PER_SECOND,
   sendMessage,
 } from '../src/lib/chat/service';
 import { MemoryChatStore, PostgresChatStore } from '../src/lib/chat/store';
@@ -175,5 +178,47 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('chat history in Postgres', () =
     expect(await store.report(`${run}x1`, 'google:bia', T0)).toBe(true);
     expect(await store.report(`${run}x1`, 'google:bia', T0)).toBe(false);
     expect((await store.get(`${run}x2`))?.deletedAt).toBe(T0);
+  });
+});
+
+describe('chat under load', () => {
+  it('accepts at most ROOM_PER_SECOND messages per second in the whole room', async () => {
+    const state = instance();
+    const people = Array.from({ length: ROOM_PER_SECOND + 3 }, (_, i) => ({
+      ...ana,
+      userId: `google:p${i}`,
+      username: `p${i}`,
+    }));
+    const results = [];
+    for (const person of people) results.push(await sendMessage(person, 'Virou!', state, T0));
+    expect(results.filter((r) => r.ok)).toHaveLength(ROOM_PER_SECOND);
+    expect(results.at(-1)).toMatchObject({ ok: false, status: 429 });
+    // The next second opens the room again (bia has not used the slow-mode turn yet).
+    expect(await sendMessage(bia, 'Agora foi', state, T0 + 1_000)).toMatchObject({
+      ok: true,
+    });
+  });
+
+  it('sends the same encoded batch to every open stream', async () => {
+    vi.useFakeTimers();
+    try {
+      const state = instance();
+      const chunks: Uint8Array[][] = [[], []];
+      const closers = chunks.map((list) => connectStream((chunk) => list.push(chunk), state));
+      expect(state.connections).toBe(2);
+      await sendMessage(ana, 'Um', state, T0);
+      await sendMessage(bia, 'Dois', state, T0);
+      expect(chunks[0]).toHaveLength(0);
+      vi.advanceTimersByTime(BATCH_MS);
+      expect(chunks[0]).toHaveLength(1);
+      expect(chunks[1][0]).toBe(chunks[0][0]);
+      const text = new TextDecoder().decode(chunks[0][0]);
+      expect(text.match(/^event: message$/gm)).toHaveLength(2);
+      expect(text).toContain('"text":"Um"');
+      closers.forEach((close) => close());
+      expect(state.connections).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

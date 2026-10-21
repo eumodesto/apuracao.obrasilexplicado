@@ -1,4 +1,4 @@
-import { catalog, client, POLL_MS, president, STALE_MS } from './service';
+import { catalog, client, CLIENT_POLL_MS, POLL_MS, president, STALE_MS } from './service';
 import { resultUrl, trackingUrl } from './urls';
 import { trackingSchema } from './schemas';
 import { officialDate } from './normalizers';
@@ -18,7 +18,7 @@ function cachedState(uf: string): ElectionResponse | null {
     stale: !!cached.issue,
     issue: cached.issue ? 'Os dados oficiais estão temporariamente indisponíveis.' : null,
     checkedAt: cached.checkedAt ? new Date(cached.checkedAt).toISOString() : null,
-    nextPollMs: POLL_MS,
+    nextPollMs: CLIENT_POLL_MS,
   };
 }
 async function tracking(): Promise<TrackingSignals> {
@@ -64,4 +64,5 @@ export const mapCoordinator = (runtime.tseMapCoordinator =
         POLL_MS,
         STALE_MS,
       ));
+mapCoordinator.serveStale = true;
 export const electionMap = () => mapCoordinator.read();

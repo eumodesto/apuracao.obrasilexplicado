@@ -47,10 +47,20 @@ export async function cachedMunicipalities(){
   const results=knownMunicipalities();
   return {uf:'br',total,available:results.length,results,nextPollMs:30000,progressive:results.length<total};
 }
+const latest=new Map<string,Awaited<ReturnType<typeof read>>>();
+/**
+ * After a UF's first answer, readers get the latest one at once while the next batch of
+ * municipalities is collected in the background (a batch can take up to 12 s of TSE reads).
+ */
 export async function municipalities(uf:string) {
-  const pending=flights.get(uf);if(pending)return pending;
-  const operation=read(uf);flights.set(uf,operation);
-  try{return await operation;}finally{flights.delete(uf);}
+  let pending=flights.get(uf) as ReturnType<typeof read>|undefined;
+  if(!pending){
+    pending=read(uf).then(result=>{latest.set(uf,result);return result;}).finally(()=>flights.delete(uf));
+    flights.set(uf,pending);
+  }
+  const previous=latest.get(uf);
+  if(previous){pending.catch(()=>{});return previous;}
+  return pending;
 }
 async function read(uf:string){
   await restoreBaseline();

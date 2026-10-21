@@ -9,6 +9,7 @@ export type RaceCandidate = {
   party: string;
   color: string;
   percentage: number;
+  votes?: number;
 };
 
 export type RaceModel = {
@@ -34,7 +35,10 @@ const PARTY_WORDS: Record<string, string> = {
 };
 const partyLabel = (party: string) => PARTY_WORDS[party.trim().toUpperCase()] ?? party;
 
-/** Left-column summary of a finished (or counting) round, from the national result. */
+/**
+ * Left-column summary of a finished (or counting) round, from the national result. With
+ * `shown = 0` it covers only the two finalists, as the 2nd round will.
+ */
 export function raceModel(snapshot: ElectionSnapshot | null, shown = 3): RaceModel | null {
   const analysis = validVoteAnalysis(snapshot);
   const band = roundBand(snapshot);
@@ -43,7 +47,7 @@ export function raceModel(snapshot: ElectionSnapshot | null, shown = 3): RaceMod
   const party = new Map(snapshot.candidates.map((c) => [c.id, c.party]));
   const finalists = new Set([band.left.id, band.right.id]);
   const others = analysis.candidates.filter((c) => !finalists.has(c.id));
-  const rest = others.slice(shown);
+  const rest = shown > 0 ? others.slice(shown) : [];
   const { progress } = snapshot;
   return {
     counted: progress.percentageCounted,
@@ -59,10 +63,13 @@ export function raceModel(snapshot: ElectionSnapshot | null, shown = 3): RaceMod
     rest: { count: rest.length, percentage: rest.reduce((sum, c) => sum + c.percentage, 0) },
     total: analysis.candidates.length,
     validVotes: analysis.validVotes,
+    // Over the voters of the sections counted so far, not the whole electorate.
     turnout:
-      progress.turnout != null && progress.eligibleVoters
-        ? (progress.turnout / progress.eligibleVoters) * 100
-        : null,
+      progress.turnout != null && progress.abstentions != null
+        ? (progress.turnout / (progress.turnout + progress.abstentions || 1)) * 100
+        : progress.turnout != null && progress.eligibleVoters
+          ? (progress.turnout / progress.eligibleVoters) * 100
+          : null,
     blankAndNull:
       progress.turnout && progress.blankVotes != null && progress.nullVotes != null
         ? ((progress.blankVotes + progress.nullVotes) / progress.turnout) * 100

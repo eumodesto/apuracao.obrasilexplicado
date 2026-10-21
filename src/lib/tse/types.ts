@@ -9,6 +9,8 @@ export type ElectionConfig = {
   directories: Record<string, string>;
   /** Every round of this presidential election published so far, the chosen one included. */
   rounds?: { contest: string; election: string; turn: string; date: string }[];
+  /** Governor races of the same round, when the TSE lists them by state (the 2nd round). */
+  governor?: { contest: string; election: string; turn: string; date: string; states: string[] };
 };
 export type Geography = {
   code: string;

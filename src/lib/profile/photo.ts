@@ -115,11 +115,55 @@ export class PostgresPhotoStore implements PhotoStore {
   }
 }
 
+/**
+ * Keeps recently served photos in memory: when someone new talks in the chat, every open panel
+ * asks for their photo at once, and only the first request reaches the database. Missing photos
+ * are not cached, and every change goes through this process (one server).
+ */
+export class CachedPhotoStore implements PhotoStore {
+  private cache = new Map<string, Promise<Buffer | null>>();
+  constructor(
+    private inner: PhotoStore,
+    private limit = 10_000,
+  ) {}
+
+  async put(key: string, data: Buffer) {
+    await this.inner.put(key, data);
+    this.cache.delete(key);
+  }
+
+  get(key: string) {
+    const hit = this.cache.get(key);
+    if (hit) {
+      // Most recently used goes to the end; the oldest is evicted first.
+      this.cache.delete(key);
+      this.cache.set(key, hit);
+      return hit;
+    }
+    const loading = this.inner.get(key).then((data) => {
+      if (!data) this.cache.delete(key);
+      return data;
+    });
+    loading.catch(() => this.cache.delete(key));
+    this.cache.set(key, loading);
+    if (this.cache.size > this.limit) this.cache.delete(this.cache.keys().next().value!);
+    return loading;
+  }
+
+  async remove(key: string) {
+    this.cache.delete(key);
+    await this.inner.remove(key);
+    this.cache.delete(key);
+  }
+}
+
 const shared = globalThis as { __photoStore?: PhotoStore };
 
 export function photoStore() {
-  shared.__photoStore ??= process.env.DATABASE_URL
-    ? new PostgresPhotoStore(process.env.DATABASE_URL)
-    : new FilePhotoStore(path.join(process.cwd(), '.data', 'photos'));
+  shared.__photoStore ??= new CachedPhotoStore(
+    process.env.DATABASE_URL
+      ? new PostgresPhotoStore(process.env.DATABASE_URL)
+      : new FilePhotoStore(path.join(process.cwd(), '.data', 'photos')),
+  );
   return shared.__photoStore;
 }

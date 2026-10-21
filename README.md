@@ -13,7 +13,7 @@ npm ci
 npm run dev
 ```
 
-Abra http://127.0.0.1:3000. Sem credenciais do Google e do Mercado Pago, o modo de desenvolvimento oferece um login de teste e um Pix simulado. Para produção: `npm run build` e `npm start`. Configure `SITE_URL` com o domínio público e as variáveis de login e pagamento descritas em `.env.example`; nenhuma credencial do TSE é necessária.
+Abra http://127.0.0.1:3000. Sem credenciais do Google e do Mercado Pago, o modo de desenvolvimento oferece um login de teste e um Pix simulado. Para produção: `npm run build` e `npm start`, ou a imagem Docker descrita em [Publicar na DigitalOcean](docs/DEPLOY_DIGITALOCEAN.md). Configure `SITE_URL` com o domínio público e as variáveis de login e pagamento descritas em `.env.example`; nenhuma credencial do TSE é necessária.
 
 ## Verificar
 

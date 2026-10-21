@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { electionMap } from '@/lib/tse/map-service';
+import { CLIENT_POLL_MS } from '@/lib/tse/service';
 import { withAccess } from '@/lib/access/guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -16,7 +17,7 @@ async function get(request: Request) {
     const headers = {
       'Cache-Control': 'private, no-cache',
       ETag: etag,
-      'X-Poll-After': String(data.nextPollMs),
+      'X-Poll-After': String(Math.max(CLIENT_POLL_MS, data.nextPollMs)),
     };
     if (request.headers.get('if-none-match') === etag)
       return new Response(null, { status: 304, headers });

@@ -1,7 +1,6 @@
 import { isAdmin } from '@/lib/access/access';
 import { chatAccess } from '@/lib/chat/access';
-import { connect, history, onlineCount } from '@/lib/chat/service';
-import type { ChatEvent } from '@/lib/chat/types';
+import { connectStream, encodeEvent, history, onlineCount } from '@/lib/chat/service';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -25,18 +24,19 @@ export async function GET(request: Request) {
   const stream = new ReadableStream({
     async start(controller) {
       let open = true;
-      const write = (text: string) => {
+      const enqueue = (chunk: Uint8Array) => {
         if (!open) return;
         try {
-          controller.enqueue(encoder.encode(text));
+          controller.enqueue(chunk);
         } catch {
           stop();
         }
       };
-      const send = (event: string, data: unknown) =>
-        write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      const write = (text: string) => enqueue(encoder.encode(text));
+      const send = (event: string, data: unknown) => write(encodeEvent(event, data));
 
-      const disconnect = connect((event: ChatEvent) => send(event.type, event));
+      // New messages and deletions arrive in shared, already encoded batches.
+      const disconnect = connectStream(enqueue);
       const timers = [
         setInterval(() => write(': ping\n\n'), PING_MS),
         setInterval(async () => {

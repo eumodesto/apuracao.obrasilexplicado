@@ -14,6 +14,10 @@ import {
 /** Messages a newly connected panel receives. */
 export const HISTORY_SIZE = 100;
 const ONLINE_CACHE_MS = 5_000;
+/** Messages the whole room accepts per second, across servers; beyond it the sender waits. */
+export const ROOM_PER_SECOND = 10;
+/** Live events are grouped and encoded once per interval for every open connection. */
+export const BATCH_MS = 500;
 
 export type ChatRuntime = {
   bus: ChatBus;
@@ -24,6 +28,8 @@ export type ChatRuntime = {
   tracking?: boolean;
   connections: number;
   online: { at: number; value: Promise<number> } | null;
+  /** Open streams fed with pre-encoded batches (see `connectStream`). */
+  streams?: { sinks: Set<(chunk: Uint8Array) => void>; queue: ChatEvent[] };
 };
 
 const runtime = globalThis as { __chat?: ChatRuntime };
@@ -120,6 +126,13 @@ async function post(
       error: 'Modo lento: espere alguns segundos para mandar outra mensagem.',
       retryAfterMs: SLOW_MODE_MS,
     };
+  if (!(await roomSlot(state, now)))
+    return {
+      ok: false,
+      status: 429,
+      error: 'O chat está muito movimentado. Tente de novo em alguns segundos.',
+      retryAfterMs: SLOW_MODE_MS,
+    };
   const message = {
     id: now.toString(36) + randomBytes(6).toString('hex'),
     ...author,
@@ -131,6 +144,14 @@ async function post(
   const published = toPublic(message);
   await state.bus.publish({ type: 'message', message: published });
   return { ok: true, message: published };
+}
+
+/** One of the room's ROOM_PER_SECOND slots for the current second (shared through the bus). */
+async function roomSlot(state: ChatRuntime, now: number) {
+  const second = Math.floor(now / 1000);
+  for (let slot = 0; slot < ROOM_PER_SECOND; slot++)
+    if (await state.bus.claim(`room:${second}:${slot}`, 2_000)) return true;
+  return false;
 }
 
 /** Removes a message for everyone (moderation). */
@@ -167,6 +188,42 @@ export function connect(listener: (event: ChatEvent) => void, state = chat()) {
     closed = true;
     state.connections -= 1;
     unsubscribe();
+  };
+}
+
+export const encodeEvent = (event: string, data: unknown) =>
+  `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+
+/**
+ * Registers a live Server-Sent Events connection. Instead of one listener per connection, the
+ * server queues bus events and every BATCH_MS encodes them once and hands the same bytes to all
+ * open streams, so a message costs one JSON encoding however many people are watching.
+ */
+export function connectStream(sink: (chunk: Uint8Array) => void, state = chat()) {
+  if (!state.streams) {
+    const streams = (state.streams = {
+      sinks: new Set<(chunk: Uint8Array) => void>(),
+      queue: [] as ChatEvent[],
+    });
+    const encoder = new TextEncoder();
+    state.bus.subscribe((event) => streams.queue.push(event));
+    setInterval(() => {
+      if (!streams.queue.length) return;
+      const events = streams.queue.splice(0);
+      if (!streams.sinks.size) return;
+      const chunk = encoder.encode(events.map((event) => encodeEvent(event.type, event)).join(''));
+      for (const send of streams.sinks) send(chunk);
+    }, BATCH_MS).unref?.();
+  }
+  const { sinks } = state.streams;
+  state.connections += 1;
+  sinks.add(sink);
+  let closed = false;
+  return () => {
+    if (closed) return;
+    closed = true;
+    state.connections -= 1;
+    sinks.delete(sink);
   };
 }
 

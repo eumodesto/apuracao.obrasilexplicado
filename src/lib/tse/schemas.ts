@@ -55,7 +55,8 @@ export const sectionsSchema = z
   .refine((s) => s.st <= s.ts, 'Counted sections exceed total');
 export const resultSchema = z.object({
   ele: digits,
-  t: z.literal('1'),
+  // Round of the file: the 2nd-round files say '2'.
+  t: z.enum(['1', '2']),
   f: z.literal('o'),
   tpabr: z.enum(['br', 'uf', 'mu']),
   cdabr: z.string(),
@@ -88,7 +89,7 @@ export const resultSchema = z.object({
 });
 export const trackingSchema = z.object({
   ele: digits,
-  t: z.literal('1'),
+  t: z.enum(['1', '2']),
   f: z.literal('o'),
   abr: z.array(
     z.object({
