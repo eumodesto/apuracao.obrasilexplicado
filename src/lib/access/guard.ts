@@ -11,7 +11,14 @@ import type { AccessStore, AccessUser } from './types';
  * write still counts the whole gap since `lastSeenAt` (capped at MAX_ACTIVITY_GAP_SECONDS).
  */
 export const TOUCH_INTERVAL_MS = 5_000;
-const recent = new Map<string, { user: AccessUser; store: AccessStore }>();
+/**
+ * Paid accounts have no free time to count: their record is only re-read (sessions, moderation)
+ * every PAID_CHECK_MS, and `lastSeenAt` (shown to the moderators) is written every PAID_TOUCH_MS.
+ * At 5,000 paying viewers this took most of the database's work in the load test.
+ */
+export const PAID_CHECK_MS = 30_000;
+export const PAID_TOUCH_MS = 5 * 60_000;
+const recent = new Map<string, { user: AccessUser; store: AccessStore; checkedAt: number }>();
 
 /** Records activity for the signed-in user and returns their access, or null without a session. */
 export async function currentAccess(
@@ -22,20 +29,28 @@ export async function currentAccess(
 ) {
   if (!session) return null;
   const started = options.started ?? (await countStarted(now));
-  const cached = recent.get(session.sub);
-  let user =
-    !options.fresh &&
-    cached?.store === store &&
-    cached.user.lastSeenAt !== null &&
-    now - cached.user.lastSeenAt < TOUCH_INTERVAL_MS
-      ? cached.user
-      : null;
+  const cached = recent.get(session.sub)?.store === store ? recent.get(session.sub) : undefined;
+  const paid = cached?.user.paidAt != null;
+  let user = !cached
+    ? null
+    : paid
+      ? now - cached.checkedAt < PAID_CHECK_MS
+        ? cached.user
+        : null
+      : !options.fresh &&
+          cached.user.lastSeenAt !== null &&
+          now - cached.user.lastSeenAt < TOUCH_INTERVAL_MS
+        ? cached.user
+        : null;
   if (!user) {
+    const write = !paid || now - (cached?.user.lastSeenAt ?? 0) >= PAID_TOUCH_MS;
     user =
-      (await store.touch(session.sub, now, MAX_ACTIVITY_GAP_SECONDS, started)) ??
+      (write
+        ? await store.touch(session.sub, now, MAX_ACTIVITY_GAP_SECONDS, started)
+        : await store.getUser(session.sub)) ??
       (await store.upsertUser({ id: session.sub, email: session.email, name: session.name }));
     if (recent.size > 50_000) recent.clear();
-    recent.set(session.sub, { user, store });
+    recent.set(session.sub, { user, store, checkedAt: now });
   }
   return {
     user,

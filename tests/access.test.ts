@@ -514,6 +514,24 @@ describe('activity writes at peak', () => {
     const fresh = await currentAccess(session, store, now, { started: true, fresh: true });
     expect(fresh!.user.freeSecondsUsed).toBe(40);
   });
+
+  it('only re-reads paid accounts every 30 s and writes their last visit every 5 min', async () => {
+    const { currentAccess, PAID_CHECK_MS, PAID_TOUCH_MS } = await import('../src/lib/access/guard');
+    const store = new FileAccessStore(),
+      session = { sub: 'google:paid-peak', email: 'pago@example.com', name: 'Pago' };
+    await store.upsertUser({ id: session.sub, email: session.email, name: session.name });
+    await store.markPaid(session.sub, 'pay-1', T0);
+    await currentAccess(session, store, T0, { started: true });
+    const touch = vi.spyOn(store, 'touch'),
+      read = vi.spyOn(store, 'getUser');
+    // Ten minutes of requests every 10 s, heartbeats included.
+    for (let now = T0 + 10_000; now <= T0 + 10 * 60_000; now += 10_000)
+      await currentAccess(session, store, now, { started: true, fresh: true });
+    expect(touch.mock.calls.length).toBe((10 * 60_000) / PAID_TOUCH_MS);
+    expect(read.mock.calls.length + touch.mock.calls.length).toBeLessThanOrEqual(
+      (10 * 60_000) / PAID_CHECK_MS,
+    );
+  });
 });
 
 describe('team access', () => {

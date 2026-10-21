@@ -275,6 +275,8 @@ console.log(
   `Teste de carga: ${USERS} pessoas em ${BASE}, subindo em ${RAMP_S}s, por ${DURATION_S}s.`,
 );
 const timer = setInterval(report, 10_000);
+// Hard stop even if this generator is overloaded and the normal ending is late.
+setTimeout(() => process.exit(0), (DURATION_S + 30) * 1000);
 const all = [];
 for (let i = 0; i < USERS; i++) {
   all.push(person(OFFSET + i));
