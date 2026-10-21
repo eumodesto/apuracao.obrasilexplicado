@@ -48,17 +48,22 @@ export async function cachedMunicipalities(){
   return {uf:'br',total,available:results.length,results,nextPollMs:30000,progressive:results.length<total};
 }
 const latest=new Map<string,Awaited<ReturnType<typeof read>>>();
+const startedAt=new Map<string,number>();
+/** Background batches per UF start at most this often, so they never crowd the TSE queue. */
+const REFRESH_MS=30_000;
 /**
  * After a UF's first answer, readers get the latest one at once while the next batch of
  * municipalities is collected in the background (a batch can take up to 12 s of TSE reads).
  */
 export async function municipalities(uf:string) {
   let pending=flights.get(uf) as ReturnType<typeof read>|undefined;
+  const previous=latest.get(uf);
+  if(!pending&&previous&&Date.now()-(startedAt.get(uf)??0)<REFRESH_MS)return previous;
   if(!pending){
+    startedAt.set(uf,Date.now());
     pending=read(uf).then(result=>{latest.set(uf,result);return result;}).finally(()=>flights.delete(uf));
     flights.set(uf,pending);
   }
-  const previous=latest.get(uf);
   if(previous){pending.catch(()=>{});return previous;}
   return pending;
 }

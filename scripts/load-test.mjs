@@ -19,6 +19,8 @@ const option = (name, fallback) => {
 };
 const USERS = Number(option('users', 5000));
 const id = (i) => `load:${i}`;
+// Exit only after everything printed reached the pipe (psql), or the SQL is cut short.
+const flushed = () => new Promise((resolve) => process.stdout.write('', resolve));
 
 if (command === 'seed') {
   // Paid, onboarded accounts with a known session id, so the signed cookie is accepted.
@@ -53,6 +55,7 @@ ALTER TABLE access_users
         )}\nON CONFLICT (id) DO UPDATE SET paid_at=now(), session_id=EXCLUDED.session_id, deleted_at=NULL, paused_at=NULL;`,
     );
   console.log('COMMIT;');
+  await flushed();
   process.exit(0);
 }
 
@@ -63,6 +66,7 @@ DELETE FROM chat_messages WHERE user_id LIKE 'load:%';
 DELETE FROM access_payments WHERE user_id LIKE 'load:%';
 DELETE FROM access_users WHERE id LIKE 'load:%';
 COMMIT;`);
+  await flushed();
   process.exit(0);
 }
 

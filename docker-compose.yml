@@ -22,6 +22,10 @@ services:
 
   db:
     image: postgres:17-alpine
+    # Commits do not wait for the disk: at peak every panel writes its watched time every few
+    # seconds. A crash loses at most the last instants of those counters (payments are always
+    # re-checked with Mercado Pago).
+    command: [postgres, -c, synchronous_commit=off, -c, shared_buffers=512MB]
     restart: unless-stopped
     environment:
       POSTGRES_USER: apuracao
