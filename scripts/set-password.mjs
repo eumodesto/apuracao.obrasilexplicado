@@ -4,7 +4,7 @@
  * team and administrator e-mails (STAFF_EMAILS / ADMIN_EMAILS), which cannot sign up on the site,
  * and to help someone who forgot theirs. Signs the account out of every device.
  *
- *   docker compose --env-file .env.production exec app node scripts/set-password.mjs pessoa@exemplo.com
+ *   docker compose --env-file .env.production exec app1 node scripts/set-password.mjs pessoa@exemplo.com
  *
  * The password is typed at the prompt (hidden), never passed as an argument.
  * Same hash format as src/lib/access/password.ts.

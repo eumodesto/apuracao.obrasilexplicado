@@ -1,10 +1,28 @@
 # HTTPS with an automatic Let's Encrypt certificate for $DOMAIN, plus any EXTRA_DOMAINS
 # (space-separated; e.g. a temporary 162-243-174-249.sslip.io while the DNS propagates).
-{$DOMAIN} {$EXTRA_DOMAINS} {
-	encode zstd gzip
-	# flush_interval -1 keeps the chat's server-sent events streaming without buffering.
-	reverse_proxy app:3000 {
+(app) {
+	reverse_proxy app1:3000 app2:3000 app3:3000 {
+		# Each visitor stays on one process (its caches, its chat connection).
+		lb_policy cookie rb_lb
+		# A process that stops answering is skipped until it recovers.
+		health_uri /api/health
+		health_interval 5s
+		fail_duration 10s
+		# Keeps the chat's server-sent events streaming without buffering.
 		flush_interval -1
+	}
+}
+
+{$DOMAIN} {$EXTRA_DOMAINS} {
+	# The live chat is not compressed: compressing thousands of open streams costs more CPU than
+	# the tiny events save.
+	@stream path /api/chat/stream
+	handle @stream {
+		import app
+	}
+	handle {
+		encode zstd gzip
+		import app
 	}
 }
 

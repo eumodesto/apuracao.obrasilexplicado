@@ -25,7 +25,7 @@ Rotas públicas, sem verificação de acesso: `/login`, `/api/election/geography
 E-mails listados em `STAFF_EMAILS` (separados por vírgula, sem diferenciar maiúsculas) entram sempre com acesso completo: sem tempo grátis, sem popup e sem pagamento. O selo mostra "Acesso da equipe". Esses e-mails (e os de `ADMIN_EMAILS`) **não podem ser cadastrados pelo site**: a senha deles é definida só no servidor, por quem tem acesso a ele:
 
 ```sh
-docker compose --env-file .env.production exec app node scripts/set-password.mjs pessoa@exemplo.com
+docker compose --env-file .env.production exec app1 node scripts/set-password.mjs pessoa@exemplo.com
 ```
 
 O comando pede a senha duas vezes (sem mostrar), cria a conta se ainda não existir e desconecta a conta de todos os aparelhos. O mesmo comando troca a senha de qualquer pessoa que tenha esquecido a sua. Para tirar alguém da equipe, remova o e-mail da variável e reinicie o servidor.

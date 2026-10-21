@@ -3,7 +3,7 @@
 O sistema foi feito para rodar como **um único processo Node que fica sempre ligado**, com o cache do TSE e o histórico gravados em disco (`.cache/tse`). Por isso o caminho recomendado é uma **Droplet** (servidor virtual) com Docker:
 
 ```text
-Internet → Caddy (HTTPS automático, portas 80/443) → app Next.js (porta 3000) → Postgres
+Internet → Caddy (HTTPS automático, portas 80/443) → 3 processos Next.js (app1, app2, app3) → Postgres e Redis
                                                         └─ volumes: .cache (TSE) e .data
 ```
 
@@ -12,7 +12,7 @@ Arquivos envolvidos:
 | Arquivo                         | Para quê                                                                     |
 | ------------------------------- | ---------------------------------------------------------------------------- |
 | `Dockerfile`                    | Gera a imagem de produção (saída `standalone` do Next.js).                   |
-| `docker-compose.yml`            | Sobe app, Postgres e Caddy, com volumes persistentes.                        |
+| `docker-compose.yml`            | Sobe 3 processos do app, Postgres, Redis e Caddy, com volumes.               |
 | `deploy/Caddyfile`              | HTTPS com certificado Let's Encrypt e redirecionamento do `www`.             |
 | `deploy/env.production.example` | Modelo das variáveis de produção.                                            |
 | `src/app/api/health/route.ts`   | `GET /api/health`: verificação de saúde que não depende do TSE nem do banco. |
@@ -65,7 +65,7 @@ docker compose --env-file .env.production ps
 ```
 
 ```bash
-docker compose --env-file .env.production logs -f app
+docker compose --env-file .env.production logs -f app1 app2 app3
 ```
 
 Abra `https://portaleleicao.com.br/api/health`: deve responder `{"ok":true}`. As tabelas do banco são criadas sozinhas no primeiro uso.
@@ -92,5 +92,5 @@ Para não cuidar do Postgres, crie um **Databases → PostgreSQL** na DigitalOce
 
 ## Limites
 
-- **Uma réplica só.** O cache do TSE, o single-flight e o chat (sem `REDIS_URL`) vivem no processo. Para escalar, cresça a Droplet na vertical. Várias réplicas exigem a coordenação distribuída descrita no README.
+- **Três processos, uma máquina.** Um processo Node usa um núcleo; o teste de carga ficou entre 1.000 e 3.000 pessoas com um só. Os três processos dividem as pessoas (o Caddy mantém cada uma no mesmo processo), o Redis liga o chat entre eles e cada processo tem seu próprio cache e histórico do TSE (`TSE_CACHE_DIR`). Para crescer mais, aumente a Droplet e acrescente processos no `docker-compose.yml` e no `Caddyfile`. Veja os números em [Teste de carga](LOAD_TEST.md).
 - **App Platform** (o PaaS da DigitalOcean) também roda este `Dockerfile`, mas o disco é apagado a cada deploy: o histórico observado e o cache do TSE se perdem, e é preciso um Postgres gerenciado. Por isso a Droplet é a opção recomendada.
