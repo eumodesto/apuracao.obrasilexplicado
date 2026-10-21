@@ -1,0 +1,27 @@
+# Cluster entry: HTTPS for $DOMAIN (and EXTRA_DOMAINS), spread over the worker processes in
+# $UPSTREAMS. Same rules as deploy/Caddyfile.
+(app) {
+	reverse_proxy {$UPSTREAMS} {
+		lb_policy cookie rb_lb
+		health_uri /api/health
+		health_interval 10s
+		health_timeout 20s
+		health_fails 3
+		flush_interval -1
+	}
+}
+
+{$DOMAIN} {$EXTRA_DOMAINS} {
+	@stream path /api/chat/stream
+	handle @stream {
+		import app
+	}
+	handle {
+		encode zstd gzip
+		import app
+	}
+}
+
+www.{$DOMAIN} {
+	redir https://{$DOMAIN}{uri} permanent
+}
