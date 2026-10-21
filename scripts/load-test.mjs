@@ -52,7 +52,7 @@ ALTER TABLE access_users
         .slice(i, i + 1000)
         .join(
           ',\n',
-        )}\nON CONFLICT (id) DO UPDATE SET paid_at=now(), session_id=EXCLUDED.session_id, deleted_at=NULL, paused_at=NULL;`,
+        )}\nON CONFLICT (id) DO UPDATE SET paid_at=now(), session_id=EXCLUDED.session_id, username=EXCLUDED.username, onboarded_at=now(), deleted_at=NULL, paused_at=NULL;`,
     );
   console.log('COMMIT;');
   await flushed();
