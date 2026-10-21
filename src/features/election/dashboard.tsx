@@ -71,13 +71,11 @@ export function Dashboard({
     (uf: string) => {
       selectMapState(uf);
       requestAnimationFrame(() =>
-        document
-          .getElementById('resultados')
-          ?.scrollIntoView({
-            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
-              ? 'instant'
-              : 'smooth',
-          }),
+        document.getElementById('resultados')?.scrollIntoView({
+          behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+            ? 'instant'
+            : 'smooth',
+        }),
       );
     },
     [selectMapState],

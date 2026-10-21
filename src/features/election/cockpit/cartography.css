@@ -1,33 +1,209 @@
-.election-cockpit .electoral-tooltip{width:270px;max-width:calc(100% - 16px);padding:13px;border-radius:11px;background:var(--bg-elevated);border-color:var(--border-default);gap:12px;z-index:10;box-shadow:none;font-size:11px}
-.electoral-tooltip header{display:flex;gap:9px;align-items:flex-start}
-.tooltip-uf{display:inline-flex!important;align-items:center;justify-content:center;font-size:10px;font-weight:600;min-width:27px;height:23px;border-radius:5px;background:var(--bg-hover);color:var(--text-primary)!important}
-.electoral-tooltip header>div{min-width:0;flex:1}
-.electoral-tooltip header strong{display:block;font-size:15px;font-weight:600;font-family:var(--font-editorial)}
-.electoral-tooltip header small{display:block;margin-top:4px;font-size:10px}
-.tooltip-candidates{display:flex;flex-direction:column;gap:12px}
-.tooltip-candidate{display:grid!important;grid-template-columns:32px 1fr auto;gap:8px;align-items:center}
-.tooltip-candidate img,.map-portrait-fallback{width:32px;height:36px;object-fit:cover;border-radius:5px;background:var(--bg-hover)}
-.map-portrait-fallback{display:flex!important;align-items:center;justify-content:center;color:var(--text-primary)!important;font-size:16px}
-.tooltip-candidate>span{display:block!important;min-width:0}
-.tooltip-candidate strong{display:block;font-size:11px;line-height:1.25;font-weight:500}
-.tooltip-candidate small{display:block;margin-top:4px;font-size:9px}
-.tooltip-candidate>b{font-size:14px;font-weight:600;color:var(--text-primary)}
-.electoral-tooltip dl{display:grid;grid-template-columns:1fr auto;gap:7px;border-top:1px solid var(--border-subtle);padding-top:10px;margin:0;color:var(--text-muted);font-size:10px}
-.electoral-tooltip dd{margin:0;color:var(--text-secondary);text-align:right}
-.electoral-tooltip p{font-size:11px;line-height:1.5;color:var(--text-secondary)}
-.map-coverage{position:absolute;bottom:63px;left:72px;color:var(--text-muted);font-size:8px;pointer-events:none}
-.cockpit-map .map-detail-status{bottom:63px;left:8px}
-.cockpit-map .map-coverage{bottom:74px;left:45px}
-.map-candidate-legend{position:absolute;right:8px;top:8px;z-index:4;max-width:280px;padding:8px 10px;border-radius:10px;background:var(--bg-overlay);border:1px solid var(--border-subtle);font-size:9px;color:var(--text-secondary)}
-.map-candidate-legend>b{display:block;font-size:10px;font-weight:500;margin-bottom:5px}
-.map-candidate-legend>div{display:flex;height:5px;gap:1px}.map-candidate-legend i{flex:1;height:5px;border-radius:0}
-.map-candidate-legend>span{display:flex;justify-content:space-between;margin-top:4px;gap:12px}.map-candidate-legend small{font-size:8px}
-.map-panel:has(.map-candidate-legend)>.map-legend{display:none}
-.map-panel:has(.cockpit-map[data-municipal=true])>.map-legend{top:45px}
-.map-panel:not([data-local=true]):has(.cockpit-map[data-municipal=true])>.map-panel-top{top:45px}
-.cockpit-map[data-hover=true] canvas{cursor:pointer}
-.cockpit-map canvas:active{cursor:grabbing}
-.map-callout-lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:1}
-.map-callout-lines line{stroke:var(--border-active);stroke-width:.7}
-.map-callouts{z-index:2}
-@media(max-width:768px){.map-coverage{display:none}.map-candidate-legend{top:100px;max-width:250px}.map-panel:has(.cockpit-map[data-municipal=true])>.map-legend{top:95px}.map-panel:not([data-local=true]):has(.cockpit-map[data-municipal=true])>.map-panel-top{top:58px}}
+.election-cockpit .electoral-tooltip {
+  width: 270px;
+  max-width: calc(100% - 16px);
+  padding: 13px;
+  border-radius: 11px;
+  background: var(--bg-elevated);
+  border-color: var(--border-default);
+  gap: 12px;
+  z-index: 10;
+  box-shadow: none;
+  font-size: 11px;
+}
+.electoral-tooltip header {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+}
+.tooltip-uf {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 27px;
+  height: 23px;
+  border-radius: 5px;
+  background: var(--bg-hover);
+  color: var(--text-primary) !important;
+}
+.electoral-tooltip header > div {
+  min-width: 0;
+  flex: 1;
+}
+.electoral-tooltip header strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: var(--font-editorial);
+}
+.electoral-tooltip header small {
+  display: block;
+  margin-top: 4px;
+  font-size: 10px;
+}
+.tooltip-candidates {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.tooltip-candidate {
+  display: grid !important;
+  grid-template-columns: 32px 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.tooltip-candidate img,
+.map-portrait-fallback {
+  width: 32px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 5px;
+  background: var(--bg-hover);
+}
+.map-portrait-fallback {
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-primary) !important;
+  font-size: 16px;
+}
+.tooltip-candidate > span {
+  display: block !important;
+  min-width: 0;
+}
+.tooltip-candidate strong {
+  display: block;
+  font-size: 11px;
+  line-height: 1.25;
+  font-weight: 500;
+}
+.tooltip-candidate small {
+  display: block;
+  margin-top: 4px;
+  font-size: 9px;
+}
+.tooltip-candidate > b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.electoral-tooltip dl {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 10px;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+}
+.electoral-tooltip dd {
+  margin: 0;
+  color: var(--text-secondary);
+  text-align: right;
+}
+.electoral-tooltip p {
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+.map-coverage {
+  position: absolute;
+  bottom: 63px;
+  left: 72px;
+  color: var(--text-muted);
+  font-size: 8px;
+  pointer-events: none;
+}
+.cockpit-map .map-detail-status {
+  bottom: 63px;
+  left: 8px;
+}
+.cockpit-map .map-coverage {
+  bottom: 74px;
+  left: 45px;
+}
+.map-candidate-legend {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 4;
+  max-width: 280px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-subtle);
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+.map-candidate-legend > b {
+  display: block;
+  font-size: 10px;
+  font-weight: 500;
+  margin-bottom: 5px;
+}
+.map-candidate-legend > div {
+  display: flex;
+  height: 5px;
+  gap: 1px;
+}
+.map-candidate-legend i {
+  flex: 1;
+  height: 5px;
+  border-radius: 0;
+}
+.map-candidate-legend > span {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  gap: 12px;
+}
+.map-candidate-legend small {
+  font-size: 8px;
+}
+.map-panel:has(.map-candidate-legend) > .map-legend {
+  display: none;
+}
+.map-panel:has(.cockpit-map[data-municipal='true']) > .map-legend {
+  top: 45px;
+}
+.map-panel:not([data-local='true']):has(.cockpit-map[data-municipal='true']) > .map-panel-top {
+  top: 45px;
+}
+.cockpit-map[data-hover='true'] canvas {
+  cursor: pointer;
+}
+.cockpit-map canvas:active {
+  cursor: grabbing;
+}
+.map-callout-lines {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+.map-callout-lines line {
+  stroke: var(--border-active);
+  stroke-width: 0.7;
+}
+.map-callouts {
+  z-index: 2;
+}
+@media (max-width: 768px) {
+  .map-coverage {
+    display: none;
+  }
+  .map-candidate-legend {
+    top: 100px;
+    max-width: 250px;
+  }
+  .map-panel:has(.cockpit-map[data-municipal='true']) > .map-legend {
+    top: 95px;
+  }
+  .map-panel:not([data-local='true']):has(.cockpit-map[data-municipal='true']) > .map-panel-top {
+    top: 58px;
+  }
+}

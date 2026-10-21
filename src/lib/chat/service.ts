@@ -1,4 +1,4 @@
-import { randomBytes } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { MemoryChatBus, RedisChatBus } from './bus';
 import { stickerById } from './stickers';
 import { MemoryChatStore, PostgresChatStore } from './store';
@@ -16,6 +16,11 @@ export const HISTORY_SIZE = 100;
 const ONLINE_CACHE_MS = 5_000;
 /** Messages the whole room accepts per second, across servers; beyond it the sender waits. */
 export const ROOM_PER_SECOND = 10;
+/** The same person cannot send the same text again within this window. */
+export const REPEAT_OWN_MS = 10 * 60_000;
+/** A text this long, just sent by anyone, cannot be sent again within REPEAT_ROOM_MS. */
+export const REPEAT_ROOM_MIN_LENGTH = 20;
+export const REPEAT_ROOM_MS = 2 * 60_000;
 /** Live events are grouped and encoded once per interval for every open connection. */
 export const BATCH_MS = 1_500;
 
@@ -133,6 +138,10 @@ async function post(
       error: 'O chat está muito movimentado. Tente de novo em alguns segundos.',
       retryAfterMs: SLOW_MODE_MS,
     };
+  if (!content.sticker) {
+    const repeated = await repeatedText(state, author.userId, content.text);
+    if (repeated) return { ok: false, status: 409, error: repeated };
+  }
   const message = {
     id: now.toString(36) + randomBytes(6).toString('hex'),
     ...author,
@@ -144,6 +153,33 @@ async function post(
   const published = toPublic(message);
   await state.bus.publish({ type: 'message', message: published });
   return { ok: true, message: published };
+}
+
+/** Same text with case, accents, punctuation and spacing ignored. */
+const textKey = (text: string) =>
+  text
+    .normalize('NFD')
+    .replace(/\p{M}/gu, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+/**
+ * No copy-and-paste in the chat: the same person repeating a text, or a long text that someone
+ * else has just sent (shared through the bus, so it holds across servers). Returns the reason.
+ */
+async function repeatedText(state: ChatRuntime, userId: string, text: string) {
+  const key = textKey(text);
+  if (!key) return null;
+  const hash = createHash('sha256').update(key).digest('base64url').slice(0, 22);
+  if (!(await state.bus.claim(`repeat:own:${userId}:${hash}`, REPEAT_OWN_MS)))
+    return 'Você já enviou essa mensagem. Escreva algo diferente.';
+  if (
+    key.length >= REPEAT_ROOM_MIN_LENGTH &&
+    !(await state.bus.claim(`repeat:room:${hash}`, REPEAT_ROOM_MS))
+  )
+    return 'Essa mensagem acabou de ser enviada no chat. Escreva com suas palavras.';
+  return null;
 }
 
 /** One of the room's ROOM_PER_SECOND slots for the current second (shared through the bus). */

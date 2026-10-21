@@ -1186,3 +1186,15 @@ footer {
     transition: none !important;
   }
 }
+
+/* Panel and chat text cannot be selected or copied (see CopyGuard); typing fields still can. */
+html.no-copy body {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+html.no-copy input,
+html.no-copy textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}

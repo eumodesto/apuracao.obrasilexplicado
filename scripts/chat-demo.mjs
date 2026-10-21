@@ -175,38 +175,63 @@ function avatar(i) {
   ]);
 }
 
-const TEXTS = [
-  'Boa noite, pessoal! Começou a apuração 🗳️',
-  'Alguém já viu os números de São Paulo?',
-  'Minas tá apertado demais',
-  'O Nordeste ainda nem começou a pesar',
-  'Calma, gente, é só o começo',
-  'Que nervoso esse mapa mudando de cor',
-  'Já passou de 30% das urnas?',
-  'Vou ficar acordado até o fim hoje',
-  'Bahia chegando agora',
-  'Esse painel tá muito bom, atualiza rápido',
-  'Rio Grande do Sul virou?',
-  'Ainda falta muito voto do interior',
-  'Exterior sempre chega depois',
-  'Diferença caindo a cada atualização',
-  'Alguém mais acompanhando pelo celular?',
-  'Paraná tá definido já',
-  'Que noite, hein',
-  'O TSE tá rápido esse ano',
-  'Goiás mudou bastante desde a última',
-  'Pernambuco com mais de 80% apurado',
-  'Tô de olho na zona eleitoral da minha cidade',
-  'Respeitem as opiniões, por favor',
-  'Mais um café e sigo aqui ☕',
-  'Faltam quantos por cento?',
-  'Votos válidos ou total? Fiquei na dúvida',
-  'Amazonas acabou de atualizar',
-  'Tá parecendo empate técnico',
-  'Vou dormir só quando sair o resultado',
-  'Que mapa bonito por município',
-  'Brasil inteiro acompanhando 🇧🇷',
+const pick = (list) => list[Math.floor(Math.random() * list.length)];
+// Phrases are assembled from parts so they rarely repeat: the chat refuses the same text twice
+// from one person and a long text that someone else has just sent.
+const OPENERS = [
+  'Gente,',
+  'Olha só:',
+  'Atenção:',
+  'Agora sim,',
+  'Nossa,',
+  'Pessoal,',
+  'Eita,',
+  'Vejam:',
+  '',
 ];
+const PLACES = [
+  'São Paulo',
+  'Minas',
+  'Bahia',
+  'Rio',
+  'Paraná',
+  'Pernambuco',
+  'Ceará',
+  'Goiás',
+  'Pará',
+  'Santa Catarina',
+  'Rio Grande do Sul',
+  'Amazonas',
+  'Maranhão',
+  'Espírito Santo',
+  'o exterior',
+];
+const EVENTS = [
+  'acabou de atualizar',
+  'tá apertado',
+  'virou agora',
+  'subiu bastante',
+  'ainda tá lento',
+  'chegou a 80%',
+  'passou da metade',
+  'tá definido',
+  'mudou de cor no mapa',
+  'segue embolado',
+];
+const TAILS = ['', '!', '...', ' 👀', ' 😬', ' 🗳️', '?', ' hein', ' demais'];
+const SHORT = [
+  'Boa noite!',
+  'Que nervoso',
+  'Calma, gente',
+  'Vamo que vamo',
+  'Tô aqui',
+  'Que noite',
+  'Café na mão ☕',
+];
+const message = () =>
+  Math.random() < 0.15
+    ? pick(SHORT)
+    : `${pick(OPENERS)} ${pick(PLACES)} ${pick(EVENTS)}${pick(TAILS)}`.trim();
 const STICKERS = [
   'vai13',
   'vai22',
@@ -221,7 +246,6 @@ const STICKERS = [
   'cafe',
   'brasil',
 ];
-const pick = (list) => list[Math.floor(Math.random() * list.length)];
 
 const bots = Array.from({ length: BOTS }, (_, i) => ({ ...bot(i), cookie: cookieFor(bot(i)) }));
 const origin = new URL(BASE).origin;
@@ -242,13 +266,13 @@ console.log(
   `Fotos salvas: ${photos}/${withPhoto.length}. Conversa por ${MINUTES} min, ~${RATE} msg/s.`,
 );
 
-const stats = { text: 0, sticker: 0, slow: 0, full: 0, other: 0 };
+const stats = { text: 0, sticker: 0, slow: 0, full: 0, repeated: 0, other: 0 };
 const ready = new Map(); // bot id -> time its slow mode ends
 const until = Date.now() + MINUTES * 60_000;
 const report = setInterval(
   () =>
     console.log(
-      `textos ${stats.text} · figurinhas ${stats.sticker} · modo lento ${stats.slow} · sala cheia ${stats.full} · outros erros ${stats.other}`,
+      `textos ${stats.text} · figurinhas ${stats.sticker} · modo lento ${stats.slow} · sala cheia ${stats.full} · repetidas ${stats.repeated} · outros erros ${stats.other}`,
     ),
   15_000,
 );
@@ -260,13 +284,15 @@ while (Date.now() < until) {
     const response = await fetch(`${BASE}/api/chat/messages`, {
       method: 'POST',
       headers: { cookie: b.cookie, origin, 'content-type': 'application/json' },
-      body: JSON.stringify(sticker ? { sticker: pick(STICKERS) } : { text: pick(TEXTS) }),
+      body: JSON.stringify(sticker ? { sticker: pick(STICKERS) } : { text: message() }),
     });
     ready.set(b.id, Date.now() + 5_500);
     if (response.status === 201) stats[sticker ? 'sticker' : 'text']++;
     else if (response.status === 429) {
       const body = await response.json().catch(() => ({}));
       stats[/movimentado/.test(body.error ?? '') ? 'full' : 'slow']++;
+    } else if (response.status === 409) {
+      stats.repeated++;
     } else {
       stats.other++;
       if (stats.other <= 3) console.warn(`  erro ${response.status}: ${await response.text()}`);

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { IBM_Plex_Sans } from 'next/font/google';
+import { CopyGuard } from '@/features/protect/copy-guard';
 import './globals.css';
 
 /** One sober family for the whole site (titles, panel and numbers). */
@@ -30,6 +31,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           Pular para o conteúdo
         </a>
         {children}
+        <CopyGuard />
       </body>
     </html>
   );

@@ -566,6 +566,12 @@ function Composer({
                 setText(event.target.value.replace(/\n/g, ' '));
                 setError(null);
               }}
+              // Messages are typed, not pasted: no copy-and-paste campaigns in the chat.
+              onPaste={(event) => {
+                event.preventDefault();
+                setError('No chat, digite a mensagem: colar texto não é permitido.');
+              }}
+              onDrop={(event) => event.preventDefault()}
               onKeyDown={(event) => {
                 if (event.key === 'Escape') setWriting(false);
                 if (event.key === 'Enter' && !event.shiftKey) {

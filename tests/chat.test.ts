@@ -11,6 +11,7 @@ import {
   reportMessage,
   ROOM_PER_SECOND,
   sendMessage,
+  sendSticker,
 } from '../src/lib/chat/service';
 import { MemoryChatStore, PostgresChatStore } from '../src/lib/chat/store';
 import { cleanMessage, maskInsults, SLOW_MODE_MS } from '../src/lib/chat/text';
@@ -220,5 +221,40 @@ describe('chat under load', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe('no copy-and-paste in the chat', () => {
+  /** Slow mode runs on the real clock; these tests only look at repeated texts. */
+  class NoSlowBus extends MemoryChatBus {
+    async claim(key: string, ms: number) {
+      return key.startsWith('slow:') ? true : super.claim(key, ms);
+    }
+  }
+  it('refuses the same person repeating a text, even with other case, accents or spacing', async () => {
+    const state = instance(new NoSlowBus());
+    expect(await sendMessage(ana, 'Virou em Minas!', state, T0)).toMatchObject({ ok: true });
+    expect(await sendMessage(ana, '  virou em  MINAS ', state, T0 + 6_000)).toMatchObject({
+      ok: false,
+      status: 409,
+    });
+    expect(await sendMessage(ana, 'Agora virou de vez', state, T0 + 12_000)).toMatchObject({
+      ok: true,
+    });
+    // Stickers can repeat.
+    expect(await sendSticker(ana, 'virou', state, T0 + 18_000)).toMatchObject({ ok: true });
+    expect(await sendSticker(ana, 'virou', state, T0 + 24_000)).toMatchObject({ ok: true });
+  });
+
+  it('refuses a long text another account has just sent, but not a short one', async () => {
+    const state = instance(new NoSlowBus());
+    const long = 'Contagem de votos em São Paulo acelerou agora';
+    expect(await sendMessage(ana, long, state, T0)).toMatchObject({ ok: true });
+    expect(await sendMessage(bia, long.toUpperCase(), state, T0 + 1_000)).toMatchObject({
+      ok: false,
+      status: 409,
+    });
+    expect(await sendMessage(ana, 'Vai 13', state, T0 + 6_000)).toMatchObject({ ok: true });
+    expect(await sendMessage(bia, 'vai 13', state, T0 + 7_000)).toMatchObject({ ok: true });
   });
 });
