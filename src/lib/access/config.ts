@@ -75,5 +75,5 @@ export function paidAccessEndsAt() {
 }
 
 /** Longest gap between two requests that still counts as watching. */
-export const MAX_ACTIVITY_GAP_SECONDS = 20;
+export const MAX_ACTIVITY_GAP_SECONDS = 30;
 export const PIX_EXPIRATION_MINUTES = 30;

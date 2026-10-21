@@ -190,27 +190,27 @@ async function person(i) {
       }
     })(),
   );
-  // Map, every 10 s.
+  // Map, every 20 s.
   loops.push(
     (async () => {
       let etag = '';
-      await sleep(Math.random() * 10_000);
+      await sleep(Math.random() * 20_000);
       while (running) {
         const result = await call('map', '/api/election/president/map', cookie, {
           headers: etag ? { 'if-none-match': etag } : {},
         });
         etag = result?.response.headers.get('etag') ?? etag;
-        await sleep(jitter(10_000));
+        await sleep(jitter(20_000));
       }
     })(),
   );
-  // Heartbeat, every 10 s.
+  // Heartbeat, every 20 s.
   loops.push(
     (async () => {
-      await sleep(Math.random() * 10_000);
+      await sleep(Math.random() * 20_000);
       while (running) {
         await call('heartbeat', '/api/access', cookie, { method: 'POST' });
-        await sleep(jitter(10_000));
+        await sleep(jitter(20_000));
       }
     })(),
   );
@@ -219,10 +219,10 @@ async function person(i) {
     loops.push(
       (async () => {
         const uf = ['sp', 'mg', 'rj', 'ba', 'pr', 'rs', 'pe', 'ce'][i % 8];
-        await sleep(Math.random() * 10_000);
+        await sleep(Math.random() * 20_000);
         while (running) {
           await call('municipal', `/api/election/president/municipalities?state=${uf}`, cookie);
-          await sleep(jitter(10_000));
+          await sleep(jitter(20_000));
         }
       })(),
     );

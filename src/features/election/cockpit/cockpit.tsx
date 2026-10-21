@@ -281,7 +281,7 @@ export function ElectionCockpit({
         if (!stopped)
           setNotice('A consulta do mapa está indisponível. O último mapa recebido foi preservado.');
       } finally {
-        if (!stopped) timer = setTimeout(poll, 10000);
+        if (!stopped) timer = setTimeout(poll, 20000);
       }
     };
     void poll();
@@ -373,8 +373,8 @@ export function ElectionCockpit({
           );
       } finally {
         index++;
-        // One UF refreshes every 10 s; several visible UFs take turns every 3 s.
-        if (!stopped) timer = setTimeout(poll, states.length > 1 ? 3000 : 10000);
+        // One UF refreshes every 20 s; several visible UFs take turns every 6 s.
+        if (!stopped) timer = setTimeout(poll, states.length > 1 ? 6000 : 20000);
       }
     };
     void poll();

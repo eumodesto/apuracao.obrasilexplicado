@@ -4,8 +4,8 @@
 
 - mantém o chat aberto (`/api/chat/stream`) e mede o atraso de entrega das mensagens;
 - consulta `/api/election/president` no intervalo que o servidor pede (`X-Poll-After`), com ETag;
-- consulta o mapa a cada 10 s e manda o batimento (`POST /api/access`) a cada 10 s;
-- 30% acompanham os municípios de um estado (a cada 10 s);
+- consulta o mapa a cada 20 s e manda o batimento (`POST /api/access`) a cada 20 s, como o painel;
+- 30% acompanham os municípios de um estado (a cada 20 s);
 - 20% escrevem no chat (uma mensagem a cada 5 a 60 s).
 
 As contas de teste têm id `load:N` e nome de usuário `cargaN`, já pagas e com cadastro feito.

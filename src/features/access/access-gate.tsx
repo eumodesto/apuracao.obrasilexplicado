@@ -5,7 +5,8 @@ import { brl, clock } from './format';
 import './access.css';
 
 /** Also how fast a device notices that the account signed in somewhere else. */
-const HEARTBEAT_MS = 10000;
+// Every 20 s: result requests also count watched time, so this mostly checks the session.
+const HEARTBEAT_MS = 20000;
 const PAYMENT_POLL_MS = 4000;
 
 type Pix = {
