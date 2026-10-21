@@ -11,19 +11,22 @@ export function Avatar({
   name,
   color,
   size = 36,
+  label,
   className,
 }: {
   photo: string | null;
   name: string;
   color: string;
   size?: number;
+  /** Shown instead of the name's first letter (e.g. the party number). */
+  label?: string;
   className?: string;
 }) {
   const [failed, setFailed] = useState<string | null>(null);
   const style = {
     width: size,
     height: size,
-    fontSize: Math.round(size * 0.44),
+    fontSize: Math.round(size * (label && label.length > 1 ? 0.38 : 0.44)),
     '--avatar': color,
   } as React.CSSProperties;
   const classes = className ? `avatar ${className}` : 'avatar';
@@ -43,7 +46,7 @@ export function Avatar({
     );
   return (
     <span className={`${classes} is-initial`} style={style} aria-hidden="true">
-      {name.replace(/^@/, '').charAt(0).toUpperCase() || '?'}
+      {label || name.replace(/^@/, '').charAt(0).toUpperCase() || '?'}
     </span>
   );
 }

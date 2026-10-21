@@ -30,7 +30,7 @@ export const POST = withAdmin<{ params: Promise<{ id: string }> }>(
     } else if (action === 'unpause') {
       await store.setPaused(id, null);
     } else if (action === 'remove_photo') {
-      if (user.photoVersion === null)
+      if (user.photoVersion == null)
         return Response.json({ error: 'A conta não tem foto.' }, { status: 409 });
       await photoStore().remove(photoKey(id));
       await store.setPhoto(id, null);

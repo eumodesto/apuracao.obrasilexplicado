@@ -7,6 +7,62 @@ const OUTPUT = 512;
 
 type Shot = { blob: Blob; url: string };
 
+/**
+ * Area of the picture without flat borders (white, black or any single color, as in images with
+ * a frame or margins), so the photo fills the whole circle.
+ */
+function contentBox(source: CanvasImageSource, width: number, height: number) {
+  const full = { x: 0, y: 0, width, height };
+  const scale = Math.min(1, 200 / Math.max(width, height));
+  const w = Math.max(1, Math.round(width * scale)),
+    h = Math.max(1, Math.round(height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const context = canvas.getContext('2d', { willReadFrequently: true });
+  if (!context) return full;
+  context.drawImage(source, 0, 0, w, h);
+  let data: Uint8ClampedArray;
+  try {
+    data = context.getImageData(0, 0, w, h).data;
+  } catch {
+    return full;
+  }
+  // The border color is the top-left corner's.
+  const [r, g, b] = [data[0], data[1], data[2]];
+  const flat = (i: number) =>
+    Math.abs(data[i] - r) + Math.abs(data[i + 1] - g) + Math.abs(data[i + 2] - b) < 60;
+  // A row or column is border when almost all of its pixels match that color.
+  const rowFlat = (y: number) => {
+    let same = 0;
+    for (let x = 0; x < w; x++) if (flat((y * w + x) * 4)) same++;
+    return same >= w * 0.97;
+  };
+  const columnFlat = (x: number, top: number, bottom: number) => {
+    let same = 0;
+    for (let y = top; y <= bottom; y++) if (flat((y * w + x) * 4)) same++;
+    return same >= (bottom - top + 1) * 0.97;
+  };
+  let top = 0,
+    bottom = h - 1,
+    left = 0,
+    right = w - 1;
+  while (top < bottom && rowFlat(top)) top++;
+  while (bottom > top && rowFlat(bottom)) bottom--;
+  while (left < right && columnFlat(left, top, bottom)) left++;
+  while (right > left && columnFlat(right, top, bottom)) right--;
+  // Nothing (or almost nothing) left: a plain picture, keep it whole.
+  if (right - left < w * 0.2 || bottom - top < h * 0.2) return full;
+  // One extra pixel in, so no trace of the border stays at the edge.
+  const inset = (left > 0 || top > 0 || right < w - 1 || bottom < h - 1 ? 1 : 0) / scale;
+  return {
+    x: left / scale + inset,
+    y: top / scale + inset,
+    width: (right - left + 1) / scale - inset * 2,
+    height: (bottom - top + 1) / scale - inset * 2,
+  };
+}
+
 /** Crops the center square of an image or video frame into a JPEG. */
 function square(
   source: CanvasImageSource,
@@ -14,7 +70,8 @@ function square(
   height: number,
   mirror: boolean,
 ): Promise<Blob | null> {
-  const side = Math.min(width, height);
+  const box = contentBox(source, width, height);
+  const side = Math.min(box.width, box.height);
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = OUTPUT;
   const context = canvas.getContext('2d');
@@ -26,8 +83,8 @@ function square(
   }
   context.drawImage(
     source,
-    (width - side) / 2,
-    (height - side) / 2,
+    box.x + (box.width - side) / 2,
+    box.y + (box.height - side) / 2,
     side,
     side,
     0,

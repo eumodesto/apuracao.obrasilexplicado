@@ -20,7 +20,7 @@ export const photoKey = (userId: string) =>
 
 /** "key.version": what chat messages carry; the version changes the address on every new photo. */
 export const photoRef = (user: Pick<AccessUser, 'id' | 'photoVersion'>) =>
-  user.photoVersion === null ? null : `${photoKey(user.id)}.${user.photoVersion.toString(36)}`;
+  user.photoVersion == null ? null : `${photoKey(user.id)}.${user.photoVersion.toString(36)}`;
 
 export const photoUrl = (ref: string | null) => (ref ? `/api/chat/photo/${ref}` : null);
 

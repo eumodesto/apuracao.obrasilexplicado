@@ -13,7 +13,7 @@ import { brl } from '@/features/access/format';
 import { STICKERS, stickerById, type Sticker } from '@/lib/chat/stickers';
 import { MAX_MESSAGE_LENGTH } from '@/lib/chat/text';
 import type { PublicMessage } from '@/lib/chat/types';
-import { partyByCode } from '@/lib/profile/parties';
+import { partyByCode, type Party } from '@/lib/profile/parties';
 import { Avatar } from './avatar';
 import { PhotoCapture } from './photo-capture';
 import './chat.css';
@@ -247,18 +247,6 @@ export function ChatDock() {
           </div>
           <button
             type="button"
-            className="chat-me"
-            onClick={() => setCapturing(true)}
-            aria-label={myPhoto ? 'Trocar sua foto de perfil' : 'Tirar sua foto de perfil'}
-            title="Sua foto no chat"
-          >
-            <Avatar photo={myPhoto} name={me ?? '?'} color={myColor} size={40} />
-            <span className="chat-me-plus" aria-hidden="true">
-              +
-            </span>
-          </button>
-          <button
-            type="button"
             className="chat-close"
             onClick={() => setOpen(false)}
             aria-label="Fechar o chat"
@@ -282,6 +270,7 @@ export function ChatDock() {
                 <Avatar
                   photo={message.photo}
                   name={message.username}
+                  label={party?.number}
                   color={party?.color ?? NO_PARTY_COLOR}
                   size={36}
                   className="chat-avatar"
@@ -396,7 +385,13 @@ export function ChatDock() {
         )}
 
         {canWrite ? (
-          <Composer onSent={(message) => setMessages((current) => merge(current, [message]))} />
+          <Composer
+            me={me ?? '?'}
+            photo={myPhoto}
+            party={partyByCode(myParty)}
+            onPhoto={() => setCapturing(true)}
+            onSent={(message) => setMessages((current) => merge(current, [message]))}
+          />
         ) : (
           <div className="chat-locked">
             <p>Você está no tempo grátis: dá para ler o chat, mas não escrever.</p>
@@ -437,13 +432,27 @@ function StickerCard({ sticker }: { sticker: Sticker }) {
   );
 }
 
-function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
+function Composer({
+  me,
+  photo,
+  party,
+  onSent,
+  onPhoto,
+}: {
+  me: string;
+  photo: string | null;
+  party: Party | null;
+  onSent: (message: PublicMessage) => void;
+  /** Opens the camera / upload to change the profile photo. */
+  onPhoto: () => void;
+}) {
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [waitUntil, setWaitUntil] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const [tray, setTray] = useState(false);
+  const [writing, setWriting] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
   const waiting = Math.max(0, Math.ceil((waitUntil - now) / 1000));
 
@@ -455,6 +464,13 @@ function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
     }, 250);
     return () => clearInterval(timer);
   }, [waitUntil]);
+
+  const openField = () => {
+    setWriting(true);
+    setTray(false);
+    // The field can take focus once its panel is no longer inert.
+    requestAnimationFrame(() => field.current?.focus());
+  };
 
   const post = async (content: { text: string } | { sticker: string }) => {
     if (sending || waiting > 0) return;
@@ -482,17 +498,26 @@ function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
       setError('Falha de conexão. Tente de novo.');
     } finally {
       setSending(false);
-      field.current?.focus();
+      if (writing) field.current?.focus();
     }
   };
 
   const submit = (event?: React.FormEvent) => {
     event?.preventDefault();
+    if (!writing) return openField();
     const value = text.trim();
     if (value) post({ text: value });
+    else field.current?.focus();
   };
 
   const left = MAX_MESSAGE_LENGTH - text.length;
+  const status = sending
+    ? 'Enviando…'
+    : waiting > 0
+      ? `Modo lento · escreva de novo em ${waiting}s`
+      : party
+        ? `Apoia o ${party.number} · ${party.code}`
+        : 'No chat ao vivo';
   return (
     <form className="chat-composer" onSubmit={submit}>
       {tray && (
@@ -520,71 +545,143 @@ function Composer({ onSent }: { onSent: (message: PublicMessage) => void }) {
           {error}
         </p>
       )}
-      <div className="chat-input">
-        <label className="sr-only" htmlFor="chat-text">
-          Mensagem
-        </label>
-        <textarea
-          ref={field}
-          id="chat-text"
-          rows={1}
-          value={text}
-          maxLength={MAX_MESSAGE_LENGTH}
-          placeholder="Escreva no chat…"
-          enterKeyHint="send"
-          onChange={(event) => {
-            setText(event.target.value.replace(/\n/g, ' '));
-            setError(null);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === 'Enter' && !event.shiftKey) {
-              event.preventDefault();
-              submit();
-            }
-          }}
-        />
-        {text.trim() ? (
-          <button type="submit" disabled={sending || waiting > 0}>
-            {waiting > 0 ? `${waiting}s` : 'Enviar'}
-          </button>
-        ) : (
+      <div className={writing ? 'chat-dock is-writing' : 'chat-dock'}>
+        {/* Opens upward: the field sits above the dock row. */}
+        <div className="chat-dock-field" inert={!writing}>
+          <div>
+            <label className="sr-only" htmlFor="chat-text">
+              Mensagem
+            </label>
+            <textarea
+              ref={field}
+              id="chat-text"
+              rows={3}
+              value={text}
+              maxLength={MAX_MESSAGE_LENGTH}
+              placeholder="Escreva no chat…"
+              enterKeyHint="send"
+              onChange={(event) => {
+                setText(event.target.value.replace(/\n/g, ' '));
+                setError(null);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') setWriting(false);
+                if (event.key === 'Enter' && !event.shiftKey) {
+                  event.preventDefault();
+                  submit();
+                }
+              }}
+            />
+            <button
+              type="button"
+              className="chat-dock-close"
+              onClick={() => setWriting(false)}
+              aria-label="Fechar o campo de mensagem"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="2" />
+              </svg>
+            </button>
+            <p className={left <= 20 ? 'chat-counter is-low' : 'chat-counter'}>{left} caracteres</p>
+          </div>
+        </div>
+        <div className="chat-dock-row">
           <button
             type="button"
-            className={tray ? 'chat-sticker-button is-open' : 'chat-sticker-button'}
+            className="chat-me"
+            onClick={onPhoto}
+            aria-label={photo ? 'Trocar sua foto de perfil' : 'Colocar sua foto de perfil'}
+            title="Tirar foto ou enviar uma imagem"
+          >
+            {/* Without a photo, the party number on the party color. */}
+            <Avatar
+              photo={photo}
+              name={me}
+              label={party?.number}
+              color={party?.color ?? NO_PARTY_COLOR}
+              size={38}
+            />
+            <span className="chat-me-plus" aria-hidden="true">
+              <svg width="11" height="11" viewBox="0 0 24 24">
+                <path
+                  d="M3 8h4l2-3h6l2 3h4v12H3V8Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinejoin="round"
+                />
+                <circle
+                  cx="12"
+                  cy="13.5"
+                  r="3"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                />
+              </svg>
+            </span>
+          </button>
+          <div className="chat-dock-who">
+            <b>{me}</b>
+            {/* Keyed so each new status slides in. */}
+            <span key={status}>{status}</span>
+          </div>
+          <button
+            type="button"
+            className={tray ? 'chat-dock-button is-open' : 'chat-dock-button'}
             onClick={() => setTray(!tray)}
             aria-expanded={tray}
             aria-controls="chat-stickers"
+            aria-label="Figurinhas"
+            title="Figurinhas"
             disabled={waiting > 0}
           >
-            {waiting > 0 ? (
-              `${waiting}s`
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M14 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h7l8-8V6a3 3 0 0 0-3-3h-4Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M13 21v-5a3 3 0 0 1 3-3h5M8.5 10h.01M14.5 10h.01M8.5 14.5s1.2 1.5 3 1.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+          <button
+            type="submit"
+            className="chat-dock-button is-primary"
+            disabled={writing && (sending || waiting > 0)}
+          >
+            {writing ? (
+              <>
+                <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M3 11.5 21 3l-8.5 18-2-7.5L3 11.5Z" fill="currentColor" />
+                </svg>
+                {waiting > 0 ? `${waiting}s` : 'Enviar'}
+              </>
             ) : (
               <>
-                <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                <svg width="15" height="15" viewBox="0 0 24 24" aria-hidden="true">
                   <path
-                    d="M14 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h7l8-8V6a3 3 0 0 0-3-3h-4Z"
+                    d="M4 5h16v11H9l-5 4V5Z"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     strokeLinejoin="round"
                   />
-                  <path
-                    d="M13 21v-5a3 3 0 0 1 3-3h5M8.5 10h.01M14.5 10h.01M8.5 14.5s1.2 1.5 3 1.5"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
                 </svg>
-                Figurinha
+                Escrever
               </>
             )}
           </button>
-        )}
+        </div>
       </div>
-      <p className={left <= 20 ? 'chat-counter is-low' : 'chat-counter'}>
-        {waiting > 0 ? 'Modo lento: uma mensagem a cada 5 segundos.' : `${left} caracteres`}
-      </p>
     </form>
   );
 }
