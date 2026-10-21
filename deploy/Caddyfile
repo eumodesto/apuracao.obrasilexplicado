@@ -4,10 +4,12 @@
 	reverse_proxy app1:3000 app2:3000 app3:3000 {
 		# Each visitor stays on one process (its caches, its chat connection).
 		lb_policy cookie rb_lb
-		# A process that stops answering is skipped until it recovers.
+		# Only a process that really stops answering is skipped: a busy one at peak is slow, not
+		# down, and dropping all three at once answered 503 to everyone in the load test.
 		health_uri /api/health
-		health_interval 5s
-		fail_duration 10s
+		health_interval 10s
+		health_timeout 20s
+		health_fails 3
 		# Keeps the chat's server-sent events streaming without buffering.
 		flush_interval -1
 	}
