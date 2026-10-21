@@ -329,7 +329,7 @@ export class PostgresAccessStore implements AccessStore {
   private ready: Promise<unknown> | null = null;
   constructor(url: string) {
     // `prepare: false` keeps it compatible with transaction poolers such as Neon and Supabase.
-    this.sql = postgres(url, { prepare: false, max: 10, idle_timeout: 20 });
+    this.sql = postgres(url, { prepare: false, onnotice: () => {}, max: 10, idle_timeout: 20 });
   }
 
   private schema() {

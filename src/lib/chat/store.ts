@@ -91,7 +91,7 @@ export class PostgresChatStore implements ChatStore {
   private sql;
   private ready: Promise<unknown> | null = null;
   constructor(url: string) {
-    this.sql = postgres(url, { prepare: false, max: 3, idle_timeout: 20 });
+    this.sql = postgres(url, { prepare: false, onnotice: () => {}, max: 3, idle_timeout: 20 });
   }
 
   private schema() {
