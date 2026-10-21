@@ -47,4 +47,4 @@ cd /opt/apuracao && docker run --rm -v "$PWD/scripts:/s:ro" node:24-bookworm-sli
 | 5.000   | 0,1 s        | 0,3 s         | 0     | 1,0 s          |
 | 10.000  | 0,025 s      | 0,27 s        | 0     | 0,9 s          |
 
-Com 10.000 pessoas, a máquina de entrada usou ~2 de 8 núcleos (Caddy ~1,6; Postgres ~0,2). Um dos workers () perdeu 20–28% da CPU para vizinhos da DigitalOcean (coluna do ) e ficou com pouca folga; o outro, com 0–6%, ficou ~60% ocioso.
+Com 10.000 pessoas, a máquina de entrada usou ~2 de 8 núcleos (Caddy ~1,6; Postgres ~0,2). Um dos workers (`gota8v`) perdeu 20–28% da CPU para vizinhos da DigitalOcean (coluna `st` do `vmstat`) e ficou com pouca folga; o outro, com 0–6%, ficou ~60% ocioso.
