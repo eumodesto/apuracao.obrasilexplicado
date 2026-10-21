@@ -1,4 +1,11 @@
-import { adminEmails, freeSeconds, paidAccessEndsAt, priceBrl, staffEmails } from './config';
+import {
+  adminEmails,
+  freeSeconds,
+  openAccess,
+  paidAccessEndsAt,
+  priceBrl,
+  staffEmails,
+} from './config';
 import type { AccessStatus, AccessUser } from './types';
 
 export const isAdmin = (user: Pick<AccessUser, 'email' | 'deletedAt' | 'pausedAt'>) =>
@@ -24,7 +31,7 @@ export function accessStatus(
   waiting = false,
   staff = isStaff(user),
 ): AccessStatus {
-  const paid = staff || hasPaidAccess(user, now, limits.endsAt),
+  const paid = staff || openAccess() || hasPaidAccess(user, now, limits.endsAt),
     remainingSeconds = paid ? 0 : Math.max(0, Math.ceil(limits.free - user.freeSecondsUsed));
   return {
     state: paid ? 'paid' : remainingSeconds > 0 ? 'free' : 'locked',

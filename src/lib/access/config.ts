@@ -67,6 +67,12 @@ export function countStartsAt() {
 /** Whether the public count has started (the panel replaces the countdown). */
 export const countIsOpen = (now = Date.now()) => now >= countStartsAt();
 
+/**
+ * Testing switch (OPEN_ACCESS=true): every signed-in account gets full access, as if paid, and can
+ * write in the chat. No free time, no payment. Turn it off before the count.
+ */
+export const openAccess = () => process.env.OPEN_ACCESS === 'true';
+
 /** Paid access lasts until the end of the count, not for a fixed duration. */
 export function paidAccessEndsAt() {
   const value = Date.parse(process.env.PAID_ACCESS_ENDS_AT || '2026-10-31T23:59:59-03:00');

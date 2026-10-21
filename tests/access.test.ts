@@ -534,6 +534,25 @@ describe('activity writes at peak', () => {
   });
 });
 
+describe('open access for testing', () => {
+  afterEach(() => vi.unstubAllEnvs());
+  it('gives everyone full access while OPEN_ACCESS=true, and only then', () => {
+    const user = {
+      ...profile,
+      ...blankProfile,
+      freeSecondsUsed: 9_999,
+      lastSeenAt: null,
+      paidAt: null,
+      paymentId: null,
+    };
+    expect(accessStatus(user, T0, limits).state).toBe('locked');
+    vi.stubEnv('OPEN_ACCESS', 'true');
+    expect(accessStatus(user, T0, limits).state).toBe('paid');
+    vi.stubEnv('OPEN_ACCESS', 'false');
+    expect(accessStatus(user, T0, limits).state).toBe('locked');
+  });
+});
+
 describe('team access', () => {
   afterEach(() => vi.unstubAllEnvs());
   it('gives STAFF_EMAILS full access without free time or payment, ignoring case', async () => {
