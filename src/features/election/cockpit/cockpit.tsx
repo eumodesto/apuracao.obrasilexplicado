@@ -1,4 +1,5 @@
 'use client';
+import { publishNational } from '@/features/election/live-summary';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Brand } from '@/components/brand';
@@ -133,6 +134,8 @@ export function ElectionCockpit({
   const root = useRef<HTMLDivElement>(null);
   const etag = useRef('');
   const live = useElection('scope=br', initial);
+  // The chat on phones shows a live summary from this same poll.
+  useEffect(() => publishNational(live.data), [live.data]);
   const abroad = useElection(historyId ? null : 'scope=exterior');
   const detailQuery = selection.exterior
     ? selection.town

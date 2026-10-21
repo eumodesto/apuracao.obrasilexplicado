@@ -15,6 +15,7 @@ import { MAX_MESSAGE_LENGTH } from '@/lib/chat/text';
 import type { PublicMessage } from '@/lib/chat/types';
 import { partyByCode, type Party } from '@/lib/profile/parties';
 import { Avatar } from './avatar';
+import { LiveSummary } from '@/features/election/live-summary';
 import { PhotoCapture } from './photo-capture';
 import './chat.css';
 
@@ -71,6 +72,8 @@ export function ChatDock() {
   const canWrite = status.state !== 'locked' || serverCanWrite;
   const [connected, setConnected] = useState(false);
   const [unread, setUnread] = useState(0);
+  // Phones: the chat fills the screen ("Tela cheia") or leaves the live summary on top.
+  const [full, setFull] = useState(false);
   const [atBottom, setAtBottom] = useState(true);
   const [report, setReport] = useState<Report | null>(null);
   const [moderator, setModerator] = useState(false);
@@ -232,7 +235,7 @@ export function ChatDock() {
       {slot && createPortal(launcher, slot)}
       <aside
         id="chat-panel"
-        className={open ? 'chat-panel is-open' : 'chat-panel'}
+        className={['chat-panel', open && 'is-open', full && 'is-full'].filter(Boolean).join(' ')}
         aria-label="Chat ao vivo"
         hidden={!open}
       >
@@ -247,6 +250,15 @@ export function ChatDock() {
                 : 'Reconectando…'}
             </p>
           </div>
+          {/* Phones: summary on top by default; "Tela cheia" hides it, "Resumo" brings it back. */}
+          <button
+            type="button"
+            className="chat-mode"
+            onClick={() => setFull(!full)}
+            aria-pressed={full}
+          >
+            {full ? 'Resumo' : 'Tela cheia'}
+          </button>
           <button
             type="button"
             className="chat-close"
@@ -256,6 +268,7 @@ export function ChatDock() {
             ×
           </button>
         </header>
+        {!full && <LiveSummary />}
 
         <ol className="chat-list" ref={list} onScroll={onScroll} role="log" aria-live="off">
           {messages.length === 0 && (

@@ -50,7 +50,9 @@
       "url": "http://127.0.0.1:3000",
       "env": {
         "COUNT_STARTS_AT": "2026-10-01T00:00:00-03:00",
-        "OPEN_ACCESS": "true"
+        "OPEN_ACCESS": "true",
+        "TSE_SIMULATION": "1",
+        "TSE_SIMULATION_MINUTES": "10"
       }
     },
     {

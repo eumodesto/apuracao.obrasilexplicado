@@ -756,3 +756,93 @@
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* Phones: live summary of the count on top of the chat, and the "Tela cheia" / "Resumo" switch. */
+.chat-mode {
+  display: none;
+  flex: none;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: transparent;
+  color: #eeede8;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.live-summary {
+  display: none;
+}
+@media (max-width: 768px) {
+  .chat-mode {
+    display: inline-flex;
+    align-items: center;
+    margin-left: auto;
+    margin-right: 6px;
+  }
+  .live-summary {
+    display: grid;
+    gap: 6px;
+    padding: 10px 14px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    background: #0b0b0a;
+  }
+  .live-summary.is-empty {
+    color: #87877e;
+    font-size: 13px;
+  }
+  .live-summary-names {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+  }
+  .live-summary-names span:last-child {
+    text-align: right;
+  }
+  .live-summary-names b {
+    color: #eeede8;
+    font-weight: 700;
+  }
+  .live-summary-bar {
+    display: flex;
+    height: 10px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .live-summary-bar span {
+    height: 100%;
+    transition: width 0.6s ease;
+  }
+  .live-summary-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    color: #b6b5ae;
+    font-size: 12px;
+  }
+  .live-summary-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #e31837;
+    animation: live-summary-pulse 1.6s ease-in-out infinite;
+  }
+}
+@keyframes live-summary-pulse {
+  50% {
+    opacity: 0.3;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-summary-dot,
+  .live-summary-bar span {
+    animation: none;
+    transition: none;
+  }
+}
