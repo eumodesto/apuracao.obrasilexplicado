@@ -101,6 +101,10 @@ function Portrait({ candidate }: { candidate: CandidateResult }) {
     />
   );
 }
+const MAP_NOTICE = 'A consulta do mapa está indisponível. O último mapa recebido foi preservado.';
+/** Warnings go away on their own: they are about a moment, not a state to keep on screen. */
+const NOTICE_MS = 10_000;
+
 export function ElectionCockpit({
   initial,
   regions,
@@ -124,6 +128,11 @@ export function ElectionCockpit({
   const [historyId, setHistoryId] = useState('');
   const [historyLoading, setHistoryLoading] = useState(false);
   const [notice, setNotice] = useState('');
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(''), NOTICE_MS);
+    return () => clearTimeout(timer);
+  }, [notice]);
   const [query, setQuery] = useState('');
   const [search, setSearch] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
@@ -279,10 +288,11 @@ export function ElectionCockpit({
               etag.current = response.headers.get('etag') ?? '';
             }
           }
+          // The map answers again: the warning about it no longer applies.
+          if (!stopped) setNotice((current) => (current === MAP_NOTICE ? '' : current));
         }
       } catch {
-        if (!stopped)
-          setNotice('A consulta do mapa está indisponível. O último mapa recebido foi preservado.');
+        if (!stopped) setNotice(MAP_NOTICE);
       } finally {
         if (!stopped) timer = setTimeout(poll, 20000);
       }
@@ -587,7 +597,7 @@ export function ElectionCockpit({
         </div>
       </header>
       {notice && (
-        <div className="cockpit-notice" role="status">
+        <div className="cockpit-notice" role="status" key={notice}>
           {notice}
           <button onClick={() => setNotice('')} aria-label="Fechar aviso">
             ×

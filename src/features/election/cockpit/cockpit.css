@@ -2457,3 +2457,28 @@
     display: none;
   }
 }
+
+/* Warnings float at the bottom as a small toast, never over the result bands at the top. */
+.election-cockpit .cockpit-notice {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: 20px;
+  left: 50%;
+  z-index: 60;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  transform: translateX(-50%);
+}
+@media (max-width: 768px) {
+  .election-cockpit .cockpit-notice {
+    bottom: 84px;
+  }
+}
