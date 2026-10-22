@@ -119,3 +119,15 @@ describe('region rows', () => {
     });
   });
 });
+
+describe('race chart moments', () => {
+  it('keeps the latest run of the count, left to right, one point per share', async () => {
+    const { chartMoments } = await import('../src/features/election/cockpit/cockpit');
+    const run = (values: number[]) => values.map((counted) => ({ counted }));
+    // A first run to 80%, then the history starts over and reaches 40%.
+    const moments = chartMoments(run([1, 20, 50, 80, 0.5, 10, 10, 25, 40]));
+    expect(moments.map((m) => m.counted)).toEqual([0.5, 10, 25, 40]);
+    // Small back-and-forth within a run is sorted, not treated as a restart.
+    expect(chartMoments(run([10, 30, 29.8, 50])).map((m) => m.counted)).toEqual([10, 29.8, 30, 50]);
+  });
+});

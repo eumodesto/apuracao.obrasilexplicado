@@ -105,6 +105,20 @@ const MAP_NOTICE = 'A consulta do mapa está indisponível. O último mapa receb
 /** Warnings go away on their own: they are about a moment, not a state to keep on screen. */
 const NOTICE_MS = 10_000;
 
+/**
+ * The moments the race chart draws: only the latest run of the count (a drop in the counted share
+ * means the history started over, e.g. a correction or a new count), ordered by counted share and
+ * one per share, so the curve always moves left to right.
+ */
+export function chartMoments<T extends { counted: number }>(moments: T[]): T[] {
+  let start = 0;
+  for (let i = 1; i < moments.length; i++)
+    if (moments[i].counted < moments[i - 1].counted - 0.5) start = i;
+  const byShare = new Map<number, T>();
+  for (const moment of moments.slice(start)) byShare.set(moment.counted, moment);
+  return [...byShare.values()].sort((a, b) => a.counted - b.counted);
+}
+
 export function ElectionCockpit({
   initial,
   regions,
@@ -489,7 +503,7 @@ export function ElectionCockpit({
   const series: ChartSeries[] = race
     ? race.finalists.map((side) => ({
         side,
-        points: observed.flatMap((moment) => {
+        points: chartMoments(observed).flatMap((moment) => {
           const candidate = moment.candidates.find((c) => c.id === side.id);
           return candidate ? [{ x: moment.counted, y: candidate.percentage }] : [];
         }),
