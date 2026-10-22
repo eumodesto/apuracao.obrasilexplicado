@@ -101,7 +101,7 @@ export function NotifyForm() {
         </p>
       ) : (
         <p id="notify-help" className="landing-fine">
-          Usamos seu e-mail só para este aviso.
+          Usamos seu e-mail só para este aviso. <a href="/privacidade">Privacidade</a>
         </p>
       )}
     </form>

@@ -1170,7 +1170,7 @@ export function ElectionCockpit({
 
       <footer className="cockpit-footer">
         Resultados Brasil · painel independente, sem vínculo institucional com o TSE · dados
-        oficiais e cartografia IBGE
+        oficiais e cartografia IBGE · <a href="/privacidade">Política de Privacidade</a>
       </footer>
     </div>
   );

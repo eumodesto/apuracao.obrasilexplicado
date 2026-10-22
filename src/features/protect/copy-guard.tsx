@@ -12,7 +12,8 @@ const typing = (target: EventTarget | null) =>
  */
 export function CopyGuard() {
   const pathname = usePathname();
-  const guarded = !pathname.startsWith('/admin');
+  // Moderators copy e-mails and ids; people copy parts of the privacy policy.
+  const guarded = !pathname.startsWith('/admin') && !pathname.startsWith('/privacidade');
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('no-copy', guarded);

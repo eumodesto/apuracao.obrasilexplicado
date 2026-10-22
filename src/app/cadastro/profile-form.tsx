@@ -186,7 +186,10 @@ export function ProfileForm({
           </label>
           <p className="signup-help">
             Opinião política é um dado sensível pela LGPD (art. 11). Ela só é usada para o selo no
-            chat, nunca é vendida nem compartilhada.
+            chat, nunca é vendida nem compartilhada.{' '}
+            <a href="/privacidade" target="_blank" rel="noopener">
+              Política de Privacidade
+            </a>
           </p>
           {errors.consent && (
             <p className="signup-status is-error" role="alert">

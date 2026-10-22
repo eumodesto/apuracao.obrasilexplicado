@@ -120,7 +120,10 @@ export function PasswordForm({
       <p className="login-fine">
         {mode === 'entrar'
           ? 'Esqueceu a senha? Fale com a equipe do Resultados Brasil.'
-          : 'Mínimo de 8 caracteres. Em seguida você escolhe seu nome de usuário.'}
+          : 'Mínimo de 8 caracteres. Em seguida você escolhe seu nome de usuário.'}{' '}
+        <a href="/privacidade" target="_blank" rel="noopener">
+          Política de Privacidade
+        </a>
       </p>
     </form>
   );

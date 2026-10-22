@@ -2482,3 +2482,8 @@
     bottom: 84px;
   }
 }
+
+.cockpit-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
