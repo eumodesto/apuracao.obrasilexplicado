@@ -258,14 +258,14 @@ describe('no copy-and-paste in the chat', () => {
 });
 
 describe('stickers', () => {
-  it('has the neutral Apuração pack for the 13 and the 22, with every picture in place', async () => {
+  it('has the neutral Apuração pack for everyone, with every picture in place', async () => {
     const { existsSync } = await import('node:fs');
     const { STICKERS, stickersFor } = await import('../src/lib/chat/stickers');
     expect(STICKERS).toHaveLength(9);
     expect(stickersFor('PT')).toHaveLength(9);
     expect(stickersFor('PL')).toHaveLength(9);
-    expect(stickersFor('none')).toHaveLength(0);
-    expect(stickersFor(null)).toHaveLength(0);
+    expect(stickersFor('none')).toHaveLength(9);
+    expect(stickersFor(null)).toHaveLength(9);
     for (const sticker of STICKERS)
       expect(existsSync(`public${sticker.image}`), sticker.image).toBe(true);
     const state = instance(new NoSlowBus());
@@ -278,7 +278,7 @@ describe('stickers', () => {
         state,
         T0,
       ),
-    ).toMatchObject({ ok: false, status: 403 });
+    ).toMatchObject({ ok: true });
   });
 
   it('keeps party packs to their party when there are packs again', async () => {

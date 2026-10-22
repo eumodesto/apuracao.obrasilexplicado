@@ -22,11 +22,12 @@ export type Sticker = {
 
 /**
  * Every sticker people can send. Today only the neutral "Apuração" pack (about the count itself, no
- * candidate, party or number), for people who chose the 13 or the 22. The party packs were taken
+ * candidate, party or number), open to everyone: visitors and free accounts are offered access when
+ * they tap one. The party packs were taken
  * out (21/10/2026); partyPack(...) brings one back.
  */
 export const STICKERS: Sticker[] = [
-  ...sharedPack(['PT', 'PL'], 'apuracao', 'Apuração', [
+  ...sharedPack(null, 'apuracao', 'Apuração', [
     ['segura-coracao', 'Segura coração'],
     ['que-contagem', 'Que contagem!'],
     ['tensao-em-tempo-real', 'Tensão em tempo real'],
@@ -39,9 +40,9 @@ export const STICKERS: Sticker[] = [
   ]),
 ];
 
-/** Picture stickers in public/stickers/<folder>/<name>.webp, open to several parties. */
+/** Picture stickers in public/stickers/<folder>/<name>.webp, for these parties (null: everyone). */
 export function sharedPack(
-  parties: string[],
+  parties: string[] | null,
   folder: string,
   title: string,
   items: [name: string, text: string][],
@@ -53,7 +54,7 @@ export function sharedPack(
     from: '#0b6b3a',
     to: '#074c2b',
     image: `/stickers/${folder}/${name}.webp`,
-    parties,
+    ...(parties ? { parties } : {}),
     pack: title,
   }));
 }
