@@ -70,7 +70,10 @@ export function RoundBand({
             role="img"
             aria-label={`${left.name} ${pct(left.percentage)}%, ${right.name} ${pct(right.percentage)}% dos votos válidos`}
           >
-            <span className="band-fill" style={{ ...style(left), width: `${left.percentage}%` }}>
+            <span
+              className={`band-fill${left.votes ? '' : ' is-empty'}`}
+              style={{ ...style(left), width: `${left.percentage}%` }}
+            >
               <b>
                 {pct(left.percentage)}
                 <small>%</small>
@@ -78,7 +81,7 @@ export function RoundBand({
               <em>{votes(left.votes)}</em>
             </span>
             <span
-              className="band-fill is-right"
+              className={`band-fill is-right${right.votes ? '' : ' is-empty'}`}
               style={{ ...style(right), width: `${right.percentage}%` }}
             >
               <em>{votes(right.votes)}</em>
