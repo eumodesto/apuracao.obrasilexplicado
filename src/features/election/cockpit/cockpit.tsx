@@ -1,5 +1,6 @@
 'use client';
 import { publishNational } from '@/features/election/live-summary';
+import { CountTimeline } from './count-timeline';
 import Image from 'next/image';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Brand } from '@/components/brand';
@@ -442,10 +443,18 @@ export function ElectionCockpit({
       })
       .slice(0, 30);
   }, [search, regions]);
+  // Moments already loaded come back at once while scrubbing the timeline.
+  const frameCache = useRef(new Map<string, CockpitFrame>());
   const replay = async (id: string) => {
     if (!id) {
       setHistoryId('');
       setHistorical(null);
+      return;
+    }
+    const cached = frameCache.current.get(id);
+    if (cached) {
+      setHistorical(cached);
+      setHistoryId(id);
       return;
     }
     setHistoryLoading(true);
@@ -454,6 +463,8 @@ export function ElectionCockpit({
       if (!response.ok) throw new Error();
       const next: Payload = await response.json();
       if (!next.frame) throw new Error();
+      if (frameCache.current.size > 120) frameCache.current.clear();
+      frameCache.current.set(id, next.frame);
       setHistorical(next.frame);
       setHistoryId(id);
     } catch {
@@ -883,40 +894,12 @@ export function ElectionCockpit({
               <b>{historyId ? 'VISUALIZANDO HISTÓRICO' : 'AO VIVO'}</b>
               {historyId ? <span>{time(historical?.observedAt)}</span> : <BrasiliaClock />}
             </div>
-            <label>
-              <span className="sr-only">Momento observado da apuração</span>
-              <input
-                aria-label="Momento observado da apuração"
-                type="range"
-                min="0"
-                max={Math.max(0, timeline.length - 1)}
-                value={Math.max(0, selectedIndex)}
-                disabled={timeline.length < 2 || historyLoading}
-                onChange={(e) => {
-                  const index = Number(e.target.value);
-                  void replay(index === timeline.length - 1 ? '' : timeline[index].id);
-                }}
-              />
-              <span>
-                {time(timeline[0]?.observedAt)}{' '}
-                <b className="timeline-ticks" title={`${timeline.length} momentos observados`}>
-                  {timeline
-                    .filter(
-                      (_, i) =>
-                        i > 0 &&
-                        i < timeline.length - 1 &&
-                        i % Math.max(1, Math.floor(timeline.length / 5)) === 0,
-                    )
-                    .slice(0, 4)
-                    .map((t) => (
-                      <span key={t.id} title={t.observedAt}>
-                        {time(t.observedAt).slice(0, 5)}
-                      </span>
-                    ))}
-                </b>{' '}
-                {time(timeline.at(-1)?.observedAt)}
-              </span>
-            </label>
+            <CountTimeline
+              moments={timeline}
+              selectedId={historyId}
+              loading={historyLoading}
+              onSelect={(id) => void replay(id)}
+            />
             <button onClick={() => void replay('')} disabled={!historyId}>
               Voltar ao vivo
             </button>

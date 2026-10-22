@@ -48,6 +48,8 @@ export type BandModel = {
   /** Names in the order of the headline (most voted first), with their side colors. */
   headline: { first: BandSide; second: BandSide; text: string };
   counted: number;
+  /** Round of this result: '1' or '2'. */
+  turn: string;
   remainingSections: number;
   /** Official totalization time, once the round is decided. */
   definedAt: string | null;
@@ -95,6 +97,7 @@ export function roundBand(snapshot: ElectionSnapshot | null): BandModel | null {
     right,
     headline: { first, second, text },
     counted: snapshot.progress.percentageCounted,
+    turn: snapshot.turn ?? '1',
     remainingSections: Math.max(
       0,
       snapshot.progress.totalSections - snapshot.progress.countedSections,

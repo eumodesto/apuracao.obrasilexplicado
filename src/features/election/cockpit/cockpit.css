@@ -2487,3 +2487,118 @@
   color: inherit;
   text-decoration: underline;
 }
+
+/* Count timeline: real-time scale, counted-share area, bubble while scrubbing. */
+.count-timeline {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+.count-timeline.is-empty {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.count-timeline-track {
+  position: relative;
+  height: 26px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.count-timeline-track:focus-visible {
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px var(--status-live);
+}
+.count-timeline-area {
+  position: absolute;
+  inset: 0 0 9px;
+  width: 100%;
+  height: calc(100% - 9px);
+}
+.count-timeline-area polygon {
+  fill: color-mix(in srgb, var(--status-live) 18%, transparent);
+}
+.count-timeline-rail {
+  position: absolute;
+  right: 0;
+  bottom: 7px;
+  left: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+}
+.count-timeline-rail span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--status-live);
+}
+.count-timeline-thumb {
+  position: absolute;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--bg-panel);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--status-live);
+  transform: translateX(-50%);
+  transition: transform 0.12s ease;
+}
+.count-timeline-track:hover .count-timeline-thumb,
+.count-timeline.is-dragging .count-timeline-thumb {
+  transform: translateX(-50%) scale(1.25);
+}
+.count-timeline.is-loading .count-timeline-thumb {
+  box-shadow: 0 0 0 2px var(--text-muted);
+}
+.count-timeline-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  display: grid;
+  gap: 1px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.count-timeline-bubble b {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.count-timeline-marks {
+  position: relative;
+  height: 14px;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+.count-timeline-marks span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.count-timeline-marks span:first-child {
+  transform: none;
+}
+.count-timeline-marks span:last-child {
+  transform: translateX(-100%);
+}
+@media (max-width: 768px) {
+  .count-timeline-track {
+    height: 34px;
+  }
+  .count-timeline-thumb {
+    width: 20px;
+    height: 20px;
+  }
+}

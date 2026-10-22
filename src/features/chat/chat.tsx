@@ -751,32 +751,34 @@ function Composer({
             {/* Keyed so each new status slides in. */}
             <span key={status}>{status}</span>
           </div>
-          <button
-            type="button"
-            className={tray ? 'chat-dock-button is-open' : 'chat-dock-button'}
-            onClick={() => setTray(!tray)}
-            aria-expanded={tray}
-            aria-controls="chat-stickers"
-            aria-label="Figurinhas"
-            title="Figurinhas"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-              <path
-                d="M14 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h7l8-8V6a3 3 0 0 0-3-3h-4Z"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M13 21v-5a3 3 0 0 1 3-3h5M8.5 10h.01M14.5 10h.01M8.5 14.5s1.2 1.5 3 1.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+          {STICKERS.length > 0 && (
+            <button
+              type="button"
+              className={tray ? 'chat-dock-button is-open' : 'chat-dock-button'}
+              onClick={() => setTray(!tray)}
+              aria-expanded={tray}
+              aria-controls="chat-stickers"
+              aria-label="Figurinhas"
+              title="Figurinhas"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M14 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h7l8-8V6a3 3 0 0 0-3-3h-4Z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M13 21v-5a3 3 0 0 1 3-3h5M8.5 10h.01M14.5 10h.01M8.5 14.5s1.2 1.5 3 1.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          )}
           <button
             type="submit"
             className="chat-dock-button is-primary"

@@ -363,3 +363,15 @@
   color: transparent;
   font-size: 0;
 }
+
+/* The progress follows each official update smoothly instead of jumping. */
+.band-progress,
+.band-card-progress span {
+  transition: width 0.8s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .band-progress,
+  .band-card-progress span {
+    transition: none;
+  }
+}

@@ -1,10 +1,10 @@
 import sharp from 'sharp';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { FileAccessStore, PostgresAccessStore } from '../src/lib/access/store';
 import type { AccessStore } from '../src/lib/access/types';
 import { MemoryChatBus } from '../src/lib/chat/bus';
 import { sendMessage, sendSticker, type ChatRuntime } from '../src/lib/chat/service';
-import { STICKERS } from '../src/lib/chat/stickers';
+import { partyPack, STICKERS } from '../src/lib/chat/stickers';
 import { MemoryChatStore } from '../src/lib/chat/store';
 import {
   FilePhotoStore,
@@ -108,6 +108,13 @@ describe('stickers', () => {
     online: null,
   });
   const ana = { userId: 'google:ana', username: 'ana', party: 'PT', photo: 'abc.1' };
+  // The chat has no stickers today; these tests bring one pack in and take it out again.
+  beforeAll(() => {
+    STICKERS.push(...partyPack('PT', '13', '#e0313f', '#8f0f1d', [['lingua', 'Língua de fora']]));
+  });
+  afterAll(() => {
+    STICKERS.splice(0, STICKERS.length);
+  });
 
   it('are sent with the author photo and count for slow mode', async () => {
     const chat = state();

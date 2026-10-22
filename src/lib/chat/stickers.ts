@@ -17,23 +17,13 @@ export type Sticker = {
 };
 
 /**
- * Every sticker people can send. Today only the PT (13) pack: the emoji examples were removed, so
- * people of other parties (or none) have no stickers yet.
+ * Every sticker people can send. Empty: stickers were taken out of the chat (21/10/2026). The
+ * party-pack mechanism stays: add entries with partyPack(...) and their pictures to bring them back.
  */
-export const STICKERS: Sticker[] = [
-  ...partyPack('PT', '13', '#e0313f', '#8f0f1d', [
-    ['o-pai-ta-on', 'O pai tá on'],
-    ['100-lula', '100% Lula'],
-    ['calma-conta-ate-13', 'Tá nervoso? Calma, respira e conta até 13'],
-    ['toma-aqui-tua-anistia', 'Toma aqui tua anistia'],
-    ['coracao', 'Coração com as mãos'],
-    ['abraco-na-estrela', 'Abraço na estrela'],
-    ['lingua', 'Língua de fora'],
-  ]),
-];
+export const STICKERS: Sticker[] = [];
 
 /** Picture stickers kept in public/stickers/<number>/<name>.webp. */
-function partyPack(
+export function partyPack(
   party: string,
   number: string,
   from: string,

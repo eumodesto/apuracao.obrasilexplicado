@@ -27,6 +27,13 @@ const instance = (
   store: ChatStore = new MemoryChatStore(),
 ): ChatRuntime => ({ bus, store, history: null, connections: 0, online: null });
 
+/** Slow mode runs on the real clock; some tests only look at other rules. */
+class NoSlowBus extends MemoryChatBus {
+  async claim(key: string, ms: number) {
+    return key.startsWith('slow:') ? true : super.claim(key, ms);
+  }
+}
+
 describe('message text', () => {
   it('keeps one clean line within the size limit', () => {
     expect(cleanMessage('  Virou!\n\n  Agora   vai  ')).toEqual({ text: 'Virou! Agora vai' });
@@ -225,12 +232,6 @@ describe('chat under load', () => {
 });
 
 describe('no copy-and-paste in the chat', () => {
-  /** Slow mode runs on the real clock; these tests only look at repeated texts. */
-  class NoSlowBus extends MemoryChatBus {
-    async claim(key: string, ms: number) {
-      return key.startsWith('slow:') ? true : super.claim(key, ms);
-    }
-  }
   it('refuses the same person repeating a text, even with other case, accents or spacing', async () => {
     const state = instance(new NoSlowBus());
     expect(await sendMessage(ana, 'Virou em Minas!', state, T0)).toMatchObject({ ok: true });
@@ -241,9 +242,6 @@ describe('no copy-and-paste in the chat', () => {
     expect(await sendMessage(ana, 'Agora virou de vez', state, T0 + 12_000)).toMatchObject({
       ok: true,
     });
-    // Stickers can repeat.
-    expect(await sendSticker(ana, '13-lingua', state, T0 + 18_000)).toMatchObject({ ok: true });
-    expect(await sendSticker(ana, '13-lingua', state, T0 + 24_000)).toMatchObject({ ok: true });
   });
 
   it('refuses a long text another account has just sent, but not a short one', async () => {
@@ -259,29 +257,35 @@ describe('no copy-and-paste in the chat', () => {
   });
 });
 
-describe('party sticker packs', () => {
-  it('lets only the party send its pack, and shows it as a picture sticker', async () => {
-    const { STICKERS, canUseSticker } = await import('../src/lib/chat/stickers');
-    const pack = STICKERS.filter((sticker) => sticker.party === 'PT');
-    expect(pack).toHaveLength(7);
-    expect(pack.every((sticker) => sticker.image?.startsWith('/stickers/13/'))).toBe(true);
-    expect(canUseSticker(pack[0], 'PT')).toBe(true);
-    expect(canUseSticker(pack[0], 'PL')).toBe(false);
-    expect(canUseSticker(pack[0], null)).toBe(false);
-    // The emoji examples are gone: other parties and "none" have no stickers yet.
-    expect(STICKERS.every((sticker) => sticker.party === 'PT')).toBe(true);
-    const state = instance();
-    expect(await sendSticker(ana, '13-lingua', state, T0)).toMatchObject({ ok: true });
-    expect(await sendSticker(bia, '13-lingua', state, T0)).toMatchObject({
+describe('stickers', () => {
+  it('has none in the chat for now', async () => {
+    const { STICKERS } = await import('../src/lib/chat/stickers');
+    expect(STICKERS).toEqual([]);
+    expect(await sendSticker(ana, 'virou', instance(), T0)).toMatchObject({
       ok: false,
-      status: 403,
+      status: 400,
     });
   });
 
-  it('keeps every pack picture in public/stickers', async () => {
-    const { existsSync } = await import('node:fs');
-    const { STICKERS } = await import('../src/lib/chat/stickers');
-    for (const sticker of STICKERS.filter((s) => s.image))
-      expect(existsSync(`public${sticker.image}`), sticker.image).toBe(true);
+  it('keeps party packs to their party when there are packs again', async () => {
+    const { STICKERS, canUseSticker, partyPack } = await import('../src/lib/chat/stickers');
+    const pack = partyPack('PT', '13', '#e0313f', '#8f0f1d', [['teste', 'Teste']]);
+    STICKERS.push(...pack);
+    try {
+      expect(pack[0]).toMatchObject({ id: '13-teste', image: '/stickers/13/teste.webp' });
+      expect(canUseSticker(pack[0], 'PT')).toBe(true);
+      expect(canUseSticker(pack[0], 'PL')).toBe(false);
+      expect(canUseSticker(pack[0], null)).toBe(false);
+      const state = instance(new NoSlowBus());
+      expect(await sendSticker(ana, '13-teste', state, T0)).toMatchObject({ ok: true });
+      // Stickers may repeat (no copy-and-paste rule for them).
+      expect(await sendSticker(ana, '13-teste', state, T0 + 6_000)).toMatchObject({ ok: true });
+      expect(await sendSticker(bia, '13-teste', state, T0)).toMatchObject({
+        ok: false,
+        status: 403,
+      });
+    } finally {
+      STICKERS.splice(0, STICKERS.length);
+    }
   });
 });

@@ -23,7 +23,9 @@ function Headline({ model }: { model: BandModel }) {
     </span>
   );
   return text === 'eleito' ? (
-    <>{name(first)} é eleito no 1º turno</>
+    <>
+      {name(first)} {model.turn === '2' ? 'é eleito presidente' : 'é eleito no 1º turno'}
+    </>
   ) : (
     <>
       {name(first)} e {name(second)} {text}
@@ -96,7 +98,14 @@ export function RoundBand({
             <b>{counted(model.counted)}</b> apurado
           </p>
         </div>
-        <span className="band-progress" style={{ width: `${model.counted}%` }} aria-hidden="true" />
+        {/* Exactly the official share of sections counted, as published by the TSE. */}
+        <span
+          className="band-progress"
+          style={{ width: `${Math.min(100, Math.max(0, model.counted))}%` }}
+          title={`${counted(model.counted)} das seções apuradas (dado oficial do TSE)`}
+          data-counted={model.counted}
+          aria-hidden="true"
+        />
       </div>
 
       {/* Phones: compact card, with a small round photo by each name. */}
@@ -108,8 +117,10 @@ export function RoundBand({
             {model.headline.text === 'vão ao 2º turno'
               ? '2º turno'
               : model.headline.text === 'eleito'
-                ? 'Eleito no 1º turno'
-                : '1º turno'}
+                ? model.turn === '2'
+                  ? 'Eleito no 2º turno'
+                  : 'Eleito no 1º turno'
+                : `${model.turn}º turno`}
             {model.definedAt ? ` · definido às ${clock(model.definedAt)}` : ' · em apuração'}
           </span>
         </div>
