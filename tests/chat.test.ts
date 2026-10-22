@@ -258,18 +258,33 @@ describe('no copy-and-paste in the chat', () => {
 });
 
 describe('stickers', () => {
-  it('has none in the chat for now', async () => {
-    const { STICKERS } = await import('../src/lib/chat/stickers');
-    expect(STICKERS).toEqual([]);
-    expect(await sendSticker(ana, 'virou', instance(), T0)).toMatchObject({
-      ok: false,
-      status: 400,
-    });
+  it('has the neutral Apuração pack for the 13 and the 22, with every picture in place', async () => {
+    const { existsSync } = await import('node:fs');
+    const { STICKERS, stickersFor } = await import('../src/lib/chat/stickers');
+    expect(STICKERS).toHaveLength(9);
+    expect(stickersFor('PT')).toHaveLength(9);
+    expect(stickersFor('PL')).toHaveLength(9);
+    expect(stickersFor('none')).toHaveLength(0);
+    expect(stickersFor(null)).toHaveLength(0);
+    for (const sticker of STICKERS)
+      expect(existsSync(`public${sticker.image}`), sticker.image).toBe(true);
+    const state = instance(new NoSlowBus());
+    expect(await sendSticker(ana, 'apuracao-que-emocao', state, T0)).toMatchObject({ ok: true });
+    expect(await sendSticker(bia, 'apuracao-que-emocao', state, T0)).toMatchObject({ ok: true });
+    expect(
+      await sendSticker(
+        { ...ana, userId: 'google:cid', party: null },
+        'apuracao-que-emocao',
+        state,
+        T0,
+      ),
+    ).toMatchObject({ ok: false, status: 403 });
   });
 
   it('keeps party packs to their party when there are packs again', async () => {
     const { STICKERS, canUseSticker, partyPack } = await import('../src/lib/chat/stickers');
     const pack = partyPack('PT', '13', '#e0313f', '#8f0f1d', [['teste', 'Teste']]);
+    const before = STICKERS.length;
     STICKERS.push(...pack);
     try {
       expect(pack[0]).toMatchObject({ id: '13-teste', image: '/stickers/13/teste.webp' });
@@ -285,7 +300,7 @@ describe('stickers', () => {
         status: 403,
       });
     } finally {
-      STICKERS.splice(0, STICKERS.length);
+      STICKERS.splice(before);
     }
   });
 });

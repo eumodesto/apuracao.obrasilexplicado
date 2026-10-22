@@ -10,13 +10,7 @@ import {
 import { createPortal } from 'react-dom';
 import { BADGE_SLOT_ID, useAccess } from '@/features/access/access-gate';
 import { brl } from '@/features/access/format';
-import {
-  canUseSticker,
-  STICKERS,
-  stickerById,
-  stickersFor,
-  type Sticker,
-} from '@/lib/chat/stickers';
+import { stickerById, stickersFor, type Sticker } from '@/lib/chat/stickers';
 import { MAX_MESSAGE_LENGTH } from '@/lib/chat/text';
 import type { PublicMessage } from '@/lib/chat/types';
 import { partyByCode, type Party } from '@/lib/profile/parties';
@@ -612,16 +606,18 @@ function Composer({
               )}
             </p>
           </div>
+          {/* The packs this person may use, one group per pack title. */}
           {[
-            { title: null, list: STICKERS.filter((sticker) => !sticker.party) },
-            {
-              // Party packs: only people who chose that party at sign-up see them.
-              title: party ? `Exclusivas do ${party.number}` : null,
-              list: STICKERS.filter(
-                (sticker) => sticker.party && canUseSticker(sticker, party?.code),
-              ),
-            },
+            ...stickersFor(party?.code)
+              .reduce((groups, sticker) => {
+                const title =
+                  sticker.pack ?? (sticker.party && party ? `Exclusivas do ${party.number}` : '');
+                groups.set(title, [...(groups.get(title) ?? []), sticker]);
+                return groups;
+              }, new Map<string, Sticker[]>())
+              .entries(),
           ]
+            .map(([title, list]) => ({ title: title || null, list }))
             .filter((group) => group.list.length > 0)
             .map((group) => (
               <div key={group.title ?? 'all'}>
@@ -751,7 +747,7 @@ function Composer({
             {/* Keyed so each new status slides in. */}
             <span key={status}>{status}</span>
           </div>
-          {STICKERS.length > 0 && (
+          {hasPack && (
             <button
               type="button"
               className={tray ? 'chat-dock-button is-open' : 'chat-dock-button'}

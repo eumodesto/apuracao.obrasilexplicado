@@ -113,7 +113,7 @@ describe('stickers', () => {
     STICKERS.push(...partyPack('PT', '13', '#e0313f', '#8f0f1d', [['lingua', 'Língua de fora']]));
   });
   afterAll(() => {
-    STICKERS.splice(0, STICKERS.length);
+    STICKERS.splice(STICKERS.findIndex((sticker) => sticker.id === '13-lingua'));
   });
 
   it('are sent with the author photo and count for slow mode', async () => {
