@@ -776,16 +776,35 @@
   display: none;
 }
 @media (max-width: 768px) {
+  /* Phones: no "Chat ao vivo" title; one short line (people online + buttons) leaves room for
+     the summary of the count. */
+  .chat-header {
+    min-height: 44px;
+    padding: 4px 8px 4px 14px;
+    gap: 8px;
+  }
+  .chat-header h2 {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .chat-online {
+    margin: 0;
+  }
   .chat-mode {
     display: inline-flex;
     align-items: center;
+    min-height: 32px;
     margin-left: auto;
-    margin-right: 6px;
+    padding: 0 12px;
   }
   .live-summary {
     display: grid;
-    gap: 6px;
-    padding: 10px 14px 12px;
+    gap: 10px;
+    padding: 14px 14px 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     background: #0b0b0a;
   }
@@ -793,23 +812,62 @@
     color: #87877e;
     font-size: 13px;
   }
-  .live-summary-names {
+  .live-summary-sides {
     display: flex;
     justify-content: space-between;
-    gap: 8px;
-    font-size: 14px;
-    font-variant-numeric: tabular-nums;
+    gap: 10px;
   }
-  .live-summary-names span:last-child {
+  .live-summary-side {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+  .live-summary-side.is-right {
+    flex-direction: row-reverse;
     text-align: right;
   }
-  .live-summary-names b {
+  .live-summary-side img {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border: 2px solid var(--side);
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: top;
+    background: #1d1d1a;
+  }
+  .live-summary-side > div {
+    display: grid;
+    min-width: 0;
+  }
+  .live-summary-name {
+    overflow: hidden;
     color: #eeede8;
+    font-size: 13px;
     font-weight: 700;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .live-summary-share {
+    color: var(--side);
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+  .live-summary-share small {
+    font-size: 14px;
+  }
+  .live-summary-votes {
+    color: #87877e;
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
   }
   .live-summary-bar {
+    position: relative;
     display: flex;
-    height: 10px;
+    height: 14px;
     overflow: hidden;
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.08);
@@ -818,6 +876,15 @@
     height: 100%;
     transition: width 0.6s ease;
   }
+  .live-summary-half {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 2px;
+    background: #fff;
+    transform: translateX(-50%);
+  }
   .live-summary-progress {
     display: flex;
     align-items: center;
@@ -825,6 +892,9 @@
     margin: 0;
     color: #b6b5ae;
     font-size: 12px;
+  }
+  .live-summary-progress b {
+    color: #eeede8;
   }
   .live-summary-dot {
     width: 7px;

@@ -1,5 +1,6 @@
 'use client';
 import { useSyncExternalStore } from 'react';
+import { editorialName } from '@/features/election/cockpit/editorial-name';
 import { candidateColor } from '@/lib/tse/candidate-colors';
 import type { ElectionResponse } from '@/lib/tse/types';
 
@@ -31,6 +32,7 @@ export const useNational = () =>
     () => null,
   );
 
+const votes = (value: number) => `${value.toLocaleString('pt-BR')} votos`;
 const percent = (value: number) =>
   value.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -48,11 +50,30 @@ export function LiveSummary() {
   const total = top.reduce((sum, c) => sum + c.percentage, 0) || 1;
   return (
     <section className="live-summary" aria-label="Resumo da apuração ao vivo">
-      <div className="live-summary-names">
-        {top.map((candidate) => (
-          <span key={candidate.id} style={{ color: candidateColor(candidate) }}>
-            <b>{candidate.ballotName}</b> {percent(candidate.percentage)}%
-          </span>
+      <div className="live-summary-sides">
+        {top.map((candidate, index) => (
+          <div
+            key={candidate.id}
+            className={index ? 'live-summary-side is-right' : 'live-summary-side'}
+            style={{ '--side': candidateColor(candidate) } as React.CSSProperties}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`/api/election/photo/${candidate.id}`}
+              alt=""
+              width={44}
+              height={44}
+              loading="lazy"
+            />
+            <div>
+              <span className="live-summary-name">{editorialName(candidate.ballotName)}</span>
+              <b className="live-summary-share">
+                {percent(candidate.percentage)}
+                <small>%</small>
+              </b>
+              <span className="live-summary-votes">{votes(candidate.votes)}</span>
+            </div>
+          </div>
         ))}
       </div>
       <div className="live-summary-bar" aria-hidden="true">
@@ -65,10 +86,11 @@ export function LiveSummary() {
             }}
           />
         ))}
+        <i className="live-summary-half" />
       </div>
       <p className="live-summary-progress">
         <span className="live-summary-dot" aria-hidden="true" />
-        {percent(snapshot.progress.percentageCounted)}% das urnas apuradas
+        <b>{percent(snapshot.progress.percentageCounted)}%</b> das urnas apuradas
         {snapshot.status === 'finished' ? ' · apuração encerrada' : ' · ao vivo'}
       </p>
     </section>
