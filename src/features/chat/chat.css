@@ -1036,3 +1036,90 @@
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+.chat-dock-party {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #87877e;
+  font: inherit;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  animation: chat-dock-status 0.16s ease-out;
+}
+.chat-dock-party:hover,
+.chat-dock-party:focus-visible {
+  color: #eeede8;
+  text-decoration: underline;
+}
+.chat-party-picker {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: #1a1a17;
+  color: #eeede8;
+  font-size: 14px;
+}
+.chat-party-picker .chat-stickers-head p {
+  font-weight: 700;
+}
+.chat-party-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.chat-party-options button {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: #22221f;
+  color: #eeede8;
+  font: inherit;
+  cursor: pointer;
+}
+.chat-party-options button:last-child {
+  grid-column: 1 / -1;
+}
+.chat-party-options button b {
+  color: var(--party, inherit);
+}
+.chat-party-options button.is-selected {
+  border-color: var(--party, #f5c518);
+  box-shadow: inset 0 0 0 1px var(--party, #f5c518);
+  background: #2a2a26;
+}
+.chat-party-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #b9b8b1;
+  font-size: 12px;
+  line-height: 1.4;
+}
+.chat-party-error {
+  margin: 0;
+  color: #ff8a80;
+  font-size: 12px;
+}
+.chat-party-save {
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: #f5c518;
+  color: #151a17;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.chat-party-save:disabled {
+  opacity: 0.6;
+}

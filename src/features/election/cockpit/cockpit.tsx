@@ -18,6 +18,7 @@ import { zoneLabel, zoneNeighborhood, zoneNeighborhoodSource } from './zone-labe
 import './cockpit.css';
 import './editorial.css';
 import { editorialName } from './editorial-name';
+import { OnlinePartiesBadge } from '@/features/chat/online-parties';
 import { RoundBand } from '@/features/landing/round-band-view';
 import { roundBand } from '@/features/landing/round-band-model';
 import { countedLabel, RaceCards, RaceWaiting, type ChartSeries } from '../race/race-cards';
@@ -603,6 +604,7 @@ export function ElectionCockpit({
             </div>
           )}
         </div>
+        <OnlinePartiesBadge />
         <div className="cockpit-status">
           <b>{historyId ? 'VISUALIZANDO HISTÓRICO' : stale ? 'AGUARDANDO TSE' : 'AO VIVO'}</b>
           <span>

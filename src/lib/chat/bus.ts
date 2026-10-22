@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import Redis from 'ioredis';
-import type { ChatBus, ChatEvent } from './types';
+import type { ChatBus, ChatEvent, PartyCounts } from './types';
 
 /** Single-process bus: enough for `npm run dev` and one server. */
 export class MemoryChatBus implements ChatBus {
@@ -27,10 +27,15 @@ export class MemoryChatBus implements ChatBus {
   async online(local: number) {
     return local;
   }
+
+  async partyOnline(local: PartyCounts) {
+    return { ...local };
+  }
 }
 
 const CHANNEL = 'chat:events';
 const ONLINE_PREFIX = 'chat:online:';
+const PARTY_PREFIX = 'chat:parties:';
 const ONLINE_TTL_SECONDS = 30;
 
 /**
@@ -95,6 +100,37 @@ export class RedisChatBus implements ChatBus {
     } while (cursor !== '0');
     const counts = keys.length ? await this.publisher.mget(keys) : [];
     return counts.reduce((sum, value) => sum + (Number(value) || 0), 0);
+  }
+
+  async partyOnline(local: PartyCounts) {
+    await this.publisher.set(
+      PARTY_PREFIX + this.serverId,
+      JSON.stringify(local),
+      'EX',
+      ONLINE_TTL_SECONDS,
+    );
+    const keys = await this.keys(PARTY_PREFIX);
+    const total: PartyCounts = { PT: 0, PL: 0, other: 0 };
+    for (const value of keys.length ? await this.publisher.mget(keys) : []) {
+      try {
+        const counts = JSON.parse(value ?? '{}') as Partial<PartyCounts>;
+        for (const key of ['PT', 'PL', 'other'] as const) total[key] += Number(counts[key]) || 0;
+      } catch {
+        // A broken entry expires on its own.
+      }
+    }
+    return total;
+  }
+
+  private async keys(prefix: string) {
+    const keys: string[] = [];
+    let cursor = '0';
+    do {
+      const [next, batch] = await this.publisher.scan(cursor, 'MATCH', prefix + '*', 'COUNT', 100);
+      keys.push(...batch);
+      cursor = next;
+    } while (cursor !== '0');
+    return keys;
   }
 
   async close() {

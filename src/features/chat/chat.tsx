@@ -13,9 +13,10 @@ import { brl } from '@/features/access/format';
 import { stickerById, stickersFor, type Sticker } from '@/lib/chat/stickers';
 import { MAX_MESSAGE_LENGTH } from '@/lib/chat/text';
 import type { PublicMessage } from '@/lib/chat/types';
-import { partyByCode, type Party } from '@/lib/profile/parties';
+import { NO_PARTY, PARTIES, partyByCode, type Party } from '@/lib/profile/parties';
 import { Avatar } from './avatar';
 import { LiveSummary } from '@/features/election/live-summary';
+import { publishOnlineParties } from './online-parties';
 import { PhotoCapture } from './photo-capture';
 import './chat.css';
 
@@ -122,6 +123,7 @@ export function ChatDock() {
       const body = data(event);
       setMessages((current) => merge(current, body.messages));
       setOnline(body.online);
+      publishOnlineParties(body.parties);
       setMe(body.me);
       setCanWrite(body.canWrite);
       setModerator(body.moderator === true);
@@ -138,7 +140,11 @@ export function ChatDock() {
       const { id } = data(event);
       setMessages((current) => current.filter((message) => message.id !== id));
     });
-    source.addEventListener('online', (event) => setOnline(data(event).online));
+    source.addEventListener('online', (event) => {
+      const body = data(event);
+      setOnline(body.online);
+      publishOnlineParties(body.parties);
+    });
     source.addEventListener('access', (event) => setCanWrite(data(event).canWrite));
     source.addEventListener('end', (event) => {
       source.close();
@@ -404,6 +410,7 @@ export function ChatDock() {
             me={me ?? '?'}
             photo={myPhoto}
             party={partyByCode(myParty)}
+            guest={status.guest}
             onPhoto={() => setCapturing(true)}
             onSent={(message) => setMessages((current) => merge(current, [message]))}
             paid={status.state === 'paid'}
@@ -471,6 +478,7 @@ function Composer({
   me,
   photo,
   party,
+  guest,
   onSent,
   onPhoto,
   paid,
@@ -483,6 +491,8 @@ function Composer({
   me: string;
   photo: string | null;
   party: Party | null;
+  /** Visitor without an account: no profile to change. */
+  guest: boolean;
   onSent: (message: PublicMessage) => void;
   /** Opens the camera / upload to change the profile photo. */
   onPhoto: () => void;
@@ -504,6 +514,7 @@ function Composer({
   const [waitUntil, setWaitUntil] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const [tray, setTray] = useState(false);
+  const [choosingParty, setChoosingParty] = useState(false);
   const [writing, setWriting] = useState(false);
   const field = useRef<HTMLTextAreaElement>(null);
   const waiting = Math.max(0, Math.ceil((waitUntil - now) / 1000));
@@ -584,6 +595,13 @@ function Composer({
         : 'No chat ao vivo';
   return (
     <form className="chat-composer" onSubmit={submit}>
+      {choosingParty && (
+        <PartyPicker
+          me={me}
+          current={party?.code ?? NO_PARTY}
+          onClose={() => setChoosingParty(false)}
+        />
+      )}
       {tray && (
         <div
           id="chat-stickers"
@@ -767,7 +785,32 @@ function Composer({
           <div className="chat-dock-who">
             <b>{me}</b>
             {/* Keyed so each new status slides in. */}
-            <span key={status}>{status}</span>
+            {guest || sending || waiting > 0 ? (
+              <span key={status}>{status}</span>
+            ) : (
+              <button
+                key={status}
+                type="button"
+                className="chat-dock-party"
+                onClick={() => {
+                  setTray(false);
+                  setChoosingParty(!choosingParty);
+                }}
+                aria-expanded={choosingParty}
+                title="Trocar partido"
+              >
+                {party ? `Apoia o ${party.number} · ${party.code}` : 'Escolher partido'}
+                <svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M4 20h4L19 9l-4-4L4 16v4Z"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </button>
+            )}
           </div>
           {hasPack && (
             <button
@@ -827,5 +870,99 @@ function Composer({
         </div>
       </div>
     </form>
+  );
+}
+
+/** Changes the party shown beside the name (or hides it), with the LGPD consent for a party. */
+function PartyPicker({
+  me,
+  current,
+  onClose,
+}: {
+  me: string;
+  current: string;
+  onClose: () => void;
+}) {
+  const [choice, setChoice] = useState(current);
+  const [consent, setConsent] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const needsConsent = choice !== NO_PARTY;
+  const save = async () => {
+    if (choice === current) return onClose();
+    if (needsConsent && !consent)
+      return setError('Marque a autorização para mostrar o partido no chat.');
+    setSaving(true);
+    setError(null);
+    const response = await fetch('/api/profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: me, party: choice, consent: needsConsent && consent }),
+    }).catch(() => null);
+    const body = await response?.json().catch(() => ({}));
+    if (!response?.ok) {
+      setSaving(false);
+      return setError(body?.error ?? 'Falha de conexão. Tente de novo.');
+    }
+    // The chat, the badge and the photo frame all follow the party: start them over.
+    window.location.reload();
+  };
+  return (
+    <div
+      className="chat-party-picker"
+      role="dialog"
+      aria-label="Trocar partido"
+      onKeyDown={(event) => event.key === 'Escape' && onClose()}
+    >
+      <div className="chat-stickers-head">
+        <p>Trocar partido</p>
+        <button type="button" className="chat-stickers-close" onClick={onClose} aria-label="Fechar">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path
+              d="M6 6l12 12M18 6L6 18"
+              stroke="currentColor"
+              strokeWidth="2.2"
+              strokeLinecap="round"
+            />
+          </svg>
+        </button>
+      </div>
+      <div className="chat-party-options">
+        {PARTIES.map((option) => (
+          <button
+            key={option.code}
+            type="button"
+            className={choice === option.code ? 'is-selected' : ''}
+            style={{ '--party': option.color } as React.CSSProperties}
+            onClick={() => setChoice(option.code)}
+            aria-pressed={choice === option.code}
+          >
+            <b>{option.number}</b> {option.code}
+          </button>
+        ))}
+        <button
+          type="button"
+          className={choice === NO_PARTY ? 'is-selected' : ''}
+          onClick={() => setChoice(NO_PARTY)}
+          aria-pressed={choice === NO_PARTY}
+        >
+          Prefiro não informar
+        </button>
+      </div>
+      {needsConsent && choice !== current && (
+        <label className="chat-party-consent">
+          <input
+            type="checkbox"
+            checked={consent}
+            onChange={(event) => setConsent(event.target.checked)}
+          />
+          Autorizo mostrar meu partido junto do meu nome no chat.
+        </label>
+      )}
+      {error && <p className="chat-party-error">{error}</p>}
+      <button type="button" className="chat-party-save" onClick={save} disabled={saving}>
+        {saving ? 'Salvando…' : 'Salvar'}
+      </button>
+    </div>
   );
 }

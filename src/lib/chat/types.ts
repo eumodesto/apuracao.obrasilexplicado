@@ -55,4 +55,9 @@ export interface ChatBus {
   claim(key: string, ms: number): Promise<boolean>;
   /** Reports how many chat connections this server holds; returns the total across servers. */
   online(local: number): Promise<number>;
+  /** Same, split by the party people chose (PT, PL, other); returns the totals across servers. */
+  partyOnline(local: PartyCounts): Promise<PartyCounts>;
 }
+
+/** Open chat connections by the party people chose: PT, PL and everyone else. */
+export type PartyCounts = { PT: number; PL: number; other: number };

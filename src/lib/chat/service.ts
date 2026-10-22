@@ -8,6 +8,7 @@ import {
   type ChatBus,
   type ChatEvent,
   type ChatStore,
+  type PartyCounts,
   type PublicMessage,
 } from './types';
 
@@ -33,6 +34,9 @@ export type ChatRuntime = {
   tracking?: boolean;
   connections: number;
   online: { at: number; value: Promise<number> } | null;
+  /** This server's open streams by party, and the cached totals across servers. */
+  parties?: PartyCounts;
+  partyOnline?: { at: number; value: Promise<PartyCounts> };
   /** Open streams fed with pre-encoded batches (see `connectStream`). */
   streams?: { sinks: Set<(chunk: Uint8Array) => void>; queue: ChatEvent[] };
 };
@@ -249,7 +253,11 @@ export const encodeEvent = (event: string, data: unknown) =>
  * server queues bus events and every BATCH_MS encodes them once and hands the same bytes to all
  * open streams, so a message costs one JSON encoding however many people are watching.
  */
-export function connectStream(sink: (chunk: Uint8Array) => void, state = chat()) {
+export function connectStream(
+  sink: (chunk: Uint8Array) => void,
+  state = chat(),
+  party?: string | null,
+) {
   if (!state.streams) {
     const streams = (state.streams = {
       sinks: new Set<(chunk: Uint8Array) => void>(),
@@ -266,13 +274,17 @@ export function connectStream(sink: (chunk: Uint8Array) => void, state = chat())
     }, BATCH_MS).unref?.();
   }
   const { sinks } = state.streams;
+  const side = party === 'PT' || party === 'PL' ? party : 'other';
+  const parties = (state.parties ??= { PT: 0, PL: 0, other: 0 });
   state.connections += 1;
+  parties[side] += 1;
   sinks.add(sink);
   let closed = false;
   return () => {
     if (closed) return;
     closed = true;
     state.connections -= 1;
+    parties[side] -= 1;
     sinks.delete(sink);
   };
 }
@@ -285,4 +297,16 @@ export function onlineCount(state = chat(), now = Date.now()) {
       value: state.bus.online(state.connections).catch(() => state.connections),
     };
   return state.online.value;
+}
+
+/** People with the chat open who chose the PT or the PL, across all servers (cached). */
+export function onlineParties(state = chat(), now = Date.now()) {
+  if (!state.partyOnline || now - state.partyOnline.at > ONLINE_CACHE_MS) {
+    const local = { ...(state.parties ?? { PT: 0, PL: 0, other: 0 }) };
+    state.partyOnline = {
+      at: now,
+      value: state.bus.partyOnline(local).catch(() => local),
+    };
+  }
+  return state.partyOnline.value.then(({ PT, PL }) => ({ PT, PL }));
 }

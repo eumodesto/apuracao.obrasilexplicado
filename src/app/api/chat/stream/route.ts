@@ -1,6 +1,12 @@
 import { isAdmin } from '@/lib/access/access';
 import { chatAccess } from '@/lib/chat/access';
-import { connectStream, encodeEvent, history, onlineCount } from '@/lib/chat/service';
+import {
+  connectStream,
+  encodeEvent,
+  history,
+  onlineCount,
+  onlineParties,
+} from '@/lib/chat/service';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -36,11 +42,11 @@ export async function GET(request: Request) {
       const send = (event: string, data: unknown) => write(encodeEvent(event, data));
 
       // New messages and deletions arrive in shared, already encoded batches.
-      const disconnect = connectStream(enqueue);
+      const disconnect = connectStream(enqueue, undefined, chat.author.party);
       const timers = [
         setInterval(() => write(': ping\n\n'), PING_MS),
         setInterval(async () => {
-          send('online', { online: await onlineCount() });
+          send('online', { online: await onlineCount(), parties: await onlineParties() });
           const again = await chatAccess({ session }).catch(() => null);
           if (!again || again.problem) {
             const body = again?.problem ? await again.problem.json().catch(() => ({})) : {};
@@ -66,6 +72,7 @@ export async function GET(request: Request) {
         send('hello', {
           messages: await history(),
           online: await onlineCount(),
+          parties: await onlineParties(),
           me: chat.author.username,
           photo: chat.author.photo,
           party: chat.author.party,

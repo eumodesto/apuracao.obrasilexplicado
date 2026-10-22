@@ -8,6 +8,7 @@ import {
   deleteMessage,
   history,
   onlineCount,
+  onlineParties,
   reportMessage,
   ROOM_PER_SECOND,
   sendMessage,
@@ -89,6 +90,18 @@ describe('chat service (one server)', () => {
     expect(await onlineCount(state, T0)).toBe(1);
     close();
     expect(await onlineCount(state, T0 + 60_000)).toBe(0);
+  });
+
+  it('counts the people online by party (PT, PL, everyone else)', async () => {
+    const state = instance();
+    const closers = ['PT', 'PT', 'PL', null, 'none'].map((party) =>
+      connectStream(() => {}, state, party),
+    );
+    expect(await onlineParties(state, T0)).toEqual({ PT: 2, PL: 1 });
+    closers[0]();
+    closers[0]();
+    expect(await onlineParties(state, T0 + 60_000)).toEqual({ PT: 1, PL: 1 });
+    closers.forEach((close) => close());
   });
 
   it('applies slow mode per person', async () => {
