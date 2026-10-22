@@ -557,7 +557,8 @@ function Composer({
       onSent(body.message);
       if (typeof body.stickers === 'number') onStickers(body.stickers);
       if ('text' in content) setText('');
-      setTray(false);
+      // After a sticker the tray stays open (the countdown shows on it); after a text it closes.
+      if ('text' in content) setTray(false);
       // Slow mode starts with every message.
       setWaitUntil(fromNow(5000));
       setNow(fromNow());
@@ -593,16 +594,22 @@ function Composer({
         <div id="chat-stickers" className="chat-stickers" role="group" aria-label="Figurinhas">
           <div className="chat-stickers-head">
             <p>
-              {!hasPack
-                ? 'Ainda não há figurinhas para o seu partido'
-                : !paid
-                  ? 'Figurinhas são para quem liberou o acesso'
-                  : staff
-                    ? 'Figurinhas da equipe · à vontade'
-                    : stickers > 0
-                      ? `Você tem ${stickers} ${stickers === 1 ? 'figurinha' : 'figurinhas'}`
-                      : 'Escolha uma figurinha para liberar o pacote'}
-              {hasPack && paid && (staff || stickers > 0) && <small> · toque para enviar</small>}
+              {hasPack && paid && waiting > 0 ? (
+                <span className="chat-stickers-wait">⏱ Aguarde {waiting}s para enviar</span>
+              ) : !hasPack ? (
+                'Ainda não há figurinhas para o seu partido'
+              ) : !paid ? (
+                'Figurinhas são para quem liberou o acesso'
+              ) : staff ? (
+                'Figurinhas da equipe · à vontade'
+              ) : stickers > 0 ? (
+                `Você tem ${stickers} ${stickers === 1 ? 'figurinha' : 'figurinhas'}`
+              ) : (
+                'Escolha uma figurinha para liberar o pacote'
+              )}
+              {hasPack && paid && waiting === 0 && (staff || stickers > 0) && (
+                <small> · toque para enviar</small>
+              )}
             </p>
           </div>
           {[
@@ -624,16 +631,25 @@ function Composer({
                     <button
                       key={sticker.id}
                       type="button"
-                      disabled={sending || waiting > 0}
+                      disabled={sending}
+                      // Slow mode: not disabled, so hovering shows the countdown on the sticker.
+                      aria-disabled={waiting > 0 || undefined}
+                      data-wait={paid && waiting > 0 ? `${waiting}s` : undefined}
                       // No access yet: the access offer; no stickers left: the sticker shop.
                       onClick={() =>
                         !paid
                           ? onNeedAccess()
-                          : !staff && stickers <= 0
-                            ? onBuy()
-                            : post({ sticker: sticker.id })
+                          : waiting > 0
+                            ? undefined
+                            : !staff && stickers <= 0
+                              ? onBuy()
+                              : post({ sticker: sticker.id })
                       }
-                      aria-label={`Enviar figurinha: ${sticker.text}`}
+                      aria-label={
+                        paid && waiting > 0
+                          ? `Aguarde ${waiting} segundos para enviar: ${sticker.text}`
+                          : `Enviar figurinha: ${sticker.text}`
+                      }
                     >
                       <StickerCard sticker={sticker} />
                     </button>
@@ -743,7 +759,6 @@ function Composer({
             aria-controls="chat-stickers"
             aria-label="Figurinhas"
             title="Figurinhas"
-            disabled={waiting > 0}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
               <path

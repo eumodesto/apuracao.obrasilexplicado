@@ -982,3 +982,40 @@
     transition: none;
   }
 }
+
+/* Slow mode: the sticker under the pointer shows how long to wait, instead of wiggling. */
+.chat-stickers-grid button {
+  position: relative;
+}
+.chat-stickers-grid button[aria-disabled='true'] {
+  cursor: not-allowed;
+}
+.chat-stickers-grid button[aria-disabled='true']:hover {
+  transform: none;
+}
+.chat-stickers-grid button[aria-disabled='true']:hover .chat-sticker-image,
+.chat-stickers-grid button[aria-disabled='true']:hover .chat-sticker {
+  animation: none;
+  opacity: 0.45;
+}
+.chat-stickers-grid button[data-wait]:hover::after,
+.chat-stickers-grid button[data-wait]:focus-visible::after {
+  content: '⏱ ' attr(data-wait);
+  position: absolute;
+  inset: 50% auto auto 50%;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(11, 11, 10, 0.88);
+  color: #f5c518;
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.chat-stickers-wait {
+  color: #f5c518;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
