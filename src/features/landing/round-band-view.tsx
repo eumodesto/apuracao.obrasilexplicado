@@ -99,7 +99,7 @@ export function RoundBand({
         <span className="band-progress" style={{ width: `${model.counted}%` }} aria-hidden="true" />
       </div>
 
-      {/* Phones: compact card without photos. */}
+      {/* Phones: compact card, with a small round photo by each name. */}
       <div className="band-card">
         <div className="band-card-top">
           <span>Brasil</span>
@@ -137,10 +137,23 @@ export function RoundBand({
               className={index ? 'band-card-side is-right' : 'band-card-side'}
               style={style(side)}
             >
-              <b>{side.name}</b>
-              <small>
-                {side.party} {side.number}
-              </small>
+              <div className="band-card-who">
+                {/* Decorative: the name is written next to it. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/api/election/photo/${side.id}`}
+                  alt=""
+                  width={48}
+                  height={48}
+                  loading="lazy"
+                />
+                <div>
+                  <b>{side.name}</b>
+                  <small>
+                    {side.party} {side.number}
+                  </small>
+                </div>
+              </div>
               <strong>
                 {pct(side.percentage)}
                 <sup>%</sup>

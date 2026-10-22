@@ -334,3 +334,32 @@
     margin: 10px 10px 0;
   }
 }
+
+/* Phones: photo by each name in the compact card (mirrored on the right). */
+.band-card-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.band-card-side.is-right .band-card-who {
+  flex-direction: row-reverse;
+}
+.band-card-who > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.band-card-who img {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border: 2px solid var(--side);
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: top;
+  /* Without the photo, just the colored ring. */
+  background: #1d1d1a;
+  color: transparent;
+  font-size: 0;
+}
