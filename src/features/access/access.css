@@ -374,7 +374,9 @@ body:has(.access-badge) {
     display: flex;
     align-items: center;
     min-height: 40px;
-    padding: 0 18px;
+    /* The access badge (Chat, name, Sair) floats over the right end: keep the text clear of it. */
+    padding: 6px 330px 6px 18px;
+    line-height: 1.4;
     text-align: left;
   }
   body:has(.cockpit-footer) .access-badge {
