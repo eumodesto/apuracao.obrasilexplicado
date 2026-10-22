@@ -50,6 +50,23 @@ describe('1st-round band', () => {
     expect(band.definedAt).toBeNull();
   });
 
+  it('shows the 2nd-round finalists at zero before the first votes, not the 1st round', () => {
+    const base = result({ '13': 1, '22': 1 });
+    const band = roundBand({
+      ...base,
+      turn: '2',
+      candidates: base.candidates
+        .filter((c) => c.number === '13' || c.number === '22')
+        .map((c) => ({ ...c, votes: 0, percentage: 0, destination: null, status: '' })),
+      progress: { ...base.progress, validVotes: 0, percentageCounted: 0, countedSections: 0 },
+    })!;
+    expect(band.left).toMatchObject({ number: '13', votes: 0, percentage: 0 });
+    expect(band.right).toMatchObject({ number: '22', votes: 0, percentage: 0 });
+    expect(band.counted).toBe(0);
+    expect(band.headline.text).toBe('disputam o 2º turno');
+    expect(band.definedAt).toBeNull();
+  });
+
   it('writes ballot names with accents for display', () => {
     expect(displayName('FLAVIO BOLSONARO')).toBe('Flávio Bolsonaro');
     expect(displayName('JOAO DA SILVA')).toBe('João da Silva');

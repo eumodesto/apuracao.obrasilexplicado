@@ -60,7 +60,7 @@ export type BandModel = {
  * party of the left (13) on the left, the right (22) on the right, as in the sign-up cards.
  */
 export function roundBand(snapshot: ElectionSnapshot | null): BandModel | null {
-  const analysis = validVoteAnalysis(snapshot);
+  const analysis = validVoteAnalysis(snapshot) ?? notStarted(snapshot);
   if (!snapshot || !analysis || analysis.candidates.length < 2) return null;
   const status = new Map(snapshot.candidates.map((c) => [c.id, c.status ?? '']));
   const party = new Map(snapshot.candidates.map((c) => [c.id, c.party]));
@@ -89,9 +89,13 @@ export function roundBand(snapshot: ElectionSnapshot | null): BandModel | null {
       ? 'vão ao 2º turno'
       : elected
         ? 'eleito'
-        : snapshot.status === 'finished'
-          ? 'apuração encerrada'
-          : 'lideram a apuração';
+        : !analysis.validVotes
+          ? snapshot.turn === '2'
+            ? 'disputam o 2º turno'
+            : 'aguardando a apuração'
+          : snapshot.status === 'finished'
+            ? 'apuração encerrada'
+            : 'lideram a apuração';
   return {
     left,
     right,
@@ -103,5 +107,16 @@ export function roundBand(snapshot: ElectionSnapshot | null): BandModel | null {
       snapshot.progress.totalSections - snapshot.progress.countedSections,
     ),
     definedAt: decided ? (snapshot.progress.totaledAt ?? snapshot.progress.generatedAt) : null,
+  };
+}
+
+/** Before the first valid votes: the round's candidates at zero, so the band waits for the TSE. */
+function notStarted(snapshot: ElectionSnapshot | null) {
+  if (!snapshot || (snapshot.progress.validVotes ?? 0) > 0) return null;
+  return {
+    validVotes: 0,
+    candidates: [...snapshot.candidates]
+      .sort((a, b) => Number(a.number) - Number(b.number))
+      .map((c) => ({ id: c.id, name: c.ballotName, number: c.number, votes: 0, percentage: 0 })),
   };
 }

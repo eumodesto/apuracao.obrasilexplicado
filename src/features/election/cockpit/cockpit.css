@@ -664,17 +664,34 @@
   overflow: auto;
   scrollbar-width: thin;
 }
+.context-town-list {
+  display: grid;
+  gap: 2px;
+  padding-right: 4px;
+}
 .context-town-list button {
   border: 0;
   border-bottom: 1px solid var(--line);
+  border-radius: 0;
   background: none;
   font-size: 10px;
   width: 100%;
   text-align: left;
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 4px;
-  padding: 8px 0;
+  gap: 12px;
+  padding: 10px 12px;
+  line-height: 1.3;
+}
+.context-town-list button:hover,
+.context-town-list button:focus-visible {
+  background: var(--border-default);
+  border-radius: 8px;
+}
+.context-town-list button span {
+  flex: none;
+  font-variant-numeric: tabular-nums;
 }
 .zones-list span {
   display: inline-block;
