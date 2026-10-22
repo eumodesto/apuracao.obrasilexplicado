@@ -585,7 +585,13 @@ function Composer({
   return (
     <form className="chat-composer" onSubmit={submit}>
       {tray && (
-        <div id="chat-stickers" className="chat-stickers" role="group" aria-label="Figurinhas">
+        <div
+          id="chat-stickers"
+          className="chat-stickers"
+          role="group"
+          aria-label="Figurinhas"
+          onKeyDown={(event) => event.key === 'Escape' && setTray(false)}
+        >
           <div className="chat-stickers-head">
             <p>
               {hasPack && paid && waiting > 0 ? (
@@ -605,6 +611,22 @@ function Composer({
                 <small> · toque para enviar</small>
               )}
             </p>
+            <button
+              type="button"
+              className="chat-stickers-close"
+              onClick={() => setTray(false)}
+              aria-label="Fechar figurinhas"
+              title="Fechar"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6 6l12 12M18 6L6 18"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
           </div>
           {/* The packs this person may use, one group per pack title. */}
           {[

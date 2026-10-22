@@ -165,6 +165,10 @@
   flex: 1;
   flex-direction: column;
 }
+/* Without the legend (no data yet) the top percentage would touch the title. */
+.race-chart-card > h2 + .race-chart {
+  margin-top: 18px;
+}
 .race-legend {
   display: flex;
   flex-wrap: wrap;
