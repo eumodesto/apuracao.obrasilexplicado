@@ -242,8 +242,8 @@ describe('no copy-and-paste in the chat', () => {
       ok: true,
     });
     // Stickers can repeat.
-    expect(await sendSticker(ana, 'virou', state, T0 + 18_000)).toMatchObject({ ok: true });
-    expect(await sendSticker(ana, 'virou', state, T0 + 24_000)).toMatchObject({ ok: true });
+    expect(await sendSticker(ana, '13-lingua', state, T0 + 18_000)).toMatchObject({ ok: true });
+    expect(await sendSticker(ana, '13-lingua', state, T0 + 24_000)).toMatchObject({ ok: true });
   });
 
   it('refuses a long text another account has just sent, but not a short one', async () => {
@@ -256,5 +256,32 @@ describe('no copy-and-paste in the chat', () => {
     });
     expect(await sendMessage(ana, 'Vai 13', state, T0 + 6_000)).toMatchObject({ ok: true });
     expect(await sendMessage(bia, 'vai 13', state, T0 + 7_000)).toMatchObject({ ok: true });
+  });
+});
+
+describe('party sticker packs', () => {
+  it('lets only the party send its pack, and shows it as a picture sticker', async () => {
+    const { STICKERS, canUseSticker } = await import('../src/lib/chat/stickers');
+    const pack = STICKERS.filter((sticker) => sticker.party === 'PT');
+    expect(pack).toHaveLength(7);
+    expect(pack.every((sticker) => sticker.image?.startsWith('/stickers/13/'))).toBe(true);
+    expect(canUseSticker(pack[0], 'PT')).toBe(true);
+    expect(canUseSticker(pack[0], 'PL')).toBe(false);
+    expect(canUseSticker(pack[0], null)).toBe(false);
+    // The emoji examples are gone: other parties and "none" have no stickers yet.
+    expect(STICKERS.every((sticker) => sticker.party === 'PT')).toBe(true);
+    const state = instance();
+    expect(await sendSticker(ana, '13-lingua', state, T0)).toMatchObject({ ok: true });
+    expect(await sendSticker(bia, '13-lingua', state, T0)).toMatchObject({
+      ok: false,
+      status: 403,
+    });
+  });
+
+  it('keeps every pack picture in public/stickers', async () => {
+    const { existsSync } = await import('node:fs');
+    const { STICKERS } = await import('../src/lib/chat/stickers');
+    for (const sticker of STICKERS.filter((s) => s.image))
+      expect(existsSync(`public${sticker.image}`), sticker.image).toBe(true);
   });
 });

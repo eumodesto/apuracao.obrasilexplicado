@@ -916,3 +916,69 @@
     transition: none;
   }
 }
+
+/* Picture stickers (party packs): the cut-out image itself, no card behind it. */
+.chat-sticker-image {
+  display: block;
+  width: 112px;
+  height: 112px;
+  margin-top: 4px;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+  user-select: none;
+}
+.chat-message:nth-child(even) .chat-sticker-image {
+  transform: rotate(2deg);
+}
+.chat-stickers-grid .chat-sticker-image {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
+}
+.chat-stickers-group {
+  margin: 12px 0 6px;
+  color: #e0313f;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Stickers invite a tap: they grow and wiggle under the pointer. */
+.chat-stickers-grid button {
+  transition: transform 0.18s ease;
+}
+.chat-stickers-grid button:not(:disabled):hover,
+.chat-stickers-grid button:not(:disabled):focus-visible {
+  z-index: 1;
+  transform: scale(1.08);
+}
+.chat-stickers-grid button:not(:disabled):hover .chat-sticker-image,
+.chat-stickers-grid button:not(:disabled):hover .chat-sticker,
+.chat-stickers-grid button:not(:disabled):focus-visible .chat-sticker-image {
+  animation: sticker-wiggle 0.6s ease-in-out infinite;
+}
+.chat-stickers-grid button:not(:disabled):active {
+  transform: scale(0.95);
+}
+@keyframes sticker-wiggle {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-6deg);
+  }
+  75% {
+    transform: rotate(6deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-stickers-grid button,
+  .chat-stickers-grid button:hover .chat-sticker-image,
+  .chat-stickers-grid button:hover .chat-sticker {
+    animation: none;
+    transition: none;
+  }
+}

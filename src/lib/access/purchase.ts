@@ -1,3 +1,4 @@
+import { stickersFor } from '@/lib/chat/stickers';
 import { isGuest } from './access';
 import { accessProduct, stickerProduct, type Product } from './products';
 import type { AccessStatus, AccessUser } from './types';
@@ -16,6 +17,12 @@ export function purchaseFor(
   if (pack === undefined || pack === null || pack === '') return { product: accessProduct() };
   const product = stickerProduct(pack);
   if (!product) return { error: 'Pacote indisponível.', status: 400, code: 'pack' };
+  if (stickersFor(user.party).length === 0)
+    return {
+      error: 'Ainda não há figurinhas para o seu partido.',
+      status: 409,
+      code: 'no_pack',
+    };
   if (status.state !== 'paid')
     return {
       error: 'Figurinhas são para quem liberou o acesso. Libere o acesso primeiro.',

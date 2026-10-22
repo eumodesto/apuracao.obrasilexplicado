@@ -111,17 +111,17 @@ describe('stickers', () => {
 
   it('are sent with the author photo and count for slow mode', async () => {
     const chat = state();
-    const sent = await sendSticker(ana, 'virou', chat, T0);
+    const sent = await sendSticker(ana, '13-lingua', chat, T0);
     expect(sent).toMatchObject({
       ok: true,
-      message: { username: 'ana', photo: 'abc.1', sticker: 'virou', text: 'Virou!' },
+      message: { username: 'ana', photo: 'abc.1', sticker: '13-lingua', text: 'Língua de fora' },
     });
     expect(await sendMessage(ana, 'logo depois', chat, T0 + 1_000)).toMatchObject({ status: 429 });
   });
 
   it('must come from the available packs', async () => {
     expect(await sendSticker(ana, 'rosto-candidato', state(), T0)).toMatchObject({ status: 400 });
-    expect(await sendSticker(ana, { id: 'virou' }, state(), T0)).toMatchObject({ status: 400 });
+    expect(await sendSticker(ana, { id: '13-lingua' }, state(), T0)).toMatchObject({ status: 400 });
     expect(new Set(STICKERS.map((s) => s.id)).size).toBe(STICKERS.length);
   });
 });

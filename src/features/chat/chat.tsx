@@ -10,7 +10,13 @@ import {
 import { createPortal } from 'react-dom';
 import { BADGE_SLOT_ID, useAccess } from '@/features/access/access-gate';
 import { brl } from '@/features/access/format';
-import { STICKERS, stickerById, type Sticker } from '@/lib/chat/stickers';
+import {
+  canUseSticker,
+  STICKERS,
+  stickerById,
+  stickersFor,
+  type Sticker,
+} from '@/lib/chat/stickers';
 import { MAX_MESSAGE_LENGTH } from '@/lib/chat/text';
 import type { PublicMessage } from '@/lib/chat/types';
 import { partyByCode, type Party } from '@/lib/profile/parties';
@@ -437,6 +443,19 @@ export function ChatDock() {
 }
 
 function StickerCard({ sticker }: { sticker: Sticker }) {
+  if (sticker.image)
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        className="chat-sticker-image"
+        src={sticker.image}
+        alt={`Figurinha: ${sticker.text}`}
+        width={112}
+        height={112}
+        loading="lazy"
+        draggable={false}
+      />
+    );
   return (
     <span
       className="chat-sticker"
@@ -559,6 +578,8 @@ function Composer({
   };
 
   const left = MAX_MESSAGE_LENGTH - text.length;
+  // Today only the 13 has a pack: other parties (or none) see a short note instead.
+  const hasPack = stickersFor(party?.code).length > 0;
   const status = sending
     ? 'Enviando…'
     : waiting > 0
@@ -572,38 +593,54 @@ function Composer({
         <div id="chat-stickers" className="chat-stickers" role="group" aria-label="Figurinhas">
           <div className="chat-stickers-head">
             <p>
-              {!paid
-                ? 'Figurinhas são para quem liberou o acesso'
-                : staff
-                  ? 'Figurinhas da equipe · à vontade'
-                  : stickers > 0
-                    ? `Você tem ${stickers} ${stickers === 1 ? 'figurinha' : 'figurinhas'}`
-                    : 'Suas figurinhas acabaram'}
-              {(staff || stickers > 0) && paid && <small> · toque para enviar</small>}
+              {!hasPack
+                ? 'Ainda não há figurinhas para o seu partido'
+                : !paid
+                  ? 'Figurinhas são para quem liberou o acesso'
+                  : staff
+                    ? 'Figurinhas da equipe · à vontade'
+                    : stickers > 0
+                      ? `Você tem ${stickers} ${stickers === 1 ? 'figurinha' : 'figurinhas'}`
+                      : 'Escolha uma figurinha para liberar o pacote'}
+              {hasPack && paid && (staff || stickers > 0) && <small> · toque para enviar</small>}
             </p>
-            {paid && !staff ? (
-              <button type="button" className="chat-stickers-buy" onClick={onBuy}>
-                Comprar
-              </button>
-            ) : !paid ? (
-              <button type="button" className="chat-stickers-buy" onClick={onNeedAccess}>
-                Liberar acesso
-              </button>
-            ) : null}
           </div>
-          <div className="chat-stickers-grid">
-            {STICKERS.map((sticker) => (
-              <button
-                key={sticker.id}
-                type="button"
-                disabled={sending || waiting > 0 || !paid || (!staff && stickers <= 0)}
-                onClick={() => post({ sticker: sticker.id })}
-                aria-label={`Enviar figurinha: ${sticker.text}`}
-              >
-                <StickerCard sticker={sticker} />
-              </button>
+          {[
+            { title: null, list: STICKERS.filter((sticker) => !sticker.party) },
+            {
+              // Party packs: only people who chose that party at sign-up see them.
+              title: party ? `Exclusivas do ${party.number}` : null,
+              list: STICKERS.filter(
+                (sticker) => sticker.party && canUseSticker(sticker, party?.code),
+              ),
+            },
+          ]
+            .filter((group) => group.list.length > 0)
+            .map((group) => (
+              <div key={group.title ?? 'all'}>
+                {group.title && <p className="chat-stickers-group">{group.title}</p>}
+                <div className="chat-stickers-grid">
+                  {group.list.map((sticker) => (
+                    <button
+                      key={sticker.id}
+                      type="button"
+                      disabled={sending || waiting > 0}
+                      // No access yet: the access offer; no stickers left: the sticker shop.
+                      onClick={() =>
+                        !paid
+                          ? onNeedAccess()
+                          : !staff && stickers <= 0
+                            ? onBuy()
+                            : post({ sticker: sticker.id })
+                      }
+                      aria-label={`Enviar figurinha: ${sticker.text}`}
+                    >
+                      <StickerCard sticker={sticker} />
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
-          </div>
         </div>
       )}
       {error && (

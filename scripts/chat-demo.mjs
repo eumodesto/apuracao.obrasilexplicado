@@ -232,19 +232,15 @@ const message = () =>
   Math.random() < 0.15
     ? pick(SHORT)
     : `${pick(OPENERS)} ${pick(PLACES)} ${pick(EVENTS)}${pick(TAILS)}`.trim();
+// Only the PT (13) pack exists, and only PT bots may send it.
 const STICKERS = [
-  'vai13',
-  'vai22',
-  'virou',
-  'apurando',
-  'tenso',
-  'chocado',
-  'festa',
-  'pipoca',
-  'calma',
-  'empate',
-  'cafe',
-  'brasil',
+  '13-o-pai-ta-on',
+  '13-100-lula',
+  '13-calma-conta-ate-13',
+  '13-toma-aqui-tua-anistia',
+  '13-coracao',
+  '13-abraco-na-estrela',
+  '13-lingua',
 ];
 
 const bots = Array.from({ length: BOTS }, (_, i) => ({ ...bot(i), cookie: cookieFor(bot(i)) }));
@@ -280,7 +276,7 @@ while (Date.now() < until) {
   const free = bots.filter((b) => (ready.get(b.id) ?? 0) <= Date.now());
   if (free.length) {
     const b = pick(free);
-    const sticker = Math.random() < 0.3;
+    const sticker = b.party === 'PT' && Math.random() < 0.3;
     const response = await fetch(`${BASE}/api/chat/messages`, {
       method: 'POST',
       headers: { cookie: b.cookie, origin, 'content-type': 'application/json' },

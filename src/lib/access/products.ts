@@ -4,7 +4,6 @@ import type { PaymentPurpose } from './types';
 
 export { STICKER_PACKS } from './packs';
 
-
 export type Product = {
   purpose: PaymentPurpose;
   amount: number;

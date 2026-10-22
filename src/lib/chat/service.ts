@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from 'node:crypto';
 import { MemoryChatBus, RedisChatBus } from './bus';
-import { stickerById } from './stickers';
+import { canUseSticker, stickerById } from './stickers';
 import { MemoryChatStore, PostgresChatStore } from './store';
 import { cleanMessage, SLOW_MODE_MS } from './text';
 import {
@@ -119,6 +119,8 @@ export async function sendSticker(
 ): Promise<SendResult> {
   const sticker = typeof id === 'string' ? stickerById(id) : null;
   if (!sticker) return { ok: false, status: 400, error: 'Figurinha indisponível.' };
+  if (!canUseSticker(sticker, author.party))
+    return { ok: false, status: 403, error: 'Esta figurinha é exclusiva de outro partido.' };
   return post(author, { text: sticker.text, sticker: sticker.id }, state, now, charge);
 }
 

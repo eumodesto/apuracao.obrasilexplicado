@@ -1,31 +1,63 @@
 export type Sticker = {
   id: string;
-  /** Big symbol at the top (emoji, never a candidate's face). */
+  /** Big symbol at the top (emoji cards). */
   emoji: string;
+  /** Caption of emoji cards; the description read aloud for image stickers. */
   text: string;
   /** Card gradient. */
   from: string;
   to: string;
+  /** Picture sticker (public/stickers/...) instead of the emoji card. */
+  image?: string;
+  /**
+   * Party pack: only people who chose this party at sign-up see it in their tray and may send it.
+   * Once sent, it shows in the chat for everyone, like any message.
+   */
+  party?: string;
 };
 
 /**
- * Free starter pack everyone with chat access can send. Paid packs (phase 2) join this list.
- * No candidate faces or names: only reactions to the count.
+ * Every sticker people can send. Today only the PT (13) pack: the emoji examples were removed, so
+ * people of other parties (or none) have no stickers yet.
  */
 export const STICKERS: Sticker[] = [
-  { id: 'vai13', emoji: '🔴', text: 'Vai 13!', from: '#e0313f', to: '#8f0f1d' },
-  { id: 'vai22', emoji: '🔵', text: 'Vai 22!', from: '#2f6fd6', to: '#123a7d' },
-  { id: 'virou', emoji: '🔄', text: 'Virou!', from: '#f5a524', to: '#c2410c' },
-  { id: 'apurando', emoji: '🗳️', text: 'Apurando…', from: '#0b6b3a', to: '#074c2b' },
-  { id: 'tenso', emoji: '😬', text: 'Tá tenso', from: '#7c3aed', to: '#4c1d95' },
-  { id: 'chocado', emoji: '😱', text: 'Não acredito!', from: '#ec4899', to: '#9d174d' },
-  { id: 'festa', emoji: '🎉', text: 'Comemora!', from: '#16a34a', to: '#166534' },
-  { id: 'pipoca', emoji: '🍿', text: 'Só observando', from: '#eab308', to: '#a16207' },
-  { id: 'calma', emoji: '🧘', text: 'Calma, gente', from: '#0ea5e9', to: '#0369a1' },
-  { id: 'empate', emoji: '⚖️', text: 'Empate técnico', from: '#64748b', to: '#334155' },
-  { id: 'cafe', emoji: '☕', text: 'Mais um café', from: '#a16207', to: '#5b3410' },
-  { id: 'brasil', emoji: '🇧🇷', text: 'Brasil!', from: '#0b6b3a', to: '#d4a40a' },
+  ...partyPack('PT', '13', '#e0313f', '#8f0f1d', [
+    ['o-pai-ta-on', 'O pai tá on'],
+    ['100-lula', '100% Lula'],
+    ['calma-conta-ate-13', 'Tá nervoso? Calma, respira e conta até 13'],
+    ['toma-aqui-tua-anistia', 'Toma aqui tua anistia'],
+    ['coracao', 'Coração com as mãos'],
+    ['abraco-na-estrela', 'Abraço na estrela'],
+    ['lingua', 'Língua de fora'],
+  ]),
 ];
+
+/** Picture stickers kept in public/stickers/<number>/<name>.webp. */
+function partyPack(
+  party: string,
+  number: string,
+  from: string,
+  to: string,
+  items: [name: string, text: string][],
+): Sticker[] {
+  return items.map(([name, text]) => ({
+    id: `${number}-${name}`,
+    emoji: '',
+    text,
+    from,
+    to,
+    image: `/stickers/${number}/${name}.webp`,
+    party,
+  }));
+}
+
+/** Whether this person may see and send the sticker (party packs need the same party). */
+export const canUseSticker = (sticker: Sticker, party: string | null | undefined) =>
+  !sticker.party || sticker.party === party;
 
 export const stickerById = (id: string | null | undefined) =>
   STICKERS.find((sticker) => sticker.id === id) ?? null;
+
+/** Stickers this person can use (their party's packs); empty means none for now. */
+export const stickersFor = (party: string | null | undefined) =>
+  STICKERS.filter((sticker) => canUseSticker(sticker, party));

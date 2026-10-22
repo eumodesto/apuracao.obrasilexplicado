@@ -23,14 +23,12 @@ function snapshot(percentage = 50.74) {
   s.progress.validVotes = 10000;
   s.progress.percentageCounted = 20;
   s.progress.eligibleVoters = 200000;
-  s.candidates = s.candidates
-    .slice(0, 2)
-    .map((c, i) => ({
-      ...c,
-      votes: i ? 10000 - Math.round(percentage * 100) : Math.round(percentage * 100),
-      destination: 'Válido',
-      percentage: 1,
-    }));
+  s.candidates = s.candidates.slice(0, 2).map((c, i) => ({
+    ...c,
+    votes: i ? 10000 - Math.round(percentage * 100) : Math.round(percentage * 100),
+    destination: 'Válido',
+    percentage: 1,
+  }));
   return s;
 }
 describe('Presidential editorial analysis and observed history', () => {
