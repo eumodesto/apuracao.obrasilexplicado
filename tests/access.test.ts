@@ -479,14 +479,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Postgres store', () => {
 
 describe('free time setting', () => {
   afterEach(() => vi.unstubAllEnvs());
-  it('defaults to one minute, also when the variable is empty, and accepts overrides', async () => {
+  it('defaults to 30 seconds, also when the variable is empty, and accepts overrides', async () => {
     const { freeSeconds } = await import('../src/lib/access/config');
     vi.stubEnv('FREE_SECONDS', undefined);
-    expect(freeSeconds()).toBe(60);
-    vi.stubEnv('FREE_SECONDS', '');
-    expect(freeSeconds()).toBe(60);
-    vi.stubEnv('FREE_SECONDS', '30');
     expect(freeSeconds()).toBe(30);
+    vi.stubEnv('FREE_SECONDS', '');
+    expect(freeSeconds()).toBe(30);
+    vi.stubEnv('FREE_SECONDS', '60');
+    expect(freeSeconds()).toBe(60);
     vi.stubEnv('FREE_SECONDS', '0');
     expect(freeSeconds()).toBe(0);
   });
