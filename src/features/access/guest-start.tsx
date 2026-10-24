@@ -1,9 +1,14 @@
 'use client';
 import { useEffect, useState } from 'react';
+/** Must match the server guest cookie binding; kept here to avoid importing server modules. */
+const GUEST_RESUME_KEY = 'rb_guest_resume';
 
 /**
  * First visit without an account: opens a visitor session (the free minute starts on the panel)
  * and loads the page again with it. No login screen before the panel.
+ *
+ * Keeps a signed resume token in localStorage so clearing cookies alone does not mint a new
+ * visitor with a fresh free minute in the same browser.
  */
 export function GuestStart() {
   const [error, setError] = useState<string | null>(null);
@@ -11,9 +16,22 @@ export function GuestStart() {
     let cancelled = false;
     (async () => {
       try {
-        const response = await fetch('/api/guest', { method: 'POST' });
+        const resume =
+          typeof window !== 'undefined' ? window.localStorage.getItem(GUEST_RESUME_KEY) : null;
+        const response = await fetch('/api/guest', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resume }),
+        });
         const body = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(body.error);
+        if (typeof body.resume === 'string')
+          try {
+            window.localStorage.setItem(GUEST_RESUME_KEY, body.resume);
+          } catch {
+            // Private mode may block storage; the HttpOnly cookie still binds the visitor.
+          }
         if (!cancelled) window.location.reload();
       } catch (problem) {
         if (!cancelled)

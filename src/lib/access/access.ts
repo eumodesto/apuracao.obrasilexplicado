@@ -21,6 +21,16 @@ export function watchedSeconds(lastSeenAt: number | null, now: number, maxGapSec
   return Math.min(Math.max((now - lastSeenAt) / 1000, 0), maxGapSeconds);
 }
 
+/**
+ * Free seconds already spent. Activity from touches, plus — for visitors — wall clock since
+ * `freeStartedAt`, so reloading the same browser cannot restart the free minute.
+ */
+export function usedFreeSeconds(user: AccessUser, now: number, waiting = false) {
+  const activity = Math.max(0, user.freeSecondsUsed);
+  if (waiting || !isGuest(user) || user.freeStartedAt == null) return activity;
+  return Math.max(activity, Math.max(0, (now - user.freeStartedAt) / 1000));
+}
+
 export function accessStatus(
   user: AccessUser,
   now: number,
@@ -29,7 +39,9 @@ export function accessStatus(
   staff = isStaff(user),
 ): AccessStatus {
   const paid = staff || openAccess() || hasPaidAccess(user),
-    remainingSeconds = paid ? 0 : Math.max(0, Math.ceil(limits.free - user.freeSecondsUsed));
+    remainingSeconds = paid
+      ? 0
+      : Math.max(0, Math.ceil(limits.free - usedFreeSeconds(user, now, waiting)));
   return {
     state: paid ? 'paid' : remainingSeconds > 0 ? 'free' : 'locked',
     remainingSeconds,
