@@ -3,10 +3,7 @@ export type AccessUser = {
   email: string;
   name: string;
   freeSecondsUsed: number;
-  /**
-   * When free time started counting for this account (first counting touch).
-   * Used so reload / sparse polls cannot restart a visitor's free minute.
-   */
+  /** When free time first started counting for this account (first counting touch). */
   freeStartedAt: number | null;
   lastSeenAt: number | null;
   paidAt: number | null;

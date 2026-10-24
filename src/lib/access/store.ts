@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
-import { isGuest, watchedSeconds } from './access';
+import { watchedSeconds } from './access';
 import type {
   AccessStats,
   AccessStore,
@@ -179,16 +179,8 @@ export class FileAccessStore implements AccessStore {
       const user = data.users[id];
       if (!user) return null;
       if (user.paidAt === null && count) {
+        if (user.freeStartedAt == null) user.freeStartedAt = now;
         user.freeSecondsUsed += watchedSeconds(user.lastSeenAt, now, maxGapSeconds);
-        // Visitors: wall-clock anchor so the same browser cannot restart the free minute on reload.
-        if (isGuest(user)) {
-          if (user.freeStartedAt == null)
-            user.freeStartedAt = now - Math.max(0, user.freeSecondsUsed) * 1000;
-          user.freeSecondsUsed = Math.max(
-            user.freeSecondsUsed,
-            Math.max(0, (now - user.freeStartedAt) / 1000),
-          );
-        }
       }
       user.lastSeenAt = now;
       return { ...user };
@@ -531,32 +523,15 @@ export class PostgresAccessStore implements AccessStore {
   async touch(id: string, now: number, maxGapSeconds: number, count = true) {
     await this.schema();
     const at = new Date(now);
-    // Guest free minute: anchor free_started_at on the first counting touch, then keep
-    // free_seconds_used at least as high as wall clock so a reload cannot restart the minute.
     const [row] = await this.sql<UserRow[]>`
       UPDATE access_users SET
         free_started_at = CASE
-          WHEN ${count} AND paid_at IS NULL AND free_started_at IS NULL AND id LIKE 'guest:%'
-            THEN ${at}::timestamptz - (GREATEST(free_seconds_used, 0) * interval '1 second')
+          WHEN ${count} AND paid_at IS NULL AND free_started_at IS NULL THEN ${at}
           ELSE free_started_at
         END,
-        free_seconds_used = CASE
-          WHEN paid_at IS NOT NULL OR NOT ${count} THEN free_seconds_used
-          ELSE GREATEST(
-            free_seconds_used + CASE
-              WHEN last_seen_at IS NULL THEN 0
-              ELSE LEAST(GREATEST(EXTRACT(EPOCH FROM (${at}::timestamptz - last_seen_at)), 0), ${maxGapSeconds})
-            END,
-            CASE
-              WHEN id LIKE 'guest:%' THEN EXTRACT(EPOCH FROM (
-                ${at}::timestamptz - COALESCE(
-                  free_started_at,
-                  ${at}::timestamptz - (GREATEST(free_seconds_used, 0) * interval '1 second')
-                )
-              ))
-              ELSE free_seconds_used
-            END
-          )
+        free_seconds_used = free_seconds_used + CASE
+          WHEN paid_at IS NOT NULL OR last_seen_at IS NULL OR NOT ${count} THEN 0
+          ELSE LEAST(GREATEST(EXTRACT(EPOCH FROM (${at}::timestamptz - last_seen_at)), 0), ${maxGapSeconds})
         END,
         last_seen_at = ${at}
       WHERE id = ${id}

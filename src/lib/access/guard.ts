@@ -33,7 +33,9 @@ export async function currentAccess(
   options: { started?: boolean; fresh?: boolean } = {},
 ) {
   if (!session) return null;
-  const started = options.started ?? (await countStarted(now));
+  // OPEN_ACCESS must not spend the free minute: otherwise turning it off locks every visitor.
+  const started =
+    (options.started ?? (await countStarted(now))) && process.env.OPEN_ACCESS !== 'true';
   const cached = recent.get(session.sub)?.store === store ? recent.get(session.sub) : undefined;
   const paid = cached?.user.paidAt != null;
   let user = !cached

@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { accessStatus, usedFreeSeconds, watchedSeconds } from '../src/lib/access/access';
+import { accessStatus, watchedSeconds } from '../src/lib/access/access';
 import {
   applyPayment,
   openPix,
@@ -794,25 +794,23 @@ describe('visitors without an account', () => {
     ).toBe('locked');
   });
 
-  it('counts visitor free time by wall clock so a reload cannot restart the minute', async () => {
+  it('keeps visitor free time across gaps without burning the minute while away', async () => {
     const store = new FileAccessStore();
     expect(await store.createGuest('guest:clock', 'Visitante 9999', T0)).toBe('ok');
     await store.touch('guest:clock', T0, 30, true);
-    const afterFirst = (await store.getUser('guest:clock'))!;
-    expect(afterFirst.freeStartedAt).toBe(T0);
-    expect(afterFirst.freeSecondsUsed).toBe(0);
-    // Sparse polls / reload 45 s later: activity gap is capped at 30, wall clock is 45.
-    await store.touch('guest:clock', T0 + 45_000, 30, true);
-    const afterGap = (await store.getUser('guest:clock'))!;
-    expect(afterGap.freeSecondsUsed).toBe(45);
-    expect(usedFreeSeconds(afterGap, T0 + 45_000)).toBe(45);
-    expect(
-      accessStatus(afterGap, T0 + 45_000, { free: 60, price: 5 }).remainingSeconds,
-    ).toBe(15);
-    // Status alone (no new touch) still advances with wall clock.
-    expect(
-      accessStatus(afterGap, T0 + 60_000, { free: 60, price: 5 }).state,
-    ).toBe('locked');
+    await store.touch('guest:clock', T0 + 20_000, 30, true);
+    expect((await store.getUser('guest:clock'))!).toMatchObject({
+      freeStartedAt: T0,
+      freeSecondsUsed: 20,
+    });
+    // Away for minutes: only the capped gap counts, so the free minute is not emptied offline.
+    await store.touch('guest:clock', T0 + 10 * 60_000, 30, true);
+    const afterAway = (await store.getUser('guest:clock'))!;
+    expect(afterAway.freeSecondsUsed).toBe(50);
+    expect(accessStatus(afterAway, T0 + 10 * 60_000, { free: 60, price: 5 })).toMatchObject({
+      state: 'free',
+      remainingSeconds: 10,
+    });
   });
 
   it('keeps people from taking a name that looks like a visitor', () => {
