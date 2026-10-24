@@ -14,7 +14,11 @@ import type {
 
 const usernameKey = (username: string) => username.toLowerCase();
 
-type Data = { users: Record<string, AccessUser>; payments: Record<string, PixPayment> };
+type Data = {
+  users: Record<string, AccessUser>;
+  payments: Record<string, PixPayment>;
+  freeQuotas: Record<string, number>;
+};
 
 /** Payments saved before purpose, method and credits existed were Pix charges for access. */
 const withPaymentDefaults = (payment: PixPayment): PixPayment => ({
@@ -69,7 +73,7 @@ const matches = (user: AccessUser, query?: string) => {
 
 /** In-process store, optionally mirrored to a JSON file. For local development and tests only. */
 export class FileAccessStore implements AccessStore {
-  private data: Data = { users: {}, payments: {} };
+  private data: Data = { users: {}, payments: {}, freeQuotas: {} };
   private loaded: Promise<void> | null = null;
   private queue = Promise.resolve();
   constructor(private file: string | null = null) {}
@@ -78,7 +82,12 @@ export class FileAccessStore implements AccessStore {
     this.loaded ??= (async () => {
       if (!this.file) return;
       try {
-        this.data = JSON.parse(await readFile(this.file, 'utf8'));
+        const parsed = JSON.parse(await readFile(this.file, 'utf8')) as Partial<Data>;
+        this.data = {
+          users: parsed.users ?? {},
+          payments: parsed.payments ?? {},
+          freeQuotas: parsed.freeQuotas ?? {},
+        };
       } catch {
         // First run: no file yet.
       }
@@ -271,6 +280,25 @@ export class FileAccessStore implements AccessStore {
     });
   }
 
+  async getFreeQuota(key: string) {
+    await this.load();
+    return Math.max(0, this.data.freeQuotas[key] ?? 0);
+  }
+
+  async bumpFreeQuota(keys: string[], seconds: number) {
+    if (!keys.length || !(seconds > 0)) return;
+    await this.change((data) => {
+      data.freeQuotas ??= {};
+      for (const key of keys)
+        data.freeQuotas[key] = Math.max(data.freeQuotas[key] ?? 0, seconds);
+    });
+  }
+
+  async maxFreeQuota(keys: string[]) {
+    await this.load();
+    return keys.reduce((max, key) => Math.max(max, this.data.freeQuotas[key] ?? 0), 0);
+  }
+
   async setPaused(id: string, pause: { at: number; reason: string } | null) {
     return this.change((data) => {
       const user = data.users[id];
@@ -446,6 +474,11 @@ export class PostgresAccessStore implements AccessStore {
         ADD COLUMN IF NOT EXISTS method text NOT NULL DEFAULT 'pix',
         ADD COLUMN IF NOT EXISTS credits integer;
       CREATE UNIQUE INDEX IF NOT EXISTS access_users_username ON access_users (lower(username));
+      CREATE TABLE IF NOT EXISTS free_quotas (
+        key text PRIMARY KEY,
+        seconds_used double precision NOT NULL DEFAULT 0,
+        updated_at timestamptz NOT NULL DEFAULT now()
+      );
     `
       .simple()
       .catch((error) => {
@@ -613,6 +646,34 @@ export class PostgresAccessStore implements AccessStore {
       VALUES (${id}, '', 'Visitante', ${username}, ${new Date(now)}, ${new Date(now)})
       ON CONFLICT DO NOTHING RETURNING id`;
     return rows.length > 0 ? ('ok' as const) : ('taken' as const);
+  }
+
+  async getFreeQuota(key: string) {
+    await this.schema();
+    const [row] = await this.sql<{ seconds_used: number }[]>`
+      SELECT seconds_used FROM free_quotas WHERE key = ${key}`;
+    return row ? Math.max(0, Number(row.seconds_used)) : 0;
+  }
+
+  async bumpFreeQuota(keys: string[], seconds: number) {
+    if (!keys.length || !(seconds > 0)) return;
+    await this.schema();
+    const at = new Date();
+    for (const key of keys)
+      await this.sql`
+        INSERT INTO free_quotas (key, seconds_used, updated_at)
+        VALUES (${key}, ${seconds}, ${at})
+        ON CONFLICT (key) DO UPDATE SET
+          seconds_used = GREATEST(free_quotas.seconds_used, EXCLUDED.seconds_used),
+          updated_at = EXCLUDED.updated_at`;
+  }
+
+  async maxFreeQuota(keys: string[]) {
+    if (!keys.length) return 0;
+    await this.schema();
+    const rows = await this.sql<{ seconds_used: number }[]>`
+      SELECT seconds_used FROM free_quotas WHERE key IN ${this.sql(keys)}`;
+    return rows.reduce((max, row) => Math.max(max, Number(row.seconds_used)), 0);
   }
 
   async setPaused(id: string, pause: { at: number; reason: string } | null) {

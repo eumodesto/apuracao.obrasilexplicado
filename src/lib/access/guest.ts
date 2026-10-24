@@ -2,15 +2,17 @@ import { randomInt, randomUUID } from 'node:crypto';
 import { cookies } from 'next/headers';
 import { isGuest } from './access';
 import { signIn } from './auth';
+import { freeSeconds, sessionSecret } from './config';
+import { bindContext } from './device';
 import { cookieOptions } from './session';
 import { sign, verify } from './signed';
-import { sessionSecret } from './config';
 import { accessStore } from './store';
 import type { AccessStore } from './types';
 
 /**
  * Remembers this browser's visitor account for a year, so signing out or closing the tab does not
  * give another free minute ("por navegador"). A private window starts over; that is accepted.
+ * Switching browser profiles on the same network still shares the free-minute pool (IP + device).
  */
 export const GUEST_COOKIE = 'rb_guest';
 const GUEST_TTL_SECONDS = 365 * 24 * 60 * 60;
@@ -23,19 +25,28 @@ function guestIdFromToken(token: string | null | undefined) {
   return saved?.id && saved.id.startsWith('guest:') ? saved.id : null;
 }
 
+export type StartGuestOptions = {
+  resume?: string | null;
+  deviceId?: string | null;
+  request?: Request;
+};
+
 /**
- * Signs this browser in as its visitor: the one it already had, or a new one. Free time is counted
- * on that account like on any other.
- *
- * `resume` is an optional signed token from localStorage when the HttpOnly cookie was lost.
+ * Signs this browser in as its visitor: the one it already had, or a new one. Free time already
+ * spent on this IP / device is applied so a new profile cannot mint another free minute.
  */
 export async function startGuest(
   store: AccessStore = accessStore(),
-  resume: string | null = null,
+  options: StartGuestOptions | string | null = null,
 ) {
+  const opts: StartGuestOptions =
+    typeof options === 'string' || options === null
+      ? { resume: options }
+      : (options ?? {});
   const jar = await cookies();
+  const bind = await bindContext(opts.request, opts.deviceId ?? null);
   let id =
-    guestIdFromToken(jar.get(GUEST_COOKIE)?.value) ?? guestIdFromToken(resume ?? undefined);
+    guestIdFromToken(jar.get(GUEST_COOKIE)?.value) ?? guestIdFromToken(opts.resume ?? undefined);
   const existing = id ? await store.getUser(id) : null;
   if (!existing || existing.deletedAt || !isGuest(existing)) {
     id = `guest:${randomUUID()}`;
@@ -44,8 +55,13 @@ export async function startGuest(
       created = (await store.createGuest(id, guestName(attempt < 4 ? 4 : 6), Date.now())) === 'ok';
     if (!created) throw new Error('Could not create a visitor account.');
   }
+  // IP / device pool: another browser profile on this apparatus may already have used the minute.
+  const spent = await store.maxFreeQuota(bind.keys);
+  if (spent > 0) await store.inheritFreeTime(id!, Math.min(spent, freeSeconds()));
   const token = sign({ id }, sessionSecret(), GUEST_TTL_SECONDS);
   jar.set(GUEST_COOKIE, token, cookieOptions(GUEST_TTL_SECONDS));
   await signIn({ sub: id!, email: '', name: 'Visitante' }, store);
-  return { id: id!, resume: token };
+  const user = await store.getUser(id!);
+  if (user) await store.bumpFreeQuota(bind.keys, user.freeSecondsUsed);
+  return { id: id!, resume: token, deviceId: bind.deviceId };
 }

@@ -31,6 +31,16 @@ export function PasswordForm({
     setSending(true);
     setError(null);
     try {
+      let deviceId: string | null = null;
+      try {
+        deviceId = window.localStorage.getItem('rb_device');
+        if (!deviceId) {
+          deviceId = crypto.randomUUID();
+          window.localStorage.setItem('rb_device', deviceId);
+        }
+      } catch {
+        deviceId = null;
+      }
       const response = await fetch('/api/auth/password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -40,12 +50,18 @@ export function PasswordForm({
           email: form.get('login'),
           password,
           next,
+          deviceId,
         }),
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok || !body.next) {
         setSending(false);
         return setError(body.error ?? 'Não foi possível entrar. Tente de novo.');
+      }
+      try {
+        if (typeof body.deviceId === 'string') window.localStorage.setItem('rb_device', body.deviceId);
+      } catch {
+        // ignore
       }
       window.location.assign(body.next);
     } catch {
