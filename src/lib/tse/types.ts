@@ -4,7 +4,13 @@ export type ElectionConfig = {
   contest: string;
   office: string;
   turn: string;
+  /** Election day as published by the TSE (dd/mm/yyyy). */
+  date: string;
   directories: Record<string, string>;
+  /** Every round of this presidential election published so far, the chosen one included. */
+  rounds?: { contest: string; election: string; turn: string; date: string }[];
+  /** Governor races of the same round, when the TSE lists them by state (the 2nd round). */
+  governor?: { contest: string; election: string; turn: string; date: string; states: string[] };
 };
 export type Geography = {
   code: string;
@@ -55,6 +61,8 @@ export type ElectionSnapshot = {
   candidates: CandidateResult[];
   source: 'TSE';
   sourceUrl: string;
+  /** Round of the election ('1' or '2'). */
+  turn?: string;
 };
 export type ElectionResponse = {
   analysis?: import('./analysis').ValidVoteAnalysis;

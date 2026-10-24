@@ -13,3 +13,8 @@ outputs/
 .vercel
 .env*
 !.env.example
+.data/
+next-env.d.ts
+
+# Original sticker art (large); the site serves resized copies from public/stickers.
+figurinhas-neutras/

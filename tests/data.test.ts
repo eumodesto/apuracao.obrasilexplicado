@@ -7,7 +7,7 @@ import { querySchema, trackingSchema } from '../src/lib/tse/schemas';
 import { resolveScope } from '../src/lib/tse/service';
 import type { Scope } from '../src/lib/tse/types';
 const fixture = (name: string) => JSON.parse(readFileSync(`tests/fixtures/${name}.json`, 'utf8'));
-const config = discoverElection(fixture('ele-c'));
+const config = discoverElection(fixture('ele-c'), undefined);
 const regions = normalizeGeography(fixture('municipalities'));
 const br: Scope = { type: 'country', code: 'br', state: 'br', name: 'Brasil' };
 const normalize = (raw: unknown, scope = br) =>
@@ -21,6 +21,33 @@ describe('Official 2026 contracts', () => {
       cycle: 'ele2026',
     });
     expect(geographyUrl(config)).toContain('/6257/config/mun-e006257-cm.json');
+  });
+  it('follows the 2nd round once the TSE publishes it, unless TSE_TURN pins a round', () => {
+    const published = fixture('ele-c');
+    published.pl.push({
+      cd: '3221',
+      c: 'ele2026',
+      dt: '25/10/2026',
+      e: [
+        {
+          cd: '6258',
+          t: '2',
+          abr: [
+            { cd: 'br', cp: [{ cd: '1' }] },
+            { cd: 'sp', cp: [{ cd: '3' }] },
+          ],
+        },
+        { cd: '6260', t: '2', abr: [{ cd: 'sp', cp: [{ cd: '3' }] }] },
+      ],
+    });
+    expect(discoverElection(published, undefined)).toMatchObject({
+      election: '6258',
+      contest: '3221',
+      turn: '2',
+      date: '25/10/2026',
+    });
+    expect(discoverElection(published, '1')).toMatchObject({ election: '6257', turn: '1' });
+    expect(() => discoverElection(fixture('ele-c'), '2')).toThrow();
   });
   it('rejects a missing election, wrong phase and other offices', () => {
     expect(() => discoverElection({ f: 'o', arq: [], pl: [] })).toThrow();

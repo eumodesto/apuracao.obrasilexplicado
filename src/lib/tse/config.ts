@@ -1,31 +1,82 @@
 import { configSchema, geographySchema } from './schemas';
 import type { ElectionConfig, Geography } from './types';
 export const CONFIG_URL = 'https://resultados.tse.jus.br/oficial/comum/config/ele-c.json';
-export function discoverElection(input: unknown): ElectionConfig {
+/** Presidential office code in the TSE files. */
+const PRESIDENT = 1;
+const GOVERNOR = 3;
+/**
+ * Picks the 2026 federal election that includes the presidential race nationwide. With more than
+ * one published (1st and 2nd round), the latest round wins; `TSE_TURN` pins a specific round.
+ */
+export function discoverElection(input: unknown, turn = process.env.TSE_TURN): ElectionConfig {
   const data = configSchema.parse(input);
-  const contest = data.pl.find(
-    (p) => p.dt === '04/10/2026' && p.c === 'ele2026' && p.cd === '3220',
-  );
-  const election = contest?.e.find(
-    (e) => e.t === '1' && e.abr.some((a) => a.cd === 'br' && a.cp.some((c) => Number(c.cd) === 1)),
-  );
-  if (!contest || !election || election.cd !== '6257')
-    throw new Error('Election configuration not published or changed');
+  const options = data.pl
+    .filter((p) => p.c === 'ele2026')
+    .flatMap((contest) =>
+      contest.e
+        .filter((e) =>
+          e.abr.some((a) => a.cd === 'br' && a.cp.some((c) => Number(c.cd) === PRESIDENT)),
+        )
+        .map((election) => ({ contest, election })),
+    )
+    .sort((a, b) => Number(b.election.t) - Number(a.election.t));
+  const chosen = options.find(({ election }) => !turn || election.t === turn);
+  if (!chosen) throw new Error('Election configuration not published or changed');
+  // The states with a governor race in the same round (in the 2nd round, only those in a runoff).
+  const governor = data.pl
+    .filter((p) => p.c === 'ele2026' && p.cd === chosen.contest.cd)
+    .flatMap((contest) => contest.e.map((election) => ({ contest, election })))
+    .map(({ contest, election }) => ({
+      contest,
+      election,
+      states: election.abr
+        .filter(
+          (a) =>
+            /^[a-z]{2}$/.test(a.cd) && a.cd !== 'br' && a.cp.some((c) => Number(c.cd) === GOVERNOR),
+        )
+        .map((a) => a.cd),
+    }))
+    .find(({ election, states }) => election.t === chosen.election.t && states.length > 0);
   return {
-    cycle: contest.c,
-    contest: contest.cd,
-    election: election.cd,
+    cycle: chosen.contest.c,
+    contest: chosen.contest.cd,
+    election: chosen.election.cd,
     office: '0001',
-    turn: election.t,
+    turn: chosen.election.t,
+    date: chosen.contest.dt,
     directories: Object.fromEntries(data.arq.map((a) => [a.tp, a.dir])),
+    ...(governor && {
+      governor: {
+        contest: governor.contest.cd,
+        election: governor.election.cd,
+        turn: governor.election.t,
+        date: governor.contest.dt,
+        states: governor.states,
+      },
+    }),
+    rounds: options.map(({ contest, election }) => ({
+      contest: contest.cd,
+      election: election.cd,
+      turn: election.t,
+      date: contest.dt,
+    })),
   };
 }
+
+/** The configuration of another round of the same election (e.g. the 1st round during the 2nd). */
+export function roundConfig(config: ElectionConfig, turn: string): ElectionConfig | null {
+  const round = config.rounds?.find((item) => item.turn === turn);
+  return round ? { ...config, ...round } : null;
+}
 export function normalizeGeography(input: unknown): Geography[] {
-  return geographySchema
-    .parse(input)
-    .abr.map((a) => ({
-      code: a.cd,
-      name: a.ds,
-      municipalities: a.mu.map((m) => ({ code: m.cd, name: m.nm, ...(m.cdi ? { ibge: m.cdi } : {}), ...(m.z ? { zones: m.z } : {}) })),
-    }));
+  return geographySchema.parse(input).abr.map((a) => ({
+    code: a.cd,
+    name: a.ds,
+    municipalities: a.mu.map((m) => ({
+      code: m.cd,
+      name: m.nm,
+      ...(m.cdi ? { ibge: m.cdi } : {}),
+      ...(m.z ? { zones: m.z } : {}),
+    })),
+  }));
 }

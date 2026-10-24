@@ -54,7 +54,10 @@ export class TseClient {
   /** Hydrate a durable result without spending an upstream request or clearing backoff. */
   async restore<T>(url: string, parse: (input: unknown) => T): Promise<Resource<T> | null> {
     const parsedUrl = new URL(url);
-    if (parsedUrl.origin !== 'https://resultados.tse.jus.br' || !parsedUrl.pathname.startsWith('/oficial/'))
+    if (
+      parsedUrl.origin !== 'https://resultados.tse.jus.br' ||
+      !parsedUrl.pathname.startsWith('/oficial/')
+    )
       throw new Error('Disallowed source');
     if (this.states.get(url)?.value) return this.peek<T>(url);
     const saved = await this.cache.get(url);
@@ -62,10 +65,17 @@ export class TseClient {
     try {
       const value = parse(JSON.parse(saved.body));
       const previous = this.states.get(url);
-      this.states.set(url, { value, entry: saved, nextAttempt: previous?.nextAttempt ?? 0,
-        failures: previous?.failures ?? 0, issue: previous?.issue ?? null,
-        attemptedAt: previous?.attemptedAt });
-    } catch { /* Corrupt or incompatible cache cannot color a municipality. */ }
+      this.states.set(url, {
+        value,
+        entry: saved,
+        nextAttempt: previous?.nextAttempt ?? 0,
+        failures: previous?.failures ?? 0,
+        issue: previous?.issue ?? null,
+        attemptedAt: previous?.attemptedAt,
+      });
+    } catch {
+      /* Corrupt or incompatible cache cannot color a municipality. */
+    }
     return this.peek<T>(url);
   }
   async read<T>(url: string, parse: (input: unknown) => T, interval: number): Promise<Resource<T>> {
@@ -75,15 +85,30 @@ export class TseClient {
       !parsedUrl.pathname.startsWith('/oficial/')
     )
       throw new Error('Disallowed source');
-    const existing = this.flights.get(url);
-    if (existing) return existing as Promise<Resource<T>>;
-    const flight = this.refresh(url, parse, interval);
-    this.flights.set(url, flight);
-    try {
-      return await flight;
-    } finally {
-      this.flights.delete(url);
+    let flight = this.flights.get(url) as Promise<Resource<T>> | undefined;
+    if (!flight) {
+      flight = this.refresh(url, parse, interval).finally(() => this.flights.delete(url));
+      this.flights.set(url, flight);
     }
+    // With a validated value in hand, answer at once and let the refresh finish in the background:
+    // under load nobody waits for the TSE or for the request spacing queue.
+    const state = this.states.get(url);
+    if (this.serveStale && state?.value != null) {
+      flight.catch(() => {});
+      return this.current<T>(state);
+    }
+    return flight;
+  }
+  /** Answer reads from the last validated value while a refresh runs (production server). */
+  serveStale = false;
+  private current<T>(state: State): Resource<T> {
+    return {
+      attemptedAt: state.attemptedAt ?? null,
+      value: state.value as T | null,
+      issue: state.issue ?? (this.blockedUntil > this.now() ? 'HTTP 429' : null),
+      checkedAt: state.entry?.checkedAt ?? null,
+      nextAttempt: Math.max(state.nextAttempt, this.blockedUntil),
+    };
   }
   private async refresh<T>(
     url: string,

@@ -1,100 +1,2621 @@
 @import './design-tokens.css';
-.election-cockpit{--ink:var(--text-primary);--muted:var(--text-secondary);--line:var(--border-default);--green:var(--status-live);background:var(--bg-canvas);color:var(--ink);height:100dvh;display:flex;flex-direction:column;font:13px Arial,Helvetica,sans-serif;overflow:hidden}
-.election-cockpit *{box-sizing:border-box}.election-cockpit button,.election-cockpit input,.election-cockpit select{font:inherit;color:inherit}.election-cockpit button{cursor:pointer;border:1px solid var(--line);background:var(--bg-elevated);border-radius:3px;min-height:36px;padding:7px 10px}.election-cockpit button:hover{background:var(--border-default)}.election-cockpit button:disabled{opacity:.45;cursor:default}.election-cockpit :focus-visible{outline:2px solid var(--status-live);outline-offset:3px}.election-cockpit h1,.election-cockpit h2,.election-cockpit h3,.election-cockpit p{margin:0}.election-cockpit h1{font-size:18px}.election-cockpit h2{font-size:16px}.election-cockpit h3{font-size:13px;margin:16px 0 8px}.election-cockpit small{font-size:11px;color:var(--muted)}.election-cockpit .eyebrow{font-size:10px;letter-spacing:1.6px;color:var(--status-live);display:block;margin-bottom:9px}.election-cockpit i{display:inline-block;width:9px;height:9px;border-radius:1px;flex-shrink:0}
-.cockpit-header{min-height:66px;display:flex;align-items:center;gap:18px;padding:10px 18px;border-bottom:1px solid var(--line);background:var(--bg-panel);z-index:20}.cockpit-header .brand{color:var(--text-primary);flex-shrink:0}.cockpit-header .brand span{color:var(--text-secondary)}.office-context{font-weight:bold;font-size:11px;line-height:1.7;white-space:nowrap}.office-context span{display:block;color:var(--muted);font-size:10px;font-weight:normal}.cockpit-search{position:relative;max-width:370px;flex:1;min-width:150px}.cockpit-search input{width:100%;height:36px;background:var(--bg-panel);border:1px solid var(--border-active);padding:8px 12px;border-radius:4px}.search-results{position:absolute;top:42px;left:0;right:0;max-height:370px;overflow:auto;background:var(--bg-panel);border:1px solid var(--border-active);box-shadow:0 10px 25px var(--bg-overlay)}.search-results button{display:grid;width:100%;grid-template-columns:1fr auto;text-align:left;border:0;border-bottom:1px solid var(--line);padding:10px}.search-results small{grid-column:1/-1;letter-spacing:1px;font-size:9px}.search-results p{padding:15px}.cockpit-status{margin-left:auto;white-space:nowrap;font-size:11px;line-height:1.7}.cockpit-status b{color:var(--status-live);font-size:10px;letter-spacing:.6px;display:block}.cockpit-status span{color:var(--muted)}.header-actions{display:flex;gap:5px}.header-actions button{font-size:11px;padding:7px}.cockpit-grid{display:grid;grid-template-columns:300px minmax(0,1fr) 280px;flex:1;min-height:0;gap:1px;background:var(--line)}.race-panel,.context-panel{background:var(--bg-panel);padding:17px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-active) transparent}.race-panel{display:flex;flex-direction:column;gap:13px}.panel-heading small{display:block;margin-top:6px;letter-spacing:.8px;font-size:9px}.race-progress{display:flex;align-items:center;gap:15px;border-top:1px solid var(--line);padding-top:12px}.race-progress strong{font-size:31px;letter-spacing:-1px;white-space:nowrap}.race-progress strong small{font-size:16px}.race-progress span{font-size:9px;color:var(--muted);line-height:1.8}.cockpit-top-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cockpit-top-two .cockpit-candidate{display:flex;flex-direction:column;align-items:flex-start;text-align:left;background:none;border:0;padding:0;gap:4px}.cockpit-candidate img,.portrait-fallback{width:48px;height:55px;object-fit:cover;border-radius:3px;background:var(--border-default)}.cockpit-candidate>strong{font-size:11px;min-height:26px;line-height:1.3}.cockpit-candidate>b{font-size:25px;letter-spacing:-1px}.cockpit-candidate>b small{font-size:12px}.cockpit-candidate>span{font-size:10px;color:var(--text-secondary)}.comparison-bar{display:flex;height:5px;background:var(--border-default);flex-shrink:0}.comparison-bar span{height:100%}.race-gap{display:grid;grid-template-columns:1fr auto;font-size:10px;line-height:1.8}.race-gap>span{color:var(--muted);font-size:9px;letter-spacing:.7px}.race-gap>b{font-size:14px}.race-gap small{grid-column:2;text-align:right}.cockpit-majority{padding-top:11px;border-top:1px solid var(--line);font-size:11px;line-height:1.5}.cockpit-majority b{display:block;margin-bottom:5px}.cockpit-majority span{display:block;color:var(--muted);font-size:10px}.other-candidates{border-top:1px solid var(--line);padding-top:5px}.compact-candidate-row{display:flex!important;align-items:center;gap:8px;width:100%;border:0!important;background:none!important;text-align:left;padding:7px 0!important}.compact-candidate-row img{width:29px;height:33px;object-fit:cover;border-radius:2px}.compact-candidate-row span{min-width:0;flex:1}.compact-candidate-row b{font-size:10px;display:block}.compact-candidate-row small{font-size:9px}.compact-candidate-row strong{font-size:12px}.other-candidates summary{font-size:10px;color:var(--muted);padding:9px 0;cursor:pointer}.compact-chart{margin-top:auto;padding-top:12px;border-top:1px solid var(--line)}.compact-chart h2{font-size:10px;text-transform:uppercase;letter-spacing:1px}.compact-chart svg{display:block;width:100%;max-height:130px;margin-top:5px}.compact-chart svg text{fill:var(--text-secondary);font-size:9px}.compact-chart p{font-size:9px;color:var(--muted);line-height:1.5;margin-top:4px}.preserved-status{font-size:10px;color:var(--status-warning)}.map-panel{position:relative;background:var(--bg-panel);min-width:0;min-height:0;display:flex;flex-direction:column}.map-panel-top{padding:13px 16px 8px;display:flex;justify-content:space-between;align-items:center;gap:10px}.map-panel-top h2{font-size:10px;text-transform:uppercase;letter-spacing:1px;color:var(--text-muted)}.map-panel-top nav{display:flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:11px}.map-panel-top nav button{border:0;background:none;padding:0 3px;min-height:28px}.map-mode-switcher{display:flex;gap:4px;padding:0 16px 10px;overflow-x:auto;flex-shrink:0}.map-mode-switcher button,.map-mode-switcher select{font-size:11px;white-space:nowrap;min-height:34px}.map-mode-switcher button[aria-pressed=true]{background:var(--border-default);border-color:var(--text-muted)}.map-mode-switcher select{background:var(--bg-elevated);border:1px solid var(--line);padding:5px;width:135px;border-radius:3px}.cockpit-map{position:relative;flex:1;min-height:260px;width:100%;overflow:hidden}.cockpit-map canvas{width:100%;height:100%;display:block;touch-action:none;cursor:grab}.cockpit-map canvas:active{cursor:grabbing}.map-zoom{position:absolute;top:12px;left:15px;display:flex;flex-direction:column;gap:4px}.map-zoom button{font-size:19px;width:36px;padding:2px;min-height:36px}.map-callouts{position:absolute;right:12px;top:30%;display:flex;flex-direction:column;gap:4px}.map-callouts button{font-size:10px;min-height:26px;padding:3px 6px;background:var(--bg-overlay);text-align:left}.map-callouts b{font-weight:normal;margin-left:3px}.cockpit-tooltip{position:absolute;left:16px;bottom:27px;min-width:220px;max-width:90%;background:var(--bg-overlay);border:1px solid var(--text-muted);padding:12px;pointer-events:none;display:flex;flex-direction:column;gap:7px;font-size:11px}.cockpit-tooltip span{display:flex;align-items:center;gap:7px}.cockpit-tooltip span b{margin-left:auto}.map-attribution{position:absolute;bottom:5px;left:15px;font-size:9px;color:var(--text-muted)}.map-error{position:absolute;bottom:25px;right:10px;color:var(--status-warning);font-size:11px}.map-legend{padding:8px 16px;display:flex;flex-wrap:wrap;gap:9px;border-top:1px solid var(--line);font-size:9px;min-height:35px;color:var(--text-secondary)}.map-legend span{display:flex;align-items:center;gap:4px}.map-legend button{border:0;background:none;padding:0;min-height:18px;font-size:9px;display:flex;gap:4px;align-items:center}.territory-alternative{border-top:1px solid var(--line);padding:8px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:49px}.territory-alternative label{display:flex;align-items:center;gap:6px;font-size:9px}.territory-alternative select{background:var(--bg-elevated);border:1px solid var(--border-active);max-width:155px;font-size:10px;height:29px}.territory-alternative>span{color:var(--text-secondary);font-size:9px}.historical-map-note{font-size:10px;color:var(--status-warning);padding:8px 15px}.context-panel h2{margin-bottom:12px}.region-sidebar details{border-bottom:1px solid var(--line);padding:11px 0}.region-sidebar summary{display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px}.region-sidebar summary>span{flex:1}.region-sidebar summary small{display:block;font-size:10px;margin-top:5px}.region-sidebar summary b{font-size:18px;letter-spacing:-.5px}.region-sidebar p{font-size:10px;color:var(--text-secondary);line-height:1.5;margin-top:8px}.region-sidebar details>div{display:flex;justify-content:space-between;gap:8px;font-size:10px;margin:9px 0}.region-sidebar>button{width:100%;background:none;border:0;padding:15px 0;display:flex;justify-content:space-between}.context-counted{font-size:34px;display:block;margin:10px 0 3px}.context-panel section>small{display:block;margin-bottom:15px}.context-candidate{display:grid;grid-template-columns:1fr auto;gap:4px;border-bottom:1px solid var(--line);padding:10px 0}.context-candidate>span{font-size:10px;display:flex;gap:5px;align-items:center}.context-candidate b{font-size:14px}.context-candidate small{grid-column:1/-1}.context-panel dl{font-size:11px;display:grid;grid-template-columns:1fr auto;gap:8px;margin:15px 0}.context-panel dt{color:var(--muted)}.context-panel dd{margin:0}.context-panel .back-button{margin-bottom:16px;font-size:10px}.context-town-list{max-height:230px;overflow:auto;scrollbar-width:thin}.context-town-list button{border:0;border-bottom:1px solid var(--line);background:none;font-size:10px;width:100%;text-align:left;display:flex;justify-content:space-between;gap:4px;padding:8px 0}.zones-list span{display:inline-block;padding:6px;background:var(--border-default);margin:3px;border:1px solid var(--border-active);font-size:11px}.zones-list p{font-size:10px;line-height:1.5;color:var(--muted);margin-top:9px}.candidate-context>img{display:block;width:62px;height:70px;object-fit:cover;margin:16px 0 8px}.candidate-context>strong{font-size:36px;display:block;margin:12px 0}.candidate-context>button{width:100%;font-size:10px;text-align:left;display:flex;justify-content:space-between;gap:8px;margin-bottom:3px}.update-feed{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}.update-feed h2{font-size:11px;text-transform:uppercase;letter-spacing:1px}.update-feed article{display:grid;grid-template-columns:55px 1fr;gap:4px;margin:13px 0;font-size:10px}.update-feed time{color:var(--status-live);grid-row:span 3}.update-feed b{font-size:10px}.update-feed span,.update-feed small{color:var(--muted);font-size:9px}.cockpit-timeline{min-height:66px;border-top:1px solid var(--line);display:flex;align-items:center;gap:18px;padding:10px 20px;background:var(--bg-panel)}.cockpit-timeline>div{min-width:120px;font-size:10px;line-height:1.7}.cockpit-timeline>div b{display:block;color:var(--status-live);letter-spacing:.6px}.cockpit-timeline>div span{font-size:16px}.cockpit-timeline label{flex:1;min-width:0}.cockpit-timeline input{width:100%;accent-color:var(--status-live)}.cockpit-timeline label>span:not(.sr-only){display:flex;justify-content:space-between;font-size:9px;color:var(--text-secondary)}.cockpit-timeline label b{font-weight:normal}.cockpit-timeline button{font-size:11px}.cockpit-timeline>small{max-width:110px;line-height:1.5;font-size:9px}.cockpit-footer{font-size:9px;min-height:20px;text-align:center;background:var(--bg-panel);color:var(--text-muted);padding:4px}.cockpit-notice{padding:8px 18px;font-size:11px;background:var(--border-default);color:var(--status-warning);display:flex;align-items:center;justify-content:space-between}.cockpit-notice button{min-height:24px;padding:0 5px;background:none;border:0}.cockpit-info{position:absolute;right:16px;top:70px;z-index:50;max-width:440px;background:var(--bg-elevated);border:1px solid var(--text-muted);padding:20px;display:flex;flex-direction:column;gap:12px;font-size:12px;line-height:1.5}.cockpit-info a{color:var(--status-live)}.exterior-map-placeholder{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:40px;text-align:center}.exterior-map-placeholder>span{letter-spacing:3px;color:var(--text-secondary)}.exterior-map-placeholder h2{font-size:28px}.exterior-map-placeholder p{color:var(--muted);max-width:350px;line-height:1.6}.exterior-map-placeholder select{display:block;width:100%;margin-top:9px;background:var(--bg-elevated);border:1px solid var(--text-muted);padding:10px;max-width:300px}
-@media(min-width:1700px){.cockpit-grid{grid-template-columns:320px minmax(0,1fr) 300px}.race-panel,.context-panel{padding:22px}.race-panel{gap:18px}.cockpit-candidate>b{font-size:30px}.compact-chart svg{max-height:170px}}
-@media(max-width:1279px) and (min-width:769px){.cockpit-grid{grid-template-columns:260px minmax(0,1fr) 230px}.cockpit-header{gap:10px;padding:10px}.office-context{display:none}.header-actions button{font-size:10px}.header-actions button[aria-label="Alternar tela cheia"]{display:none}.race-panel,.context-panel{padding:12px}.cockpit-candidate>b{font-size:23px}.map-panel-top h2{display:none}.cockpit-status{font-size:10px}}
-@media(max-width:1023px) and (min-width:769px){.cockpit-grid{grid-template-columns:245px minmax(0,1fr)}.context-panel{grid-column:1/-1;max-height:300px}.cockpit-grid{overflow:auto;grid-template-rows:minmax(520px,1fr) auto}.cockpit-status{display:none}.race-panel{overflow:visible}}
-@media(max-width:768px){.election-cockpit{height:auto;min-height:100dvh;overflow:visible}.cockpit-header{min-height:100px;flex-wrap:wrap;padding:10px 12px;gap:9px}.cockpit-header .brand{font-size:12px}.office-context{font-size:9px;margin-left:auto}.office-context span{font-size:9px}.cockpit-search{order:4;max-width:none;flex-basis:100%;min-width:0}.cockpit-search input{height:40px;font-size:13px}.cockpit-status{order:5;margin:0;font-size:10px;flex:1}.header-actions{order:6;gap:4px}.header-actions button{font-size:10px;padding:6px;min-height:40px}.header-actions button[aria-label="Alternar tela cheia"]{display:none}.header-actions button[aria-label="Compartilhar contexto"]{width:auto;font-size:10px}.cockpit-grid{display:flex;flex-direction:column;flex:none;gap:1px}.race-panel{padding:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;overflow:visible}.panel-heading{grid-column:1/-1}.panel-heading .eyebrow{font-size:9px;margin-bottom:5px}.panel-heading h1{font-size:20px}.panel-heading small{font-size:9px}.race-progress{grid-column:1/-1;padding-top:8px}.race-progress strong{font-size:32px}.race-progress span{font-size:10px}.cockpit-top-two{grid-column:1/-1;gap:24px}.cockpit-candidate img{width:44px;height:50px}.cockpit-candidate>strong{min-height:auto;font-size:12px}.cockpit-candidate>b{font-size:30px}.cockpit-candidate>span{font-size:11px}.comparison-bar,.race-gap,.cockpit-majority{grid-column:1/-1}.race-gap{font-size:11px}.cockpit-majority{font-size:12px}.cockpit-majority span{font-size:11px}.other-candidates{grid-column:1/-1}.compact-candidate-row{min-height:44px}.compact-candidate-row b{font-size:11px}.compact-candidate-row small{font-size:10px}.compact-candidate-row strong{font-size:13px}.other-candidates summary{font-size:11px;min-height:44px}.compact-chart{display:none}.preserved-status{grid-column:1/-1}.map-panel{min-height:650px}.map-panel-top{padding:14px 12px}.map-panel-top h2{display:none}.map-panel-top nav{font-size:12px}.map-mode-switcher{padding:0 12px 10px}.map-mode-switcher button,.map-mode-switcher select{min-height:44px;font-size:12px}.cockpit-map{height:430px;flex:none;min-height:430px}.map-zoom button{min-height:44px;width:44px}.map-callouts{right:6px}.map-callouts button{min-height:34px;font-size:11px}.map-legend{font-size:11px;padding:12px}.map-legend button{font-size:10px;min-height:32px}.map-attribution{font-size:10px}.territory-alternative{padding:12px;gap:10px}.territory-alternative label{font-size:11px;flex-wrap:wrap}.territory-alternative select{height:44px;max-width:200px;font-size:12px}.territory-alternative>span{font-size:11px}.context-panel{padding:20px;overflow:visible}.context-panel .eyebrow{font-size:10px}.context-panel h2{font-size:22px}.region-sidebar summary{font-size:15px;min-height:48px}.region-sidebar summary small{font-size:12px}.region-sidebar summary b{font-size:24px}.region-sidebar p,.region-sidebar details>div,.context-town-list button,.context-candidate>span,.zones-list p{font-size:12px}.region-sidebar details>div{margin:13px 0}.context-candidate b{font-size:18px}.context-candidate small,.context-panel small{font-size:12px}.context-panel dl{font-size:13px}.context-town-list button{min-height:44px}.update-feed h2{font-size:13px}.update-feed article,.update-feed b,.update-feed small,.update-feed span{font-size:12px}.update-feed article{grid-template-columns:70px 1fr;gap:7px;margin:18px 0}.cockpit-timeline{flex-wrap:wrap;gap:12px;padding:14px 16px;order:2}.cockpit-timeline>div{min-width:90px}.cockpit-timeline label{flex-basis:60%}.cockpit-timeline input{min-height:44px}.cockpit-timeline label>span:not(.sr-only){font-size:10px}.cockpit-timeline button{min-height:44px}.cockpit-timeline>small{max-width:none}.cockpit-footer{order:3;line-height:1.6;padding:12px;font-size:10px}.cockpit-info{top:155px;left:12px;right:12px;max-width:none}.cockpit-tooltip{font-size:12px;gap:9px}.exterior-map-placeholder{padding:35px 20px;min-height:430px}}
-@media(prefers-reduced-motion:reduce){.election-cockpit *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+.election-cockpit {
+  --ink: var(--text-primary);
+  --muted: var(--text-secondary);
+  --line: var(--border-default);
+  --green: var(--status-live);
+  background: var(--bg-canvas);
+  color: var(--ink);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  font: 13px var(--font-sans);
+  overflow: hidden;
+}
+.election-cockpit * {
+  box-sizing: border-box;
+}
+.election-cockpit button,
+.election-cockpit input,
+.election-cockpit select {
+  font: inherit;
+  color: inherit;
+}
+.election-cockpit button {
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--bg-elevated);
+  border-radius: 3px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+.election-cockpit button:hover {
+  background: var(--border-default);
+}
+.election-cockpit button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.election-cockpit :focus-visible {
+  outline: 2px solid var(--status-live);
+  outline-offset: 3px;
+}
+.election-cockpit h1,
+.election-cockpit h2,
+.election-cockpit h3,
+.election-cockpit p {
+  margin: 0;
+}
+.election-cockpit h1 {
+  font-size: 18px;
+}
+.election-cockpit h2 {
+  font-size: 16px;
+}
+.election-cockpit h3 {
+  font-size: 13px;
+  margin: 16px 0 8px;
+}
+.election-cockpit small {
+  font-size: 11px;
+  color: var(--muted);
+}
+.election-cockpit .eyebrow {
+  font-size: 10px;
+  letter-spacing: 1.6px;
+  color: var(--status-live);
+  display: block;
+  margin-bottom: 9px;
+}
+.election-cockpit i {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 1px;
+  flex-shrink: 0;
+}
+.cockpit-header {
+  min-height: 66px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-panel);
+  z-index: 20;
+}
+.cockpit-header .brand {
+  color: var(--text-primary);
+  flex-shrink: 0;
+}
+.cockpit-header .brand span {
+  color: var(--text-secondary);
+}
+.office-context {
+  font-weight: bold;
+  font-size: 11px;
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.office-context span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: normal;
+}
+.cockpit-search {
+  position: relative;
+  max-width: 370px;
+  flex: 1;
+  min-width: 150px;
+}
+.cockpit-search input {
+  width: 100%;
+  height: 36px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-active);
+  padding: 8px 12px;
+  border-radius: 4px;
+}
+.search-results {
+  position: absolute;
+  top: 42px;
+  left: 0;
+  right: 0;
+  max-height: 370px;
+  overflow: auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-active);
+  box-shadow: 0 10px 25px var(--bg-overlay);
+}
+.search-results button {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 1fr auto;
+  text-align: left;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 10px;
+}
+.search-results small {
+  grid-column: 1/-1;
+  letter-spacing: 1px;
+  font-size: 9px;
+}
+.search-results p {
+  padding: 15px;
+}
+.cockpit-status {
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.7;
+}
+.cockpit-status b {
+  color: var(--status-live);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  display: block;
+}
+.cockpit-status span {
+  color: var(--muted);
+}
+.header-actions {
+  display: flex;
+  gap: 5px;
+}
+.header-actions button {
+  font-size: 11px;
+  padding: 7px;
+}
+.cockpit-grid {
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr) 280px;
+  flex: 1;
+  min-height: 0;
+  gap: 1px;
+  background: var(--line);
+}
+.race-panel,
+.context-panel {
+  background: var(--bg-panel);
+  padding: 17px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-active) transparent;
+}
+.race-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.panel-heading small {
+  display: block;
+  margin-top: 6px;
+  letter-spacing: 0.8px;
+  font-size: 9px;
+}
+.race-progress {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+.race-progress strong {
+  font-size: 31px;
+  letter-spacing: -1px;
+  white-space: nowrap;
+}
+.race-progress strong small {
+  font-size: 16px;
+}
+.race-progress span {
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.cockpit-top-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.cockpit-top-two .cockpit-candidate {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 0;
+  gap: 4px;
+}
+.cockpit-candidate img,
+.portrait-fallback {
+  width: 48px;
+  height: 55px;
+  object-fit: cover;
+  border-radius: 3px;
+  background: var(--border-default);
+}
+.cockpit-candidate > strong {
+  font-size: 11px;
+  min-height: 26px;
+  line-height: 1.3;
+}
+.cockpit-candidate > b {
+  font-size: 25px;
+  letter-spacing: -1px;
+}
+.cockpit-candidate > b small {
+  font-size: 12px;
+}
+.cockpit-candidate > span {
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.comparison-bar {
+  display: flex;
+  height: 5px;
+  background: var(--border-default);
+  flex-shrink: 0;
+}
+.comparison-bar span {
+  height: 100%;
+}
+.race-gap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.race-gap > span {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: 0.7px;
+}
+.race-gap > b {
+  font-size: 14px;
+}
+.race-gap small {
+  grid-column: 2;
+  text-align: right;
+}
+.cockpit-majority {
+  padding-top: 11px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  line-height: 1.5;
+}
+.cockpit-majority b {
+  display: block;
+  margin-bottom: 5px;
+}
+.cockpit-majority span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+}
+.other-candidates {
+  border-top: 1px solid var(--line);
+  padding-top: 5px;
+}
+.compact-candidate-row {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border: 0 !important;
+  background: none !important;
+  text-align: left;
+  padding: 7px 0 !important;
+}
+.compact-candidate-row img {
+  width: 29px;
+  height: 33px;
+  object-fit: cover;
+  border-radius: 2px;
+}
+.compact-candidate-row span {
+  min-width: 0;
+  flex: 1;
+}
+.compact-candidate-row b {
+  font-size: 10px;
+  display: block;
+}
+.compact-candidate-row small {
+  font-size: 9px;
+}
+.compact-candidate-row strong {
+  font-size: 12px;
+}
+.other-candidates summary {
+  font-size: 10px;
+  color: var(--muted);
+  padding: 9px 0;
+  cursor: pointer;
+}
+.compact-chart {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+.compact-chart h2 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.compact-chart svg {
+  display: block;
+  width: 100%;
+  max-height: 130px;
+  margin-top: 5px;
+}
+.compact-chart svg text {
+  fill: var(--text-secondary);
+  font-size: 9px;
+}
+.compact-chart p {
+  font-size: 9px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+.preserved-status {
+  font-size: 10px;
+  color: var(--status-warning);
+}
+.map-panel {
+  position: relative;
+  background: var(--bg-panel);
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.map-panel-top {
+  padding: 13px 16px 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.map-panel-top h2 {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+.map-panel-top nav {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  font-size: 11px;
+}
+.map-panel-top nav button {
+  border: 0;
+  background: none;
+  padding: 0 3px;
+  min-height: 28px;
+}
+.map-mode-switcher {
+  display: flex;
+  gap: 4px;
+  padding: 0 16px 10px;
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+.map-mode-switcher button,
+.map-mode-switcher select {
+  font-size: 11px;
+  white-space: nowrap;
+  min-height: 34px;
+}
+.map-mode-switcher button[aria-pressed='true'] {
+  background: var(--border-default);
+  border-color: var(--text-muted);
+}
+.map-mode-switcher select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--line);
+  padding: 5px;
+  width: 135px;
+  border-radius: 3px;
+}
+.cockpit-map {
+  position: relative;
+  flex: 1;
+  min-height: 260px;
+  width: 100%;
+  overflow: hidden;
+}
+.cockpit-map canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  cursor: grab;
+}
+.cockpit-map canvas:active {
+  cursor: grabbing;
+}
+.map-zoom {
+  position: absolute;
+  top: 12px;
+  left: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.map-zoom button {
+  font-size: 19px;
+  width: 36px;
+  padding: 2px;
+  min-height: 36px;
+}
+.map-callouts {
+  position: absolute;
+  right: 12px;
+  top: 30%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.map-callouts button {
+  font-size: 10px;
+  min-height: 26px;
+  padding: 3px 6px;
+  background: var(--bg-overlay);
+  text-align: left;
+}
+.map-callouts b {
+  font-weight: normal;
+  margin-left: 3px;
+}
+.cockpit-tooltip {
+  position: absolute;
+  left: 16px;
+  bottom: 27px;
+  min-width: 220px;
+  max-width: 90%;
+  background: var(--bg-overlay);
+  border: 1px solid var(--text-muted);
+  padding: 12px;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 11px;
+}
+.cockpit-tooltip span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.cockpit-tooltip span b {
+  margin-left: auto;
+}
+.map-attribution {
+  position: absolute;
+  bottom: 5px;
+  left: 15px;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+.map-error {
+  position: absolute;
+  bottom: 25px;
+  right: 10px;
+  color: var(--status-warning);
+  font-size: 11px;
+}
+.map-legend {
+  padding: 8px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  border-top: 1px solid var(--line);
+  font-size: 9px;
+  min-height: 35px;
+  color: var(--text-secondary);
+}
+.map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.map-legend button {
+  border: 0;
+  background: none;
+  padding: 0;
+  min-height: 18px;
+  font-size: 9px;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+.territory-alternative {
+  border-top: 1px solid var(--line);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-height: 49px;
+}
+.territory-alternative label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+}
+.territory-alternative select {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-active);
+  max-width: 155px;
+  font-size: 10px;
+  height: 29px;
+}
+.territory-alternative > span {
+  color: var(--text-secondary);
+  font-size: 9px;
+}
+.historical-map-note {
+  font-size: 10px;
+  color: var(--status-warning);
+  padding: 8px 15px;
+}
+.context-panel h2 {
+  margin-bottom: 12px;
+}
+.region-sidebar details {
+  border-bottom: 1px solid var(--line);
+  padding: 11px 0;
+}
+.region-sidebar summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+.region-sidebar summary > span {
+  flex: 1;
+}
+.region-sidebar summary small {
+  display: block;
+  font-size: 10px;
+  margin-top: 5px;
+}
+.region-sidebar summary b {
+  font-size: 18px;
+  letter-spacing: -0.5px;
+}
+.region-sidebar p {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.region-sidebar details > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 10px;
+  margin: 9px 0;
+}
+.region-sidebar > button {
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 15px 0;
+  display: flex;
+  justify-content: space-between;
+}
+.context-counted {
+  font-size: 34px;
+  display: block;
+  margin: 10px 0 3px;
+}
+.context-panel section > small {
+  display: block;
+  margin-bottom: 15px;
+}
+.context-candidate {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px;
+  border-bottom: 1px solid var(--line);
+  padding: 10px 0;
+}
+.context-candidate > span {
+  font-size: 10px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.context-candidate b {
+  font-size: 14px;
+}
+.context-candidate small {
+  grid-column: 1/-1;
+}
+.context-panel dl {
+  font-size: 11px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  margin: 15px 0;
+}
+.context-panel dt {
+  color: var(--muted);
+}
+.context-panel dd {
+  margin: 0;
+}
+.context-panel .back-button {
+  margin-bottom: 16px;
+  font-size: 10px;
+}
+.context-town-list {
+  max-height: 230px;
+  overflow: auto;
+  scrollbar-width: thin;
+}
+.context-town-list {
+  display: grid;
+  gap: 2px;
+  padding-right: 4px;
+}
+.context-town-list button {
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: none;
+  font-size: 10px;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  line-height: 1.3;
+}
+.context-town-list button:hover,
+.context-town-list button:focus-visible {
+  background: var(--border-default);
+  border-radius: 8px;
+}
+.context-town-list button span {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+.zones-list span {
+  display: inline-block;
+  padding: 6px;
+  background: var(--border-default);
+  margin: 3px;
+  border: 1px solid var(--border-active);
+  font-size: 11px;
+}
+.zones-list p {
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 9px;
+}
+.candidate-context > img {
+  display: block;
+  width: 62px;
+  height: 70px;
+  object-fit: cover;
+  margin: 16px 0 8px;
+}
+.candidate-context > strong {
+  font-size: 36px;
+  display: block;
+  margin: 12px 0;
+}
+.candidate-context > button {
+  width: 100%;
+  font-size: 10px;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.update-feed {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+.update-feed h2 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.update-feed article {
+  display: grid;
+  grid-template-columns: 55px 1fr;
+  gap: 4px;
+  margin: 13px 0;
+  font-size: 10px;
+}
+.update-feed time {
+  color: var(--status-live);
+  grid-row: span 3;
+}
+.update-feed b {
+  font-size: 10px;
+}
+.update-feed span,
+.update-feed small {
+  color: var(--muted);
+  font-size: 9px;
+}
+.cockpit-timeline {
+  min-height: 66px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 20px;
+  background: var(--bg-panel);
+}
+.cockpit-timeline > div {
+  min-width: 120px;
+  font-size: 10px;
+  line-height: 1.7;
+}
+.cockpit-timeline > div b {
+  display: block;
+  color: var(--status-live);
+  letter-spacing: 0.6px;
+}
+.cockpit-timeline > div span {
+  font-size: 16px;
+}
+.cockpit-timeline label {
+  flex: 1;
+  min-width: 0;
+}
+.cockpit-timeline input {
+  width: 100%;
+  accent-color: var(--status-live);
+}
+.cockpit-timeline label > span:not(.sr-only) {
+  display: flex;
+  justify-content: space-between;
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+.cockpit-timeline label b {
+  font-weight: normal;
+}
+.cockpit-timeline button {
+  font-size: 11px;
+}
+.cockpit-timeline > small {
+  max-width: 110px;
+  line-height: 1.5;
+  font-size: 9px;
+}
+.cockpit-footer {
+  font-size: 9px;
+  min-height: 20px;
+  text-align: center;
+  background: var(--bg-panel);
+  color: var(--text-muted);
+  padding: 4px;
+}
+.cockpit-notice {
+  padding: 8px 18px;
+  font-size: 11px;
+  background: var(--border-default);
+  color: var(--status-warning);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cockpit-notice button {
+  min-height: 24px;
+  padding: 0 5px;
+  background: none;
+  border: 0;
+}
+.cockpit-info {
+  position: absolute;
+  right: 16px;
+  top: 70px;
+  z-index: 50;
+  max-width: 440px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--text-muted);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.cockpit-info a {
+  color: var(--status-live);
+}
+.exterior-map-placeholder {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 40px;
+  text-align: center;
+}
+.exterior-map-placeholder > span {
+  letter-spacing: 3px;
+  color: var(--text-secondary);
+}
+.exterior-map-placeholder h2 {
+  font-size: 28px;
+}
+.exterior-map-placeholder p {
+  color: var(--muted);
+  max-width: 350px;
+  line-height: 1.6;
+}
+.exterior-map-placeholder select {
+  display: block;
+  width: 100%;
+  margin-top: 9px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--text-muted);
+  padding: 10px;
+  max-width: 300px;
+}
+@media (min-width: 1700px) {
+  .cockpit-grid {
+    grid-template-columns: 320px minmax(0, 1fr) 300px;
+  }
+  .race-panel,
+  .context-panel {
+    padding: 22px;
+  }
+  .race-panel {
+    gap: 18px;
+  }
+  .cockpit-candidate > b {
+    font-size: 30px;
+  }
+  .compact-chart svg {
+    max-height: 170px;
+  }
+}
+@media (max-width: 1279px) and (min-width: 769px) {
+  .cockpit-grid {
+    grid-template-columns: 260px minmax(0, 1fr) 230px;
+  }
+  .cockpit-header {
+    gap: 10px;
+    padding: 10px;
+  }
+  .office-context {
+    display: none;
+  }
+  .header-actions button {
+    font-size: 10px;
+  }
+  .header-actions button[aria-label='Alternar tela cheia'] {
+    display: none;
+  }
+  .race-panel,
+  .context-panel {
+    padding: 12px;
+  }
+  .cockpit-candidate > b {
+    font-size: 23px;
+  }
+  .map-panel-top h2 {
+    display: none;
+  }
+  .cockpit-status {
+    font-size: 10px;
+  }
+}
+@media (max-width: 1023px) and (min-width: 769px) {
+  .cockpit-grid {
+    grid-template-columns: 245px minmax(0, 1fr);
+  }
+  .context-panel {
+    grid-column: 1/-1;
+    max-height: 300px;
+  }
+  .cockpit-grid {
+    overflow: auto;
+    grid-template-rows: minmax(520px, 1fr) auto;
+  }
+  .cockpit-status {
+    display: none;
+  }
+  .race-panel {
+    overflow: visible;
+  }
+}
+@media (max-width: 768px) {
+  .election-cockpit {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .cockpit-header {
+    min-height: 100px;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 9px;
+  }
+  .cockpit-header .brand {
+    font-size: 12px;
+  }
+  .office-context {
+    font-size: 9px;
+    margin-left: auto;
+  }
+  .office-context span {
+    font-size: 9px;
+  }
+  .cockpit-search {
+    order: 4;
+    max-width: none;
+    flex-basis: 100%;
+    min-width: 0;
+  }
+  .cockpit-search input {
+    height: 40px;
+    font-size: 13px;
+  }
+  .cockpit-status {
+    order: 5;
+    margin: 0;
+    font-size: 10px;
+    flex: 1;
+  }
+  .header-actions {
+    order: 6;
+    gap: 4px;
+  }
+  .header-actions button {
+    font-size: 10px;
+    padding: 6px;
+    min-height: 40px;
+  }
+  .header-actions button[aria-label='Alternar tela cheia'] {
+    display: none;
+  }
+  .header-actions button[aria-label='Compartilhar contexto'] {
+    width: auto;
+    font-size: 10px;
+  }
+  .cockpit-grid {
+    display: flex;
+    flex-direction: column;
+    flex: none;
+    gap: 1px;
+  }
+  .race-panel {
+    padding: 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    overflow: visible;
+  }
+  .panel-heading {
+    grid-column: 1/-1;
+  }
+  .panel-heading .eyebrow {
+    font-size: 9px;
+    margin-bottom: 5px;
+  }
+  .panel-heading h1 {
+    font-size: 20px;
+  }
+  .panel-heading small {
+    font-size: 9px;
+  }
+  .race-progress {
+    grid-column: 1/-1;
+    padding-top: 8px;
+  }
+  .race-progress strong {
+    font-size: 32px;
+  }
+  .race-progress span {
+    font-size: 10px;
+  }
+  .cockpit-top-two {
+    grid-column: 1/-1;
+    gap: 24px;
+  }
+  .cockpit-candidate img {
+    width: 44px;
+    height: 50px;
+  }
+  .cockpit-candidate > strong {
+    min-height: auto;
+    font-size: 12px;
+  }
+  .cockpit-candidate > b {
+    font-size: 30px;
+  }
+  .cockpit-candidate > span {
+    font-size: 11px;
+  }
+  .comparison-bar,
+  .race-gap,
+  .cockpit-majority {
+    grid-column: 1/-1;
+  }
+  .race-gap {
+    font-size: 11px;
+  }
+  .cockpit-majority {
+    font-size: 12px;
+  }
+  .cockpit-majority span {
+    font-size: 11px;
+  }
+  .other-candidates {
+    grid-column: 1/-1;
+  }
+  .compact-candidate-row {
+    min-height: 44px;
+  }
+  .compact-candidate-row b {
+    font-size: 11px;
+  }
+  .compact-candidate-row small {
+    font-size: 10px;
+  }
+  .compact-candidate-row strong {
+    font-size: 13px;
+  }
+  .other-candidates summary {
+    font-size: 11px;
+    min-height: 44px;
+  }
+  .compact-chart {
+    display: none;
+  }
+  .preserved-status {
+    grid-column: 1/-1;
+  }
+  .map-panel {
+    min-height: 650px;
+  }
+  .map-panel-top {
+    padding: 14px 12px;
+  }
+  .map-panel-top h2 {
+    display: none;
+  }
+  .map-panel-top nav {
+    font-size: 12px;
+  }
+  .map-mode-switcher {
+    padding: 0 12px 10px;
+  }
+  .map-mode-switcher button,
+  .map-mode-switcher select {
+    min-height: 44px;
+    font-size: 12px;
+  }
+  .cockpit-map {
+    height: 430px;
+    flex: none;
+    min-height: 430px;
+  }
+  .election-cockpit .map-zoom button {
+    min-height: 44px;
+    height: 44px;
+    width: 44px;
+  }
+  .map-callouts {
+    right: 6px;
+  }
+  .map-callouts button {
+    min-height: 34px;
+    font-size: 11px;
+  }
+  .map-legend {
+    font-size: 11px;
+    padding: 12px;
+  }
+  .map-legend button {
+    font-size: 10px;
+    min-height: 32px;
+  }
+  .map-attribution {
+    font-size: 10px;
+  }
+  .territory-alternative {
+    padding: 12px;
+    gap: 10px;
+  }
+  .territory-alternative label {
+    font-size: 11px;
+    flex-wrap: wrap;
+  }
+  .territory-alternative select {
+    height: 44px;
+    max-width: 200px;
+    font-size: 12px;
+  }
+  .territory-alternative > span {
+    font-size: 11px;
+  }
+  .context-panel {
+    padding: 20px;
+    overflow: visible;
+  }
+  .context-panel .eyebrow {
+    font-size: 10px;
+  }
+  .context-panel h2 {
+    font-size: 22px;
+  }
+  .region-sidebar summary {
+    font-size: 15px;
+    min-height: 48px;
+  }
+  .region-sidebar summary small {
+    font-size: 12px;
+  }
+  .region-sidebar summary b {
+    font-size: 24px;
+  }
+  .region-sidebar p,
+  .region-sidebar details > div,
+  .context-town-list button,
+  .context-candidate > span,
+  .zones-list p {
+    font-size: 12px;
+  }
+  .region-sidebar details > div {
+    margin: 13px 0;
+  }
+  .context-candidate b {
+    font-size: 18px;
+  }
+  .context-candidate small,
+  .context-panel small {
+    font-size: 12px;
+  }
+  .context-panel dl {
+    font-size: 13px;
+  }
+  .context-town-list button {
+    min-height: 44px;
+  }
+  .update-feed h2 {
+    font-size: 13px;
+  }
+  .update-feed article,
+  .update-feed b,
+  .update-feed small,
+  .update-feed span {
+    font-size: 12px;
+  }
+  .update-feed article {
+    grid-template-columns: 70px 1fr;
+    gap: 7px;
+    margin: 18px 0;
+  }
+  .cockpit-timeline {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px 16px;
+    order: 2;
+  }
+  .cockpit-timeline > div {
+    min-width: 90px;
+  }
+  .cockpit-timeline label {
+    flex-basis: 60%;
+  }
+  .cockpit-timeline input {
+    min-height: 44px;
+  }
+  .cockpit-timeline label > span:not(.sr-only) {
+    font-size: 10px;
+  }
+  .cockpit-timeline button {
+    min-height: 44px;
+  }
+  .cockpit-timeline > small {
+    max-width: none;
+  }
+  .cockpit-footer {
+    order: 3;
+    line-height: 1.6;
+    padding: 12px;
+    font-size: 10px;
+  }
+  .cockpit-info {
+    top: 155px;
+    left: 12px;
+    right: 12px;
+    max-width: none;
+  }
+  .cockpit-tooltip {
+    font-size: 12px;
+    gap: 9px;
+  }
+  .exterior-map-placeholder {
+    padding: 35px 20px;
+    min-height: 430px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .election-cockpit * {
+    scroll-behavior: auto !important;
+    transition: none !important;
+    animation: none !important;
+  }
+}
 
 /* Keep the score and chart visible together at the requested desktop heights. */
 @media (min-width: 1280px) {
-  .race-panel { gap: 8px; padding: 14px; }
-  .race-panel > * { flex-shrink: 0; }
-  .race-panel .other-candidates { min-height: 40px; max-height: 112px; overflow-y: auto; flex-shrink: 1; }
-  .race-panel .compact-chart { margin-top: auto; padding-top: 9px; }
-  .race-panel .compact-chart svg { height: 92px; max-height: 92px; }
-  .race-panel .compact-chart p { margin-top: 3px; font-size: 9px; }
-  .race-panel .compact-chart > small { display: block; font-size: 9px; }
-  .race-panel .cockpit-candidate > strong { min-height: 20px; }
-  .race-panel .cockpit-candidate { gap: 2px; }
-  .race-panel .cockpit-majority { padding-top: 8px; }
-  .race-panel .preserved-status { padding-top: 3px; line-height: 1.3; }
+  .race-panel {
+    gap: 8px;
+    padding: 14px;
+  }
+  .race-panel > * {
+    flex-shrink: 0;
+  }
+  .race-panel .other-candidates {
+    min-height: 40px;
+    max-height: 112px;
+    overflow-y: auto;
+    flex-shrink: 1;
+  }
+  .race-panel .compact-chart {
+    margin-top: auto;
+    padding-top: 9px;
+  }
+  .race-panel .compact-chart svg {
+    height: 92px;
+    max-height: 92px;
+  }
+  .race-panel .compact-chart p {
+    margin-top: 3px;
+    font-size: 9px;
+  }
+  .race-panel .compact-chart > small {
+    display: block;
+    font-size: 9px;
+  }
+  .race-panel .cockpit-candidate > strong {
+    min-height: 20px;
+  }
+  .race-panel .cockpit-candidate {
+    gap: 2px;
+  }
+  .race-panel .cockpit-majority {
+    padding-top: 8px;
+  }
+  .race-panel .preserved-status {
+    padding-top: 3px;
+    line-height: 1.3;
+  }
 }
 
-.mobile-secondary{display:none}.cockpit-header .brand>svg{color:var(--status-live)}.cockpit-candidate>b,.compact-candidate-row>strong{color:var(--text-primary);padding-bottom:2px}.election-cockpit .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}@media(min-width:769px) and (max-height:850px){.race-panel{gap:8px;padding:13px}.other-candidates{max-height:110px;overflow:auto;flex-shrink:0}.compact-chart svg{max-height:100px}.compact-chart{flex-shrink:0}.cockpit-top-two .cockpit-candidate{gap:3px}.cockpit-candidate>strong{min-height:24px}.cockpit-majority{padding-top:7px}.race-progress{padding-top:7px}.cockpit-timeline{min-height:60px}}@media(max-width:768px){.cockpit-grid{display:contents}.cockpit-header{order:0}.cockpit-notice{order:0}.race-panel{order:1}.race-panel .other-candidates{display:none}.map-panel{order:2}.cockpit-timeline{order:3}.mobile-secondary{order:4;display:block;padding:20px;background:var(--bg-panel);border-top:1px solid var(--border-default)}.mobile-secondary svg{width:100%;max-height:190px}.mobile-secondary svg text{fill:var(--text-secondary);font-size:10px}.mobile-secondary>small{display:block}.mobile-secondary summary{min-height:44px;padding:15px 0;font-size:13px}.context-panel{order:5}.cockpit-footer{order:6}.cockpit-tooltip{pointer-events:none}}
+.mobile-secondary {
+  display: none;
+}
+.cockpit-header .brand > svg {
+  color: var(--status-live);
+}
+.cockpit-candidate > b,
+.compact-candidate-row > strong {
+  color: var(--text-primary);
+  padding-bottom: 2px;
+}
+.election-cockpit .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (min-width: 769px) and (max-height: 850px) {
+  .race-panel {
+    gap: 8px;
+    padding: 13px;
+  }
+  .other-candidates {
+    max-height: 110px;
+    overflow: auto;
+    flex-shrink: 0;
+  }
+  .compact-chart svg {
+    max-height: 100px;
+  }
+  .compact-chart {
+    flex-shrink: 0;
+  }
+  .cockpit-top-two .cockpit-candidate {
+    gap: 3px;
+  }
+  .cockpit-candidate > strong {
+    min-height: 24px;
+  }
+  .cockpit-majority {
+    padding-top: 7px;
+  }
+  .race-progress {
+    padding-top: 7px;
+  }
+  .cockpit-timeline {
+    min-height: 60px;
+  }
+}
+@media (max-width: 768px) {
+  .cockpit-grid {
+    display: contents;
+  }
+  .cockpit-header {
+    order: 0;
+  }
+  .cockpit-notice {
+    order: 0;
+  }
+  .race-panel {
+    order: 1;
+  }
+  .race-panel .other-candidates {
+    display: none;
+  }
+  .map-panel {
+    order: 2;
+  }
+  .cockpit-timeline {
+    order: 3;
+  }
+  .mobile-secondary {
+    order: 4;
+    display: block;
+    padding: 20px;
+    background: var(--bg-panel);
+    border-top: 1px solid var(--border-default);
+  }
+  .mobile-secondary svg {
+    width: 100%;
+    max-height: 190px;
+  }
+  .mobile-secondary svg text {
+    fill: var(--text-secondary);
+    font-size: 10px;
+  }
+  .mobile-secondary > small {
+    display: block;
+  }
+  .mobile-secondary summary {
+    min-height: 44px;
+    padding: 15px 0;
+    font-size: 13px;
+  }
+  .context-panel {
+    order: 5;
+  }
+  .cockpit-footer {
+    order: 6;
+  }
+  .cockpit-tooltip {
+    pointer-events: none;
+  }
+}
 
+@media (min-width: 1280px) {
+  .race-panel .preserved-status {
+    display: none;
+  }
+  .race-panel .compact-chart svg text {
+    font-size: 11px;
+  }
+  .region-sidebar summary {
+    min-height: 44px;
+  }
+  .update-feed article {
+    margin: 11px 0;
+  }
+  .election-cockpit .portrait-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 22px;
+    color: var(--text-primary);
+  }
+}
 
-@media (min-width:1280px){.race-panel .preserved-status{display:none}.race-panel .compact-chart svg text{font-size:11px}.region-sidebar summary{min-height:44px}.update-feed article{margin:11px 0}.election-cockpit .portrait-fallback{display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;color:var(--text-primary)}}
+@media (min-width: 1280px) {
+  .race-panel {
+    padding-bottom: 10px;
+  }
+  .context-panel {
+    display: flex;
+    flex-direction: column;
+  }
+  .context-panel > .region-sidebar {
+    flex-shrink: 0;
+  }
+  .context-panel .update-feed {
+    flex: 1;
+    min-height: 100px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+  .region-sidebar details {
+    padding: 8px 0;
+  }
+  .region-sidebar summary small {
+    font-size: 10px;
+    line-height: 1.4;
+    margin-top: 4px;
+  }
+  .map-callouts button {
+    min-width: 73px;
+  }
+  .cockpit-status b {
+    color: var(--status-warning);
+  }
+  .cockpit-timeline > div b {
+    color: var(--status-live);
+  }
+}
 
-@media(min-width:1280px){.race-panel{padding-bottom:10px}.context-panel{display:flex;flex-direction:column}.context-panel>.region-sidebar{flex-shrink:0}.context-panel .update-feed{flex:1;min-height:100px;overflow-y:auto;scrollbar-width:thin;margin-top:12px;padding-top:12px}.region-sidebar details{padding:8px 0}.region-sidebar summary small{font-size:10px;line-height:1.4;margin-top:4px}.map-callouts button{min-width:73px}.cockpit-status b{color:var(--status-warning)}.cockpit-timeline>div b{color:var(--status-live)}}
+.cockpit-notice {
+  position: absolute;
+  top: 66px;
+  left: 301px;
+  right: 280px;
+  z-index: 30;
+  box-shadow: 0 4px 12px var(--bg-overlay);
+}
+@media (max-width: 1279px) {
+  .cockpit-notice {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    top: 70px;
+  }
+}
 
-.cockpit-notice{position:absolute;top:66px;left:301px;right:280px;z-index:30;box-shadow:0 4px 12px var(--bg-overlay)}@media(max-width:1279px){.cockpit-notice{position:fixed;left:12px;right:12px;top:70px}}
-
-.compact-candidate-row .portrait-fallback{width:29px;height:33px;flex:0 0 29px;font-size:16px;min-width:29px}
+.compact-candidate-row .portrait-fallback {
+  width: 29px;
+  height: 33px;
+  flex: 0 0 29px;
+  font-size: 16px;
+  min-width: 29px;
+}
 
 /* Cartographic composition: one continuous map surface, with floating tools. */
-.election-cockpit{background:var(--bg-canvas);--line:var(--border-default)}
-.cockpit-grid{background:transparent;gap:17px;margin:14px 16px 0;grid-template-columns:290px minmax(0,1fr) 265px}
-.map-panel{background:transparent;isolation:isolate}
-.cockpit-map{position:absolute;inset:0;min-height:0;height:100%;z-index:0}
-.map-panel-top{position:absolute;top:8px;left:8px;right:8px;z-index:3;padding:0;pointer-events:none}
-.map-panel-top nav{pointer-events:auto;background:var(--bg-overlay);border-radius:4px;padding:2px 5px}
-.map-panel-top h2{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
-.map-mode-switcher{position:absolute;top:44px;left:8px;z-index:3;padding:0;gap:3px;max-width:calc(100% - 16px);background:var(--bg-overlay);border-radius:5px}
-.map-mode-switcher button,.map-mode-switcher select{min-height:27px;height:27px;padding:3px 8px;font-size:10px;border-color:var(--border-subtle);border-radius:5px;background:var(--bg-overlay)}
-.map-mode-switcher select{width:100px}
-.map-legend{position:absolute;right:8px;top:8px;z-index:4;border:0;padding:5px 7px;min-height:0;font-size:10px;background:var(--bg-overlay);border-radius:4px;gap:9px;max-width:75%}
-.map-legend button{font-size:10px;min-height:20px}.map-legend b{font-weight:normal;color:var(--text-secondary)}
-.map-legend details{position:relative}.map-legend summary{font-size:9px;cursor:pointer;list-style:none;color:var(--text-secondary);padding:3px}
-.map-legend details[open]{background:var(--bg-panel);padding:8px;position:absolute;right:0;top:26px;min-width:180px;box-shadow:0 8px 25px var(--bg-overlay)}
-.map-legend details[open] button{display:flex;width:100%;text-align:left;padding:4px}
-.map-zoom{top:auto;bottom:78px;left:8px;gap:2px}.map-zoom button{width:28px;min-height:28px;height:28px;padding:0;font-size:18px;border-color:var(--border-subtle);background:var(--bg-overlay)}
-.map-attribution{bottom:53px;left:8px;font-size:8px;color:var(--text-muted)}
-.map-callouts{right:7px;top:32%;gap:3px}.map-callouts button{min-width:67px;min-height:23px;height:23px;font-size:10px;padding:2px 5px;border:0;border-left:1px solid var(--text-muted);background:var(--bg-overlay)}
-.cockpit-tooltip{bottom:80px;left:45px;z-index:5}
-.territory-navigation{position:absolute;bottom:51px;right:7px;z-index:5;font-size:9px;color:var(--text-secondary)}
-.territory-navigation>summary{cursor:pointer;padding:4px;list-style:none;opacity:.7}
-.territory-navigation[open]{background:var(--bg-elevated);border:1px solid var(--border-active);border-radius:5px;padding:6px;max-width:95%}
-.territory-alternative{border:0;min-height:0;padding:7px}.historical-map-note{position:absolute;left:45px;bottom:52px;z-index:3;max-width:65%;padding:3px;font-size:9px;background:var(--bg-overlay)}
-.cockpit-timeline{position:absolute;bottom:0;left:0;right:0;z-index:4;min-height:42px;height:42px;border:0;border-top:1px solid var(--border-subtle);padding:4px 8px;gap:10px;background:var(--bg-overlay);border-radius:5px;flex-wrap:nowrap}
-.cockpit-timeline>div{min-width:72px;font-size:8px;line-height:1.4}.cockpit-timeline>div b{font-size:8px}.cockpit-timeline>div span{font-size:12px}
-.cockpit-timeline label>span:not(.sr-only){font-size:8px}.cockpit-timeline input{height:13px;min-height:0;display:block;margin:0}
-.cockpit-timeline button{min-height:24px;height:24px;padding:3px 6px;font-size:9px;white-space:nowrap}
-.cockpit-timeline button:disabled{display:none}.cockpit-timeline>small{display:none}
-.cockpit-footer{height:20px;min-height:20px;background:transparent;font-size:8px}
-.race-panel,.context-panel{border:1px solid var(--border-subtle);border-radius:7px;background:var(--bg-panel);padding:13px}
-.race-panel{gap:9px}.panel-heading .eyebrow{display:none}.panel-heading h1{font-size:20px;letter-spacing:-.4px}.panel-heading small{font-size:9px;letter-spacing:1px}
-.race-progress{padding-top:9px;gap:10px}.race-progress strong{font-size:24px}.race-progress span{font-size:8px}
-.cockpit-top-two{gap:12px;margin-top:2px}.cockpit-top-two .cockpit-candidate{gap:4px}
-.cockpit-candidate>strong{font-size:10px;line-height:1.3;min-height:26px}.cockpit-candidate img,.cockpit-candidate>.portrait-fallback{width:58px;height:64px}
-.cockpit-candidate>b{font-size:33px;line-height:1.15;letter-spacing:-1.4px;border-bottom:0!important}.cockpit-candidate>b small{font-size:13px}.cockpit-candidate>span{font-size:10px}
-.comparison-bar{height:9px;border-radius:2px;overflow:hidden;margin-top:3px}
-.race-gap{display:block;font-size:10px;line-height:1.5}.race-gap>span{display:block;font-size:9px;text-transform:none;letter-spacing:0}.race-gap>b{font-size:12px}
-.cockpit-majority{padding:7px 0 0;font-size:10px}.cockpit-majority b{font-weight:400;margin:0;font-size:10px}.cockpit-majority b span{display:inline;font-size:10px;color:var(--text-secondary)}
-.race-panel .other-candidates{min-height:140px;max-height:140px;flex-shrink:0;border-top:1px solid var(--border-default);padding-top:4px;overflow:auto}
-.compact-candidate-row{height:35px;min-height:35px;padding:3px 0!important;gap:7px}.compact-candidate-row img,.compact-candidate-row .portrait-fallback{width:24px;height:27px;flex-basis:24px;min-width:24px;font-size:13px}.compact-candidate-row b{font-size:9px}.compact-candidate-row small{font-size:8px}.compact-candidate-row strong{font-size:12px;border-bottom:0!important}.other-candidates summary{padding:5px 0;font-size:9px}
-.race-panel .compact-chart{background:var(--bg-overlay);border:1px solid var(--border-subtle);border-radius:5px;padding:10px 8px 7px;margin-top:auto}
-.race-panel .compact-chart svg{height:112px;max-height:112px;margin-top:6px}.compact-chart h2{font-size:10px}.race-panel .compact-chart p{font-size:8px}.race-panel .compact-chart>small{font-size:8px}
-.context-panel{gap:0}.region-sidebar>.eyebrow{display:none}.region-sidebar h2{font-size:17px;margin-bottom:4px}
-.region-sidebar details{padding:7px 0;border-bottom:1px solid var(--border-subtle)}.region-sidebar summary{display:grid;grid-template-columns:1fr auto;gap:5px;min-height:67px;list-style:none}
-.region-sidebar summary>.region-name{font-size:12px}.region-sidebar summary .region-name small{font-size:9px;margin-top:3px;color:var(--text-secondary)}
-.region-sidebar summary>.regional-score{display:flex;align-items:center;gap:6px;justify-content:flex-end}
-.regional-score img,.regional-score>.portrait-fallback{width:24px;height:29px;object-fit:cover;border-radius:3px;font-size:13px}
-.regional-score>span{font-size:9px;color:var(--text-secondary);display:block}.region-sidebar summary .regional-score b{display:block;font-size:19px;color:var(--text-primary);line-height:1.3}
-.regional-score em{font-size:10px;font-style:normal;color:var(--status-live);align-self:flex-end;padding-bottom:4px}
-.region-sidebar summary>.regional-mini-bar{grid-column:1/-1;display:flex;height:3px;background:var(--border-default);overflow:hidden;gap:0;align-self:end}
-.regional-mini-bar i{height:3px;border-radius:0;flex-shrink:0}.region-sidebar>button{padding:10px 0;min-height:30px;font-size:11px}
-.context-panel .update-feed{padding-top:10px;margin-top:7px;min-height:105px;border-top:1px solid var(--border-subtle)}.update-feed h2{font-size:10px;margin-bottom:8px}
-.update-feed article{grid-template-columns:46px 1fr;margin:7px 0;gap:2px 5px;padding-left:7px;border-left:2px solid var(--status-live)}.update-feed time{font-size:9px}.update-feed b{font-size:9px;line-height:1.3}.update-feed span,.update-feed small{font-size:8px}
-.cockpit-notice{top:55px;left:323px;right:298px}
-@media(min-width:769px){.cockpit-header{height:52px;min-height:52px;padding:6px 16px;gap:13px;background:var(--bg-panel);border-color:var(--border-subtle)}.cockpit-header .brand{font-size:12px;gap:7px}.cockpit-header .brand svg{width:29px;height:29px}.cockpit-header .brand small{display:none}.office-context{font-size:10px;line-height:1.3}.office-context span{font-size:8px}.cockpit-search{max-width:290px;min-width:120px}.cockpit-search input{height:29px;padding:5px 9px;font-size:11px}.cockpit-status{font-size:9px;line-height:1.4}.cockpit-status b{font-size:9px}.header-actions button{font-size:10px;padding:4px 7px;min-height:27px;height:27px}.race-panel .preserved-status{display:none}}
-@media(min-width:1700px){.cockpit-grid{grid-template-columns:295px minmax(0,1fr) 270px}.race-panel{gap:13px}.race-panel .compact-chart svg{height:160px;max-height:160px}.race-panel .other-candidates{max-height:160px}}
-@media(min-width:769px) and (max-height:800px){.race-panel{gap:7px;padding:11px}.race-panel .compact-chart svg{height:95px;max-height:95px}.cockpit-candidate img,.cockpit-candidate>.portrait-fallback{width:52px;height:58px}.cockpit-candidate>b{font-size:31px}.race-panel .other-candidates{min-height:134px;max-height:134px}.race-panel .compact-chart{padding:8px 6px 6px}}
-@media(min-width:769px) and (max-width:1279px){.cockpit-grid{grid-template-columns:255px minmax(0,1fr) 225px;gap:10px;margin:10px}.map-mode-switcher{gap:1px}.map-mode-switcher button{padding:3px 5px;font-size:9px}.map-legend{top:78px}.cockpit-top-two{gap:8px}.cockpit-candidate>b{font-size:28px}.regional-score em{display:none}}
-@media(max-width:1023px) and (min-width:769px){.cockpit-grid{grid-template-columns:255px minmax(0,1fr);grid-template-rows:650px auto}.context-panel{max-height:450px}.map-panel{min-height:650px}.race-panel{overflow:auto}.map-legend{top:8px}}
-@media(max-width:768px){.cockpit-grid{margin:0;gap:10px}.race-panel,.context-panel{margin:10px;border-radius:7px}.race-panel .other-candidates{display:none}.map-panel{min-height:580px;margin:0 8px}.cockpit-map{height:580px;min-height:0}.map-panel-top{top:8px}.map-mode-switcher{top:44px}.map-legend{top:82px;right:8px;max-width:100%;font-size:9px}.map-callouts{top:35%}.cockpit-timeline{height:46px;min-height:46px;padding:4px 6px;gap:8px;order:unset}.cockpit-timeline input{height:16px}.cockpit-timeline label{flex-basis:auto}.cockpit-timeline>div{min-width:70px}.cockpit-timeline label>span:not(.sr-only){font-size:7px}.cockpit-timeline button{font-size:8px;min-height:27px}.territory-alternative select{height:36px}.territory-alternative{padding:8px}.context-panel{overflow:visible}.region-sidebar summary{min-height:74px}.update-feed article{margin:10px 0}.cockpit-footer{height:auto;padding:7px}.race-panel .cockpit-majority{font-size:10px}}
-.map-mode-switcher{top:8px}.map-panel-top{top:42px}.map-panel-top nav{font-size:10px}.region-sidebar summary::-webkit-details-marker{display:none}@media(max-width:768px){.map-mode-switcher{top:8px}.map-panel-top{top:44px}}
-.timeline-ticks{display:flex;flex:1;justify-content:space-evenly}.timeline-ticks span{font-size:8px;color:var(--text-secondary)}.race-panel .compact-chart svg{width:100%}.cockpit-timeline label>span:not(.sr-only){gap:5px}
-.map-detail-status{position:absolute;bottom:53px;left:72px;color:var(--text-muted);font-size:8px;pointer-events:none}.map-detail-status small{font-size:8px}.pointer-tooltip{width:260px;max-width:calc(100% - 16px);z-index:7}.map-zone-controls{position:absolute;right:10px;top:79px;z-index:6;max-width:270px;padding:10px;background:var(--bg-overlay);border:1px solid var(--border-active);border-radius:5px}.map-zone-controls>b{display:block;font-size:11px}.map-zone-controls>small{display:block;font-size:9px;margin:5px 0 8px;line-height:1.4}.map-zone-controls>div{display:flex;gap:4px;flex-wrap:wrap}.map-zone-controls button{font-size:11px;min-height:29px;padding:4px 7px;display:flex;gap:5px;align-items:center}.map-zone-controls button[aria-pressed=true],.zone-row[aria-pressed=true]{border-color:var(--status-live);background:var(--border-default)}.map-zone-controls .is-highlighted,.zone-row.is-highlighted{outline:1px solid var(--status-live);background:var(--border-default)}.zone-tooltip{bottom:78px;left:45px;z-index:8;max-width:280px}.zone-tooltip>small{font-size:9px}.zones-list .zone-row{width:100%;display:grid;grid-template-columns:1fr auto;padding:8px;margin:5px 0;text-align:left;border:1px solid var(--border-active);border-radius:4px;gap:5px;font-size:11px}.zone-row>small{font-size:9px;grid-column:1/-1}.zones-list .zone-row>span{margin:0;padding:0;display:flex;gap:5px;align-items:center;min-width:0;background:none;border:0;font-size:9px}.zone-row>strong{font-size:13px}.zone-mini-bar,.municipal-candidate-bar{display:flex;height:4px;background:var(--border-default);grid-column:1/-1}.zone-mini-bar i,.municipal-candidate-bar i{height:4px;border-radius:0;flex-shrink:0}.municipal-summary{font-size:10px;color:var(--text-secondary);line-height:1.7}.municipal-candidate-bar{margin-top:3px}.map-panel[data-local=true] .map-panel-top{top:8px}.map-panel[data-local=true] .map-mode-switcher{top:45px}.map-panel[data-local=true] .map-legend{display:none}@media(max-width:768px){.map-zone-controls{max-width:210px;padding:7px;font-size:10px}.map-zone-controls button{min-height:38px}.zone-tooltip{left:8px;bottom:65px;font-size:11px}.zones-list .zone-row{min-height:44px}.map-detail-status{display:none}}
+.election-cockpit {
+  background: var(--bg-canvas);
+  --line: var(--border-default);
+}
+.cockpit-grid {
+  background: transparent;
+  gap: 17px;
+  margin: 14px 16px 0;
+  grid-template-columns: 290px minmax(0, 1fr) 265px;
+}
+.map-panel {
+  background: transparent;
+  isolation: isolate;
+}
+.cockpit-map {
+  position: absolute;
+  inset: 0;
+  min-height: 0;
+  height: 100%;
+  z-index: 0;
+}
+.map-panel-top {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  z-index: 3;
+  padding: 0;
+  pointer-events: none;
+}
+.map-panel-top nav {
+  pointer-events: auto;
+  background: var(--bg-overlay);
+  border-radius: 4px;
+  padding: 2px 5px;
+}
+.map-panel-top h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+.map-mode-switcher {
+  position: absolute;
+  top: 44px;
+  left: 8px;
+  z-index: 3;
+  padding: 0;
+  gap: 3px;
+  max-width: calc(100% - 16px);
+  background: var(--bg-overlay);
+  border-radius: 5px;
+}
+.map-mode-switcher button,
+.map-mode-switcher select {
+  min-height: 27px;
+  height: 27px;
+  padding: 3px 8px;
+  font-size: 10px;
+  border-color: var(--border-subtle);
+  border-radius: 5px;
+  background: var(--bg-overlay);
+}
+.map-mode-switcher select {
+  width: 100px;
+}
+.map-legend {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  z-index: 4;
+  border: 0;
+  padding: 5px 7px;
+  min-height: 0;
+  font-size: 10px;
+  background: var(--bg-overlay);
+  border-radius: 4px;
+  gap: 9px;
+  max-width: 75%;
+}
+.map-legend button {
+  font-size: 10px;
+  min-height: 20px;
+}
+.map-legend b {
+  font-weight: normal;
+  color: var(--text-secondary);
+}
+.map-legend details {
+  position: relative;
+}
+.map-legend summary {
+  font-size: 9px;
+  cursor: pointer;
+  list-style: none;
+  color: var(--text-secondary);
+  padding: 3px;
+}
+.map-legend details[open] {
+  background: var(--bg-panel);
+  padding: 8px;
+  position: absolute;
+  right: 0;
+  top: 26px;
+  min-width: 180px;
+  box-shadow: 0 8px 25px var(--bg-overlay);
+}
+.map-legend details[open] button {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  padding: 4px;
+}
+.map-zoom {
+  top: auto;
+  bottom: 78px;
+  left: 8px;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-control);
+  background: var(--bg-overlay);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+.election-cockpit .map-zoom button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.election-cockpit .map-zoom button + button {
+  box-shadow: inset 0 1px 0 var(--border-subtle);
+}
+.election-cockpit .map-zoom button:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+.election-cockpit .map-zoom button:active {
+  background: var(--bg-control);
+}
+/* Finger-sized on phones (this block comes after the earlier mobile rules). */
+@media (max-width: 768px) {
+  .election-cockpit .map-zoom button {
+    width: 44px;
+    min-height: 44px;
+    height: 44px;
+  }
+}
+.map-attribution {
+  bottom: 53px;
+  left: 8px;
+  font-size: 8px;
+  color: var(--text-muted);
+}
+.map-callouts {
+  right: 7px;
+  top: 32%;
+  gap: 3px;
+}
+.map-callouts button {
+  min-width: 67px;
+  min-height: 23px;
+  height: 23px;
+  font-size: 10px;
+  padding: 2px 5px;
+  border: 0;
+  border-left: 1px solid var(--text-muted);
+  background: var(--bg-overlay);
+}
+.cockpit-tooltip {
+  bottom: 80px;
+  left: 45px;
+  z-index: 5;
+}
+.territory-navigation {
+  position: absolute;
+  bottom: 51px;
+  right: 7px;
+  z-index: 5;
+  font-size: 9px;
+  color: var(--text-secondary);
+}
+.territory-navigation > summary {
+  cursor: pointer;
+  padding: 4px;
+  list-style: none;
+  opacity: 0.7;
+}
+.territory-navigation[open] {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-active);
+  border-radius: 5px;
+  padding: 6px;
+  max-width: 95%;
+}
+.territory-alternative {
+  border: 0;
+  min-height: 0;
+  padding: 7px;
+}
+.historical-map-note {
+  position: absolute;
+  left: 45px;
+  bottom: 52px;
+  z-index: 3;
+  max-width: 65%;
+  padding: 3px;
+  font-size: 9px;
+  background: var(--bg-overlay);
+}
+.cockpit-timeline {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 4;
+  min-height: 42px;
+  height: 42px;
+  border: 0;
+  border-top: 1px solid var(--border-subtle);
+  padding: 4px 8px;
+  gap: 10px;
+  background: var(--bg-overlay);
+  border-radius: 5px;
+  flex-wrap: nowrap;
+}
+.cockpit-timeline > div {
+  min-width: 72px;
+  font-size: 8px;
+  line-height: 1.4;
+}
+.cockpit-timeline > div b {
+  font-size: 8px;
+}
+.cockpit-timeline > div span {
+  font-size: 12px;
+}
+.cockpit-timeline label > span:not(.sr-only) {
+  font-size: 8px;
+}
+.cockpit-timeline input {
+  height: 13px;
+  min-height: 0;
+  display: block;
+  margin: 0;
+}
+.cockpit-timeline button {
+  min-height: 24px;
+  height: 24px;
+  padding: 3px 6px;
+  font-size: 9px;
+  white-space: nowrap;
+}
+.cockpit-timeline button:disabled {
+  display: none;
+}
+.cockpit-timeline > small {
+  display: none;
+}
+.cockpit-footer {
+  height: 20px;
+  min-height: 20px;
+  background: transparent;
+  font-size: 8px;
+}
+.race-panel,
+.context-panel {
+  border: 1px solid var(--border-subtle);
+  border-radius: 7px;
+  background: var(--bg-panel);
+  padding: 13px;
+}
+.race-panel {
+  gap: 9px;
+}
+.panel-heading .eyebrow {
+  display: none;
+}
+.panel-heading h1 {
+  font-size: 20px;
+  letter-spacing: -0.4px;
+}
+.panel-heading small {
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.race-progress {
+  padding-top: 9px;
+  gap: 10px;
+}
+.race-progress strong {
+  font-size: 24px;
+}
+.race-progress span {
+  font-size: 8px;
+}
+.cockpit-top-two {
+  gap: 12px;
+  margin-top: 2px;
+}
+.cockpit-top-two .cockpit-candidate {
+  gap: 4px;
+}
+.cockpit-candidate > strong {
+  font-size: 10px;
+  line-height: 1.3;
+  min-height: 26px;
+}
+.cockpit-candidate img,
+.cockpit-candidate > .portrait-fallback {
+  width: 58px;
+  height: 64px;
+}
+.cockpit-candidate > b {
+  font-size: 33px;
+  line-height: 1.15;
+  letter-spacing: -1.4px;
+  border-bottom: 0 !important;
+}
+.cockpit-candidate > b small {
+  font-size: 13px;
+}
+.cockpit-candidate > span {
+  font-size: 10px;
+}
+.comparison-bar {
+  height: 9px;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 3px;
+}
+.race-gap {
+  display: block;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.race-gap > span {
+  display: block;
+  font-size: 9px;
+  text-transform: none;
+  letter-spacing: 0;
+}
+.race-gap > b {
+  font-size: 12px;
+}
+.cockpit-majority {
+  padding: 7px 0 0;
+  font-size: 10px;
+}
+.cockpit-majority b {
+  font-weight: 400;
+  margin: 0;
+  font-size: 10px;
+}
+.cockpit-majority b span {
+  display: inline;
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+.race-panel .other-candidates {
+  min-height: 140px;
+  max-height: 140px;
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-default);
+  padding-top: 4px;
+  overflow: auto;
+}
+.compact-candidate-row {
+  height: 35px;
+  min-height: 35px;
+  padding: 3px 0 !important;
+  gap: 7px;
+}
+.compact-candidate-row img,
+.compact-candidate-row .portrait-fallback {
+  width: 24px;
+  height: 27px;
+  flex-basis: 24px;
+  min-width: 24px;
+  font-size: 13px;
+}
+.compact-candidate-row b {
+  font-size: 9px;
+}
+.compact-candidate-row small {
+  font-size: 8px;
+}
+.compact-candidate-row strong {
+  font-size: 12px;
+  border-bottom: 0 !important;
+}
+.other-candidates summary {
+  padding: 5px 0;
+  font-size: 9px;
+}
+.race-panel .compact-chart {
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-subtle);
+  border-radius: 5px;
+  padding: 10px 8px 7px;
+  margin-top: auto;
+}
+.race-panel .compact-chart svg {
+  height: 112px;
+  max-height: 112px;
+  margin-top: 6px;
+}
+.compact-chart h2 {
+  font-size: 10px;
+}
+.race-panel .compact-chart p {
+  font-size: 8px;
+}
+.race-panel .compact-chart > small {
+  font-size: 8px;
+}
+.context-panel {
+  gap: 0;
+}
+.region-sidebar > .eyebrow {
+  display: none;
+}
+.region-sidebar h2 {
+  font-size: 17px;
+  margin-bottom: 4px;
+}
+.region-sidebar details {
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.region-sidebar summary {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 5px;
+  min-height: 67px;
+  list-style: none;
+}
+.region-sidebar summary > .region-name {
+  font-size: 12px;
+}
+.region-sidebar summary .region-name small {
+  font-size: 9px;
+  margin-top: 3px;
+  color: var(--text-secondary);
+}
+.region-sidebar summary > .regional-score {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+.regional-score img,
+.regional-score > .portrait-fallback {
+  width: 24px;
+  height: 29px;
+  object-fit: cover;
+  border-radius: 3px;
+  font-size: 13px;
+}
+.regional-score > span {
+  font-size: 9px;
+  color: var(--text-secondary);
+  display: block;
+}
+.region-sidebar summary .regional-score b {
+  display: block;
+  font-size: 19px;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+.regional-score em {
+  font-size: 10px;
+  font-style: normal;
+  color: var(--status-live);
+  align-self: flex-end;
+  padding-bottom: 4px;
+}
+.region-sidebar summary > .regional-mini-bar {
+  grid-column: 1/-1;
+  display: flex;
+  height: 3px;
+  background: var(--border-default);
+  overflow: hidden;
+  gap: 0;
+  align-self: end;
+}
+.regional-mini-bar i {
+  height: 3px;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.region-sidebar > button {
+  padding: 10px 0;
+  min-height: 30px;
+  font-size: 11px;
+}
+.context-panel .update-feed {
+  padding-top: 10px;
+  margin-top: 7px;
+  min-height: 105px;
+  border-top: 1px solid var(--border-subtle);
+}
+.update-feed h2 {
+  font-size: 10px;
+  margin-bottom: 8px;
+}
+.update-feed article {
+  grid-template-columns: 46px 1fr;
+  margin: 7px 0;
+  gap: 2px 5px;
+  padding-left: 7px;
+  border-left: 2px solid var(--status-live);
+}
+.update-feed time {
+  font-size: 9px;
+}
+.update-feed b {
+  font-size: 9px;
+  line-height: 1.3;
+}
+.update-feed span,
+.update-feed small {
+  font-size: 8px;
+}
+.cockpit-notice {
+  top: 55px;
+  left: 323px;
+  right: 298px;
+}
+@media (min-width: 769px) {
+  .cockpit-header {
+    height: 52px;
+    min-height: 52px;
+    padding: 6px 16px;
+    gap: 13px;
+    background: var(--bg-panel);
+    border-color: var(--border-subtle);
+  }
+  .cockpit-header .brand {
+    font-size: 12px;
+    gap: 7px;
+  }
+  .cockpit-header .brand svg {
+    width: 29px;
+    height: 29px;
+  }
+  .cockpit-header .brand small {
+    display: none;
+  }
+  .office-context {
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .office-context span {
+    font-size: 8px;
+  }
+  .cockpit-search {
+    max-width: 290px;
+    min-width: 120px;
+  }
+  .cockpit-search input {
+    height: 29px;
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .cockpit-status {
+    font-size: 9px;
+    line-height: 1.4;
+  }
+  .cockpit-status b {
+    font-size: 9px;
+  }
+  .header-actions button {
+    font-size: 10px;
+    padding: 4px 7px;
+    min-height: 27px;
+    height: 27px;
+  }
+  .race-panel .preserved-status {
+    display: none;
+  }
+}
+@media (min-width: 1700px) {
+  .cockpit-grid {
+    grid-template-columns: 295px minmax(0, 1fr) 270px;
+  }
+  .race-panel {
+    gap: 13px;
+  }
+  .race-panel .compact-chart svg {
+    height: 160px;
+    max-height: 160px;
+  }
+  .race-panel .other-candidates {
+    max-height: 160px;
+  }
+}
+@media (min-width: 769px) and (max-height: 800px) {
+  .race-panel {
+    gap: 7px;
+    padding: 11px;
+  }
+  .race-panel .compact-chart svg {
+    height: 95px;
+    max-height: 95px;
+  }
+  .cockpit-candidate img,
+  .cockpit-candidate > .portrait-fallback {
+    width: 52px;
+    height: 58px;
+  }
+  .cockpit-candidate > b {
+    font-size: 31px;
+  }
+  .race-panel .other-candidates {
+    min-height: 134px;
+    max-height: 134px;
+  }
+  .race-panel .compact-chart {
+    padding: 8px 6px 6px;
+  }
+}
+@media (min-width: 769px) and (max-width: 1279px) {
+  .cockpit-grid {
+    grid-template-columns: 255px minmax(0, 1fr) 225px;
+    gap: 10px;
+    margin: 10px;
+  }
+  .map-mode-switcher {
+    gap: 1px;
+  }
+  .map-mode-switcher button {
+    padding: 3px 5px;
+    font-size: 9px;
+  }
+  .map-legend {
+    top: 78px;
+  }
+  .cockpit-top-two {
+    gap: 8px;
+  }
+  .cockpit-candidate > b {
+    font-size: 28px;
+  }
+  .regional-score em {
+    display: none;
+  }
+}
+@media (max-width: 1023px) and (min-width: 769px) {
+  .cockpit-grid {
+    grid-template-columns: 255px minmax(0, 1fr);
+    grid-template-rows: 650px auto;
+  }
+  .context-panel {
+    max-height: 450px;
+  }
+  .map-panel {
+    min-height: 650px;
+  }
+  .race-panel {
+    overflow: auto;
+  }
+  .map-legend {
+    top: 8px;
+  }
+}
+@media (max-width: 768px) {
+  .cockpit-grid {
+    margin: 0;
+    gap: 10px;
+  }
+  .race-panel,
+  .context-panel {
+    margin: 10px;
+    border-radius: 7px;
+  }
+  .race-panel .other-candidates {
+    display: none;
+  }
+  .map-panel {
+    min-height: 580px;
+    margin: 0 8px;
+  }
+  .cockpit-map {
+    height: 580px;
+    min-height: 0;
+  }
+  .map-panel-top {
+    top: 8px;
+  }
+  .map-mode-switcher {
+    top: 44px;
+  }
+  .map-legend {
+    top: 82px;
+    right: 8px;
+    max-width: 100%;
+    font-size: 9px;
+  }
+  .map-callouts {
+    top: 35%;
+  }
+  .cockpit-timeline {
+    height: 46px;
+    min-height: 46px;
+    padding: 4px 6px;
+    gap: 8px;
+    order: unset;
+  }
+  .cockpit-timeline input {
+    height: 16px;
+  }
+  .cockpit-timeline label {
+    flex-basis: auto;
+  }
+  .cockpit-timeline > div {
+    min-width: 70px;
+  }
+  .cockpit-timeline label > span:not(.sr-only) {
+    font-size: 7px;
+  }
+  .cockpit-timeline button {
+    font-size: 8px;
+    min-height: 27px;
+  }
+  .territory-alternative select {
+    height: 36px;
+  }
+  .territory-alternative {
+    padding: 8px;
+  }
+  .context-panel {
+    overflow: visible;
+  }
+  .region-sidebar summary {
+    min-height: 74px;
+  }
+  .update-feed article {
+    margin: 10px 0;
+  }
+  .cockpit-footer {
+    height: auto;
+    padding: 7px;
+  }
+  .race-panel .cockpit-majority {
+    font-size: 10px;
+  }
+}
+.map-mode-switcher {
+  top: 8px;
+}
+.map-panel-top {
+  top: 42px;
+}
+.map-panel-top nav {
+  font-size: 10px;
+}
+.region-sidebar summary::-webkit-details-marker {
+  display: none;
+}
+@media (max-width: 768px) {
+  .map-mode-switcher {
+    top: 8px;
+  }
+  .map-panel-top {
+    top: 44px;
+  }
+}
+.timeline-ticks {
+  display: flex;
+  flex: 1;
+  justify-content: space-evenly;
+}
+.timeline-ticks span {
+  font-size: 8px;
+  color: var(--text-secondary);
+}
+.race-panel .compact-chart svg {
+  width: 100%;
+}
+.cockpit-timeline label > span:not(.sr-only) {
+  gap: 5px;
+}
+.map-detail-status {
+  position: absolute;
+  bottom: 53px;
+  left: 72px;
+  color: var(--text-muted);
+  font-size: 8px;
+  pointer-events: none;
+}
+.map-detail-status small {
+  font-size: 8px;
+}
+.pointer-tooltip {
+  width: 260px;
+  max-width: calc(100% - 16px);
+  z-index: 7;
+}
+.map-zone-controls {
+  position: absolute;
+  right: 10px;
+  top: 79px;
+  z-index: 6;
+  max-width: 270px;
+  padding: 10px;
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-active);
+  border-radius: 5px;
+}
+.map-zone-controls > b {
+  display: block;
+  font-size: 11px;
+}
+.map-zone-controls > small {
+  display: block;
+  font-size: 9px;
+  margin: 5px 0 8px;
+  line-height: 1.4;
+}
+.map-zone-controls > div {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.map-zone-controls button {
+  font-size: 11px;
+  min-height: 29px;
+  padding: 4px 7px;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+}
+.map-zone-controls button[aria-pressed='true'],
+.zone-row[aria-pressed='true'] {
+  border-color: var(--status-live);
+  background: var(--border-default);
+}
+.map-zone-controls .is-highlighted,
+.zone-row.is-highlighted {
+  outline: 1px solid var(--status-live);
+  background: var(--border-default);
+}
+.zone-tooltip {
+  bottom: 78px;
+  left: 45px;
+  z-index: 8;
+  max-width: 280px;
+}
+.zone-tooltip > small {
+  font-size: 9px;
+}
+.zones-list .zone-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  padding: 8px;
+  margin: 5px 0;
+  text-align: left;
+  border: 1px solid var(--border-active);
+  border-radius: 4px;
+  gap: 5px;
+  font-size: 11px;
+}
+.zone-row > small {
+  font-size: 9px;
+  grid-column: 1/-1;
+}
+.zones-list .zone-row > span {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  min-width: 0;
+  background: none;
+  border: 0;
+  font-size: 9px;
+}
+.zone-row > strong {
+  font-size: 13px;
+}
+.zone-mini-bar,
+.municipal-candidate-bar {
+  display: flex;
+  height: 4px;
+  background: var(--border-default);
+  grid-column: 1/-1;
+}
+.zone-mini-bar i,
+.municipal-candidate-bar i {
+  height: 4px;
+  border-radius: 0;
+  flex-shrink: 0;
+}
+.municipal-summary {
+  font-size: 10px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.municipal-candidate-bar {
+  margin-top: 3px;
+}
+.map-panel[data-local='true'] .map-panel-top {
+  top: 8px;
+}
+.map-panel[data-local='true'] .map-mode-switcher {
+  top: 45px;
+}
+.map-panel[data-local='true'] .map-legend {
+  display: none;
+}
+@media (max-width: 768px) {
+  .map-zone-controls {
+    max-width: 210px;
+    padding: 7px;
+    font-size: 10px;
+  }
+  .map-zone-controls button {
+    min-height: 38px;
+  }
+  .zone-tooltip {
+    left: 8px;
+    bottom: 65px;
+    font-size: 11px;
+  }
+  .zones-list .zone-row {
+    min-height: 44px;
+  }
+  .map-detail-status {
+    display: none;
+  }
+}
+/* Phones: the status text wraps instead of running under the header buttons, and the mode tabs fade at the edge to show they scroll. */
+@media (max-width: 768px) {
+  .cockpit-status {
+    white-space: normal;
+    min-width: 0;
+    flex: 1 1 0;
+    line-height: 1.4;
+  }
+  .cockpit-status span {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+  .header-actions {
+    flex-shrink: 0;
+  }
+  .map-mode-switcher {
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 28px), transparent);
+    padding-right: 28px;
+  }
+  .map-mode-switcher::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Warnings float at the bottom as a small toast, never over the result bands at the top. */
+.election-cockpit .cockpit-notice {
+  position: fixed;
+  top: auto;
+  right: auto;
+  bottom: 20px;
+  left: 50%;
+  z-index: 60;
+  width: max-content;
+  max-width: min(560px, calc(100vw - 32px));
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-default);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  transform: translateX(-50%);
+}
+@media (max-width: 768px) {
+  .election-cockpit .cockpit-notice {
+    bottom: 84px;
+  }
+}
+
+.cockpit-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+/* Count timeline: real-time scale, counted-share area, bubble while scrubbing. */
+.count-timeline {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  padding-top: 2px;
+}
+.count-timeline.is-empty {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+.count-timeline-track {
+  position: relative;
+  height: 26px;
+  cursor: pointer;
+  touch-action: none;
+  outline: none;
+}
+.count-timeline-track:focus-visible {
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px var(--status-live);
+}
+.count-timeline-area {
+  position: absolute;
+  inset: 0 0 9px;
+  width: 100%;
+  height: calc(100% - 9px);
+}
+.count-timeline-area polygon {
+  fill: color-mix(in srgb, var(--status-live) 18%, transparent);
+}
+.count-timeline-rail {
+  position: absolute;
+  right: 0;
+  bottom: 7px;
+  left: 0;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--bg-hover);
+}
+.count-timeline-rail span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--status-live);
+}
+.count-timeline-thumb {
+  position: absolute;
+  bottom: 2px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--bg-panel);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 2px var(--status-live);
+  transform: translateX(-50%);
+  transition: transform 0.12s ease;
+}
+.count-timeline-track:hover .count-timeline-thumb,
+.count-timeline.is-dragging .count-timeline-thumb {
+  transform: translateX(-50%) scale(1.25);
+}
+.count-timeline.is-loading .count-timeline-thumb {
+  box-shadow: 0 0 0 2px var(--text-muted);
+}
+.count-timeline-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  z-index: 5;
+  display: grid;
+  gap: 1px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  color: var(--text-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.count-timeline-bubble b {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+.count-timeline-marks {
+  position: relative;
+  height: 14px;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 9px;
+}
+.count-timeline-marks span {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+.count-timeline-marks span:first-child {
+  transform: none;
+}
+.count-timeline-marks span:last-child {
+  transform: translateX(-100%);
+}
+@media (max-width: 768px) {
+  .count-timeline-track {
+    height: 34px;
+  }
+  .count-timeline-thumb {
+    width: 20px;
+    height: 20px;
+  }
+}

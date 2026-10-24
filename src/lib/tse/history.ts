@@ -1,9 +1,14 @@
+import { tseCacheDir } from './simulation';
 import { mkdir, readFile, appendFile } from 'node:fs/promises';
 import path from 'node:path';
 import { z } from 'zod';
 import type { ElectionSnapshot } from './types';
 import { validVoteAnalysis } from './analysis';
+import { electionOf } from './urls';
+/** Observations written before the 2nd round carried no election code; they belong to the 1st. */
+const FIRST_ROUND = '6257';
 const observationSchema = z.object({
+  election: z.string().default(FIRST_ROUND),
   version: z.string(),
   updatedAt: z.iso.datetime({ offset: true }),
   retrievedAt: z.iso.datetime({ offset: true }),
@@ -20,12 +25,14 @@ const observationSchema = z.object({
     }),
   ),
 });
-export type HistoryObservation = z.infer<typeof observationSchema>;
+export type HistoryObservation = z.output<typeof observationSchema>;
 export class ElectionHistory {
   private observations: HistoryObservation[] = [];
   private loading: Promise<void> | null = null;
   private queue: Promise<void> = Promise.resolve();
   private durable = true;
+  /** Election of the latest national result seen; only its observations are served. */
+  private election: string | null = null;
   constructor(private directory: string) {}
   private async load() {
     this.loading ??= this.restore();
@@ -37,7 +44,12 @@ export class ElectionHistory {
       for (const line of body.split('\n').filter(Boolean)) {
         try {
           const parsed = observationSchema.safeParse(JSON.parse(line));
-          if (parsed.success && !this.observations.some((o) => o.version === parsed.data.version))
+          if (
+            parsed.success &&
+            !this.observations.some(
+              (o) => o.election === parsed.data.election && o.version === parsed.data.version,
+            )
+          )
             this.observations.push(parsed.data);
           if (!parsed.success) this.durable = false;
         } catch {
@@ -53,11 +65,14 @@ export class ElectionHistory {
     const operation = this.queue.then(async () => {
       await this.load();
       if (snapshot.scope.type !== 'country' || snapshot.scope.code !== 'br' || !retrievedAt) return;
+      const election = electionOf(snapshot.sourceUrl) ?? FIRST_ROUND;
+      this.election = election;
       const analysis = validVoteAnalysis(snapshot);
       if (!analysis) return;
       const updatedAt = snapshot.progress.totaledAt ?? snapshot.progress.generatedAt;
-      if (this.observations.some((o) => o.version === snapshot.version)) return;
-      const last = this.observations.at(-1);
+      const current = this.observations.filter((o) => o.election === election);
+      if (current.some((o) => o.version === snapshot.version)) return;
+      const last = current.at(-1);
       if (last && Date.parse(updatedAt) < Date.parse(last.updatedAt)) return;
       // A generation or retrieval clock alone does not create an electoral observation.
       if (
@@ -75,6 +90,7 @@ export class ElectionHistory {
       )
         return;
       const observation = observationSchema.parse({
+        election,
         version: snapshot.version,
         updatedAt,
         retrievedAt,
@@ -101,8 +117,9 @@ export class ElectionHistory {
   async read() {
     await this.queue;
     await this.load();
+    const election = this.election ?? this.observations.at(-1)?.election;
     return {
-      observations: [...this.observations],
+      observations: this.observations.filter((o) => o.election === election),
       durable: this.durable,
       storage: process.env.VERCEL ? 'temporary-instance' : 'persistent-file',
     };
@@ -110,5 +127,5 @@ export class ElectionHistory {
 }
 const runtime = globalThis as typeof globalThis & { tseHistory?: ElectionHistory };
 export const history = (runtime.tseHistory ??= new ElectionHistory(
-  path.resolve(/* turbopackIgnore: true */ process.env.TSE_CACHE_DIR || '.cache/tse'),
+  path.resolve(/* turbopackIgnore: true */ tseCacheDir()),
 ));

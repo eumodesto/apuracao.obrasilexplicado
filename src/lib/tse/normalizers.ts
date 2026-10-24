@@ -15,18 +15,21 @@ export function normalizeResult(
   config: ElectionConfig,
   scope: Scope,
   sourceUrl: string,
+  /** TSE office code: 1 is President, 3 is Governor. */
+  officeCode = 1,
 ): ElectionSnapshot {
   const r = resultSchema.parse(input);
   const expectedType =
     scope.type === 'country' ? 'br' : scope.type === 'municipality' ? 'mu' : 'uf';
   if (
     r.ele !== config.election ||
+    r.t !== config.turn ||
     r.cdabr !== scope.code ||
     r.tpabr !== expectedType ||
     r.dv !== 's'
   )
     throw new Error('Result identity or disclosure mismatch');
-  const office = r.carg.find((c) => Number(c.cd) === 1);
+  const office = r.carg.find((c) => Number(c.cd) === officeCode);
   if (!office || r.carg.length !== 1) throw new Error('Unexpected office');
   const generatedAt = officialDate(r.dg, r.hg);
   if (!generatedAt) throw new Error('Missing generation timestamp');
@@ -45,7 +48,7 @@ export function normalizeResult(
         status: c.st || null,
         elected: c.e === 's' && c.st === 'Eleito',
         destination: c.dvt ?? null,
-        imageUrl: photoUrl(config, c.sqcand),
+        imageUrl: photoUrl(config, c.sqcand, officeCode === 1 ? 'br' : scope.state),
         order: c.seq,
       })),
     ),
@@ -60,6 +63,7 @@ export function normalizeResult(
     candidates,
     source: 'TSE',
     sourceUrl,
+    turn: config.turn,
     progress: {
       totalSections: r.s.ts,
       countedSections: r.s.st,

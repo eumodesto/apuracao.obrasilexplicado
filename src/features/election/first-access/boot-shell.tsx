@@ -1,9 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Brand } from '@/components/brand';
+import { WhatsAppShare } from '../whatsapp-share';
+import { GovernorBoard } from '../governors/governor-board';
 import geometry from '../map/geometry.json';
 import { NATIONAL_VIEW } from '../cockpit/map-navigation';
-import { time, percent, number } from '@/lib/format';
+import { time, percent, number, roundLabel } from '@/lib/format';
 import Image from 'next/image';
 import type { ElectionResponse } from '@/lib/tse/types';
 import '../cockpit/cockpit.css';
@@ -45,10 +47,18 @@ export function BootShell({
   waiting = false,
   initial,
   fallback = false,
+  band,
+  regionBoard,
+  raceBoard,
 }: {
   waiting?: boolean;
   initial?: ElectionResponse;
   fallback?: boolean;
+  band?: React.ReactNode;
+  /** Replaces the empty region list (the 1st-round result before the count opens). */
+  regionBoard?: React.ReactNode;
+  /** Replaces the empty left column (the 1st-round result before the count opens). */
+  raceBoard?: React.ReactNode;
 }) {
   const snapshot = initial?.snapshot,
     top = [...(snapshot?.candidates ?? [])].sort((a, b) => b.votes - a.votes).slice(0, 2);
@@ -75,7 +85,7 @@ export function BootShell({
       <header className="cockpit-header">
         <Brand />
         <div className="office-context">
-          Presidente <span>1º turno · 2026</span>
+          Presidente <span>{roundLabel(snapshot?.turn)}</span>
         </div>
         <div className="cockpit-search">
           <label className="sr-only" htmlFor="boot-search">
@@ -99,18 +109,7 @@ export function BootShell({
         </div>
         <div className="header-actions">
           <button onClick={exterior}>Exterior</button>
-          <button
-            aria-label="Compartilhar contexto"
-            onClick={() => navigator.clipboard?.writeText(location.href)}
-          >
-            Compartilhar
-          </button>
-          <button
-            aria-label="Alternar tela cheia"
-            onClick={() => document.documentElement.requestFullscreen?.()}
-          >
-            Tela cheia
-          </button>
+          <WhatsAppShare />
           <button aria-label="Informações e transparência" onClick={() => setInfo(!info)}>
             Info
           </button>
@@ -126,74 +125,79 @@ export function BootShell({
           <button onClick={() => setInfo(false)}>Fechar</button>
         </section>
       )}
-      <main className="cockpit-grid" id={fallback?'boot-content':'conteudo'}>
-        <section className="race-panel">
-          <div className="panel-heading">
-            <h1>Presidente · Brasil</h1>
-            <small>{snapshot ? 'ÚLTIMO RESULTADO OFICIAL' : 'AGUARDANDO RESULTADO OFICIAL'}</small>
-          </div>
-          <div className="race-progress">
-            <strong>
-              {percent(snapshot?.progress.percentageCounted)}
-              {snapshot && <small>%</small>}
-            </strong>
-            <span>
-              DAS SEÇÕES TOTALIZADAS
-              <br />
-              {number(snapshot?.progress.countedSections)} de{' '}
-              {number(snapshot?.progress.totalSections)}
-            </span>
-          </div>
-          <div className="cockpit-top-two">
-            {top.length
-              ? top.map((candidate) => (
-                  <div className="cockpit-candidate" key={candidate.id}>
-                    <strong>{candidate.ballotName}</strong>
-                    <Image
-                      unoptimized
-                      preload
-                      src={`/api/election/photo/${candidate.id}`}
-                      alt={candidate.ballotName}
-                      width={52}
-                      height={58}
-                    />
-                    <small>
-                      {candidate.party} · {candidate.number}
-                    </small>
-                    <b>
-                      {percent(candidate.percentage)}
-                      <small>%</small>
-                    </b>
-                    <span>{number(candidate.votes)}</span>
-                  </div>
-                ))
-              : [1, 2].map((slot) => (
-                  <div className="cockpit-candidate" key={slot}>
-                    <strong>Candidatura —</strong>
-                    <div className="portrait-fallback boot-portrait" aria-hidden="true" />
-                    <small>—</small>
-                    <b>—</b>
-                    <span>— votos</span>
-                  </div>
-                ))}
-          </div>
-          <div className="comparison-bar" />
-          <div className="race-gap">
-            <span>Diferença</span>
-            <b>—</b>
-          </div>
-          <div className="cockpit-majority">
-            <b>Aguardando votos válidos</b>
-          </div>
-          <div className="other-candidates">
-            <p>Demais candidaturas · —</p>
-          </div>
-          <section className="compact-chart">
-            <h2>Ao longo da apuração</h2>
-            <div className="boot-chart">Aguardando observações oficiais</div>
-            <p>Observações reais · votos válidos · sem projeção</p>
+      {band}
+      <main className="cockpit-grid" id={fallback ? 'boot-content' : 'conteudo'}>
+        {raceBoard ?? (
+          <section className="race-panel">
+            <div className="panel-heading">
+              <h1>Presidente · Brasil</h1>
+              <small>
+                {snapshot ? 'ÚLTIMO RESULTADO OFICIAL' : 'AGUARDANDO RESULTADO OFICIAL'}
+              </small>
+            </div>
+            <div className="race-progress">
+              <strong>
+                {percent(snapshot?.progress.percentageCounted)}
+                {snapshot && <small>%</small>}
+              </strong>
+              <span>
+                DAS SEÇÕES TOTALIZADAS
+                <br />
+                {number(snapshot?.progress.countedSections)} de{' '}
+                {number(snapshot?.progress.totalSections)}
+              </span>
+            </div>
+            <div className="cockpit-top-two">
+              {top.length
+                ? top.map((candidate) => (
+                    <div className="cockpit-candidate" key={candidate.id}>
+                      <strong>{candidate.ballotName}</strong>
+                      <Image
+                        unoptimized
+                        preload
+                        src={`/api/election/photo/${candidate.id}`}
+                        alt={candidate.ballotName}
+                        width={52}
+                        height={58}
+                      />
+                      <small>
+                        {candidate.party} · {candidate.number}
+                      </small>
+                      <b>
+                        {percent(candidate.percentage)}
+                        <small>%</small>
+                      </b>
+                      <span>{number(candidate.votes)}</span>
+                    </div>
+                  ))
+                : [1, 2].map((slot) => (
+                    <div className="cockpit-candidate" key={slot}>
+                      <strong>Candidatura —</strong>
+                      <div className="portrait-fallback boot-portrait" aria-hidden="true" />
+                      <small>—</small>
+                      <b>—</b>
+                      <span>— votos</span>
+                    </div>
+                  ))}
+            </div>
+            <div className="comparison-bar" />
+            <div className="race-gap">
+              <span>Diferença</span>
+              <b>—</b>
+            </div>
+            <div className="cockpit-majority">
+              <b>Aguardando votos válidos</b>
+            </div>
+            <div className="other-candidates">
+              <p>Demais candidaturas · —</p>
+            </div>
+            <section className="compact-chart">
+              <h2>Ao longo da apuração</h2>
+              <div className="boot-chart">Aguardando observações oficiais</div>
+              <p>Observações reais · votos válidos · sem projeção</p>
+            </section>
           </section>
-        </section>
+        )}
         <section className="map-panel" aria-label="Mapa da apuração">
           <div className="cockpit-map">
             <NeutralMap />
@@ -237,14 +241,17 @@ export function BootShell({
             <span className="boot-timeline-line" />
           </section>
         </section>
-        <aside className="context-panel">
-          <section className="region-sidebar">
-            <h2>Por região</h2>
-            <PendingRegions />
-            <button className="exterior-row" onClick={exterior}>
-              Exterior <span>Consultar</span>
-            </button>
-          </section>
+        <aside className={regionBoard ? 'context-panel has-region-board' : 'context-panel'}>
+          {regionBoard ?? (
+            <section className="region-sidebar">
+              <h2>Por região</h2>
+              <PendingRegions />
+              <button className="exterior-row" onClick={exterior}>
+                Exterior <span>Consultar</span>
+              </button>
+            </section>
+          )}
+          {regionBoard && <GovernorBoard />}
           <section className="update-feed">
             <h2>Últimas atualizações</h2>
             <p role="status">

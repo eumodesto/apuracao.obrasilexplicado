@@ -1,0 +1,60 @@
+# Cluster, worker machine: seven app processes (one per core, one core left for the system),
+# published only on the private network address for the entry machine's Caddy.
+#   docker compose -p apuracao -f deploy/cluster/worker.yml --env-file .env.production up -d --build
+# .env.production here sets DATABASE_URL and REDIS_URL to the entry machine's private address,
+# and PRIVATE_IP to this machine's.
+
+x-app: &app
+  build: ../..
+  image: apuracao-app
+  restart: unless-stopped
+  env_file: ../../.env.production
+  volumes:
+    - tse-cache:/app/.cache
+
+services:
+  app1:
+    <<: *app
+    environment:
+      TSE_CACHE_DIR: /app/.cache/tse-1
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3001:3000'
+  app2:
+    <<: *app
+    environment:
+      TSE_CACHE_DIR: /app/.cache/tse-2
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3002:3000'
+  app3:
+    <<: *app
+    environment:
+      TSE_CACHE_DIR: /app/.cache/tse-3
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3003:3000'
+  app4:
+    <<: *app
+    environment:
+      TSE_CACHE_DIR: /app/.cache/tse-4
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3004:3000'
+  app5:
+    <<: *app
+    environment:
+      TSE_CACHE_DIR: /app/.cache/tse-5
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3005:3000'
+  app6:
+    <<: *app
+    environment:
+      TSE_CACHE_DIR: /app/.cache/tse-6
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3006:3000'
+  app7:
+    <<: *app
+    environment:
+      TSE_CACHE_DIR: /app/.cache/tse-7
+    ports:
+      - '${PRIVATE_IP:?set PRIVATE_IP}:3007:3000'
+
+volumes:
+  tse-cache:

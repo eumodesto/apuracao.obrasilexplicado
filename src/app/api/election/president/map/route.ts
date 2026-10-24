@@ -1,8 +1,10 @@
 import { createHash } from 'node:crypto';
 import { electionMap } from '@/lib/tse/map-service';
+import { CLIENT_POLL_MS } from '@/lib/tse/service';
+import { withAccess } from '@/lib/access/guard';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-export async function GET(request: Request) {
+async function get(request: Request) {
   if (new URL(request.url).searchParams.size)
     return Response.json(
       { error: 'O mapa utiliza somente a abrangência Brasil.' },
@@ -15,7 +17,7 @@ export async function GET(request: Request) {
     const headers = {
       'Cache-Control': 'private, no-cache',
       ETag: etag,
-      'X-Poll-After': String(data.nextPollMs),
+      'X-Poll-After': String(Math.max(CLIENT_POLL_MS, data.nextPollMs)),
     };
     if (request.headers.get('if-none-match') === etag)
       return new Response(null, { status: 304, headers });
@@ -28,3 +30,4 @@ export async function GET(request: Request) {
     return Response.json({ error: 'O mapa está temporariamente indisponível.' }, { status: 503 });
   }
 }
+export const GET = withAccess(get);

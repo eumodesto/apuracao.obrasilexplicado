@@ -1,4 +1,4 @@
-import { client, POLL_MS, STALE_MS } from '@/lib/tse/service';
+import { client, CLIENT_POLL_MS, STALE_MS } from '@/lib/tse/service';
 import { CONFIG_URL, discoverElection, normalizeGeography } from '@/lib/tse/config';
 import { geographyUrl, resultUrl } from '@/lib/tse/urls';
 import { normalizeResult } from '@/lib/tse/normalizers';
@@ -11,7 +11,7 @@ export const emptyBootResult: ElectionResponse = {
   stale: false,
   issue: null,
   checkedAt: null,
-  nextPollMs: POLL_MS,
+  nextPollMs: CLIENT_POLL_MS,
   staleAfterMs: STALE_MS,
 };
 /** Read existing validated cache only. Existing APIs handle upstream refresh. */

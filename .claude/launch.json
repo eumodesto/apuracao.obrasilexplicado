@@ -1,0 +1,88 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000"
+    },
+    {
+      "name": "dev-turno1",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "TSE_TURN": "1",
+        "TSE_CACHE_DIR": ".cache/tse-turno1"
+      }
+    },
+    {
+      "name": "dev-simulacao",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "TSE_SIMULATION": "1",
+        "TSE_SIMULATION_MINUTES": "10"
+      }
+    },
+    {
+      "name": "dev-aberto",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "COUNT_STARTS_AT": "2026-10-01T00:00:00-03:00",
+        "OPEN_ACCESS": "true",
+        "TSE_SIMULATION": "1",
+        "TSE_SIMULATION_MINUTES": "10"
+      }
+    },
+    {
+      "name": "dev-jornada",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "COUNT_STARTS_AT": "2026-10-01T00:00:00-03:00",
+        "FREE_TIME_BEFORE_COUNT": "true",
+        "FREE_SECONDS": "20"
+      }
+    },
+    {
+      "name": "dev-como-producao",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "url": "http://127.0.0.1:3000",
+      "env": {
+        "COUNT_STARTS_AT": "2026-10-21T00:00:00-03:00",
+        "OPEN_ACCESS": "true"
+      }
+    }
+  ]
+}

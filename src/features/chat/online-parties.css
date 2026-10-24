@@ -1,0 +1,46 @@
+.online-parties {
+  margin-left: auto;
+  display: grid;
+  gap: 3px;
+  white-space: nowrap;
+  font-size: 11px;
+  line-height: 1.2;
+}
+.online-parties small {
+  color: var(--muted, #87877e);
+  font-size: 10px;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.online-parties-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.online-parties-row b {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.online-parties-bar {
+  display: flex;
+  width: 90px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #2a2a28;
+}
+.online-parties-bar i {
+  transition: width 0.6s ease;
+}
+/* The status that usually pushes itself to the right now sits beside the split. */
+.online-parties + .cockpit-status {
+  margin-left: 22px;
+}
+@media (max-width: 900px) {
+  .online-parties {
+    display: none;
+  }
+  .online-parties + .cockpit-status {
+    margin-left: auto;
+  }
+}

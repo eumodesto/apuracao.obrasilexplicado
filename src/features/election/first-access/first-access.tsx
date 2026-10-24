@@ -9,9 +9,18 @@ import { startEntryCountUp } from './entry-count-up';
 export function FirstAccess({
   initial,
   regions,
+  band,
+  regionBoard,
+  raceBoard,
 }: {
   initial: ElectionResponse;
   regions: Geography[];
+  /** Server-rendered 1st-round band shown above the panel. */
+  band?: React.ReactNode;
+  /** 1st-round "Por região" shown while there is no 2nd-round data. */
+  regionBoard?: React.ReactNode;
+  /** 1st-round left column shown while there is no 2nd-round data. */
+  raceBoard?: React.ReactNode;
 }) {
   const [boot, setBoot] = useState({ initial, regions }),
     [waiting, setWaiting] = useState(false),
@@ -149,14 +158,23 @@ export function FirstAccess({
       observer.disconnect();
     };
   }, [ready]);
-  if (!ready) return <BootShell waiting={waiting} initial={boot.initial} />;
+  if (!ready)
+    return (
+      <BootShell
+        waiting={waiting}
+        initial={boot.initial}
+        band={band}
+        regionBoard={regionBoard}
+        raceBoard={raceBoard}
+      />
+    );
   return (
     <div
       className={`first-access-controller${initial.snapshot ? '' : ' first-access-enter'}`}
       ref={root}
       data-entry-counting={countPhase}
     >
-      <ElectionCockpit initial={boot.initial} regions={boot.regions} />
+      <ElectionCockpit initial={boot.initial} regions={boot.regions} band={band} />
       {targets.region && createPortal(<PendingRegions />, targets.region, 'pending-regions')}
       {targets.map &&
         createPortal(

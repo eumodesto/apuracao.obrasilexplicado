@@ -1,0 +1,605 @@
+.access-content {
+  display: contents;
+}
+
+.access-badge {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(18, 18, 16, 0.92);
+  color: #eeede8;
+  font: 13px/1 var(--font-sans);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+.access-badge form {
+  margin: 0;
+}
+.access-badge-time b {
+  font-variant-numeric: tabular-nums;
+}
+.access-badge-time.is-ending b {
+  color: #f5c518;
+}
+.access-badge-logout {
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 10px;
+  background: transparent;
+  color: #b6b5ae;
+}
+.access-badge-logout:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #eeede8;
+}
+
+.paywall-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  overflow-y: auto;
+  background: rgba(6, 6, 5, 0.72);
+  backdrop-filter: blur(6px);
+}
+.paywall {
+  width: min(100%, 480px);
+  padding: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 4px solid #0b6b3a;
+  border-radius: 14px;
+  background: #121210;
+  color: #eeede8;
+  font-family: var(--font-sans);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.55);
+}
+.paywall-eyebrow {
+  margin: 0 0 10px;
+  color: #87877e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.paywall h2 {
+  margin: 0 0 10px;
+  font: 400 30px/1.2 var(--font-sans);
+}
+.paywall-text {
+  margin: 0 0 18px;
+  color: #b6b5ae;
+  font-size: 17px;
+  line-height: 1.55;
+}
+.paywall-text b {
+  color: #eeede8;
+}
+.paywall-cause {
+  margin: 0 0 16px;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0e0e0d;
+}
+.paywall-cause img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+.paywall-cause figcaption {
+  margin: 0;
+  padding: 14px 16px;
+  color: #d8d7d0;
+  font-size: 16px;
+  line-height: 1.5;
+  background: linear-gradient(180deg, #1a221c 0%, #141814 100%);
+  border-top: 1px solid rgba(109, 167, 131, 0.35);
+}
+.paywall-cause figcaption b {
+  color: #f5c518;
+}
+.paywall-list {
+  margin: 0 0 22px;
+  padding: 0;
+  list-style: none;
+  font-size: 16px;
+  line-height: 1.45;
+}
+.paywall-list li {
+  position: relative;
+  padding: 0 0 8px 24px;
+}
+.paywall-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 4px;
+  width: 10px;
+  height: 6px;
+  border: solid #6da783;
+  border-width: 0 0 2px 2px;
+  transform: rotate(-45deg);
+}
+.paywall-pay {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 9px;
+  background: #f5c518;
+  color: #151a17;
+  font-size: 16px;
+  font-weight: 700;
+}
+.paywall-pay:hover:not(:disabled) {
+  background: #ffd43b;
+}
+.paywall-pay:disabled {
+  opacity: 0.7;
+}
+.paywall-error {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 9px;
+  background: #3a1d1f;
+  color: #f2b8bd;
+  font-size: 14px;
+}
+.paywall-qr-stage {
+  display: grid;
+  place-items: center;
+  margin: 8px 0 18px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+}
+.paywall-qr {
+  display: block;
+  width: min(240px, 68vw);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
+  border-radius: 9px;
+  background: #fff;
+  image-rendering: pixelated;
+}
+.paywall-qr.is-simulated {
+  display: grid;
+  place-items: center;
+  width: 220px;
+  height: 220px;
+  border: 2px dashed #87877e;
+  background: #1d1d1a;
+  color: #87877e;
+  font-size: 14px;
+}
+.pix-alone .paywall-text {
+  text-align: center;
+}
+.paywall-code-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #b6b5ae;
+  font-size: 13px;
+}
+.paywall-code {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.paywall-code input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  background: #1d1d1a;
+  color: #eeede8;
+  font:
+    13px/44px ui-monospace,
+    Menlo,
+    Consolas,
+    monospace;
+  text-overflow: ellipsis;
+}
+.paywall-code button {
+  min-width: 88px;
+  border: 0;
+  border-radius: 9px;
+  background: #f5c518;
+  color: #151a17;
+  font-weight: 700;
+}
+.paywall-waiting {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+.paywall-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #6da783;
+  border-radius: 50%;
+  animation: paywall-spin 0.9s linear infinite;
+}
+@keyframes paywall-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paywall-spinner {
+    animation-duration: 3s;
+  }
+}
+.paywall-fine {
+  margin: 0;
+  color: #87877e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.paywall-dev {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px;
+  border: 1px dashed #c4a36b;
+  border-radius: 9px;
+  background: #30291c;
+  color: #e8cf9c;
+  font-size: 13px;
+}
+.paywall-account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 22px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  color: #87877e;
+  font-size: 12px;
+}
+.paywall-account span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.paywall-account button {
+  flex: none;
+  border: 0;
+  background: none;
+  color: #b6b5ae;
+  text-decoration: underline;
+}
+.paywall :focus-visible,
+.access-badge :focus-visible {
+  outline: 3px solid #f5c518;
+  outline-offset: 2px;
+}
+@media (max-width: 480px) {
+  .paywall {
+    padding: 22px 18px;
+  }
+  .paywall h2 {
+    font-size: 24px;
+  }
+}
+
+/* The panel is dark: never let the light page background show around it. */
+body:has(.access-badge) {
+  background: #0b0b0a;
+}
+@media (max-width: 768px) {
+  /* Phones scroll the panel: keep its end clear of the floating badge. */
+  body:has(.access-badge) {
+    padding-bottom: 72px;
+  }
+  .access-badge {
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    font-size: 12px;
+  }
+}
+
+.paywall-text b {
+  color: #eeede8;
+}
+.paywall-qr-narrow {
+  display: none;
+  margin: -4px 0 16px;
+  color: #b6b5ae;
+  font-size: 13px;
+}
+.paywall-qr-narrow summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.paywall-qr-narrow .paywall-qr {
+  margin-top: 8px;
+}
+@media (max-width: 600px) {
+  .paywall-qr-wide {
+    display: none;
+  }
+  .paywall-qr-narrow {
+    display: block;
+  }
+  .paywall-code {
+    flex-direction: column;
+  }
+  .paywall-code input {
+    line-height: 40px;
+  }
+  .paywall-code button {
+    min-height: 52px;
+    font-size: 16px;
+  }
+}
+
+.access-badge-user {
+  max-width: 140px;
+  padding-right: 8px;
+  margin-right: 4px;
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+  color: #b6b5ae;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 420px) {
+  .access-badge-user {
+    max-width: 96px;
+  }
+}
+
+.access-badge-wait-short {
+  display: none;
+}
+@media (max-width: 600px) {
+  .access-badge-wait {
+    display: none;
+  }
+  .access-badge-wait-short {
+    display: inline;
+    color: #b6b5ae;
+  }
+}
+
+.paywall {
+  position: relative;
+}
+.paywall-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #b6b5ae;
+  font-size: 26px;
+  line-height: 1;
+}
+.paywall-close:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.access-badge-slot:empty {
+  display: none;
+}
+.access-badge-slot {
+  display: contents;
+}
+
+/* Desktop: the badge is no longer a floating pill; it sits inside the panel's black footer. */
+@media (min-width: 769px) {
+  body:has(.cockpit-footer) .election-cockpit .cockpit-footer {
+    display: flex;
+    align-items: center;
+    min-height: 40px;
+    /* The access badge (Chat, name, Sair) floats over the right end: keep the text clear of it. */
+    padding: 6px 330px 6px 18px;
+    line-height: 1.4;
+    /* Above the map and the chart, which can spill past the grid; below the badge (z 40). */
+    position: relative;
+    z-index: 30;
+    text-align: left;
+  }
+  body:has(.cockpit-footer) .access-badge {
+    right: 18px;
+    bottom: 0;
+    height: 40px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+    font-size: 12px;
+  }
+  body:has(.cockpit-footer) .access-badge .chat-launcher {
+    min-height: 28px;
+  }
+}
+
+/* First visit, while the visitor session opens. */
+.guest-start {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  background: #0b0b0a;
+  color: #eeede8;
+}
+.guest-start-brand {
+  margin: 0;
+  color: #87877e;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.guest-start p {
+  margin: 0;
+}
+.guest-start button {
+  justify-self: center;
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: 9px;
+  background: #fff;
+  color: #1f1f1f;
+  font-weight: 700;
+}
+
+/* Pix or card. */
+.checkout {
+  margin-top: 4px;
+}
+.checkout-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #1d1d1a;
+}
+.checkout-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #b6b5ae;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.checkout-tabs button.is-active {
+  background: #0b6b3a;
+  color: #fff;
+}
+.paywall .checkout-tabs button {
+  min-height: 48px;
+  font-size: 16px;
+}
+.paywall .paywall-pay {
+  min-height: 54px;
+  font-size: 18px;
+}
+.checkout-pane {
+  display: grid;
+  gap: 10px;
+}
+.checkout-card {
+  min-height: 40px;
+}
+/* Sign up or in inside the dialog (visitors): larger type for easier reading. */
+.paywall-auth {
+  margin-top: 8px;
+}
+.paywall-auth .login-form.is-easy .login-label {
+  margin-top: 4px;
+  font-size: 16px;
+  color: #d8d7d0;
+}
+.paywall-auth .login-form.is-easy .login-input {
+  height: 52px;
+  margin-bottom: 14px;
+  font-size: 18px;
+}
+.paywall-auth .login-form.is-easy .login-dev,
+.paywall-auth .login-form.is-easy .login-submit {
+  min-height: 54px;
+  margin-top: 8px;
+  font-size: 18px;
+}
+.paywall-auth .login-mode-switch {
+  margin: 0 0 18px;
+  color: #87877e;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+}
+.paywall-auth .login-mode-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #b6b5ae;
+  font: inherit;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.paywall-auth .login-mode-link:hover {
+  color: #eeede8;
+}
+.paywall-auth .login-fine {
+  font-size: 14px;
+}
+/* Sticker packs. */
+.shop-packs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.shop-pack {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  padding: 14px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: #1d1d1a;
+  color: #eeede8;
+  font: inherit;
+  cursor: pointer;
+}
+.shop-pack:hover {
+  border-color: #0b6b3a;
+}
+.shop-pack b {
+  font-size: 26px;
+  line-height: 1;
+}
+.shop-pack span {
+  color: #b6b5ae;
+  font-size: 12px;
+}
+.shop-pack em {
+  margin-top: 6px;
+  font-style: normal;
+  font-weight: 700;
+  color: #f5c518;
+}
+.shop-back {
+  margin-top: 12px;
+  border: 0;
+  background: none;
+  color: #b6b5ae;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}

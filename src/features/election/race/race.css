@@ -1,0 +1,311 @@
+/* Left column: separate cards, like "Por região". */
+.race-column {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.race-card {
+  flex-shrink: 0;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: #151514;
+  color: #eeede8;
+  font-family: var(--font-sans);
+}
+.race-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+}
+.election-cockpit .race-card h1,
+.election-cockpit .race-card h2 {
+  margin: 0;
+  color: #eeede8;
+  font: 600 15px/1.2 var(--font-sans);
+  letter-spacing: 0;
+}
+.race-tag {
+  padding: 2px 7px;
+  border-radius: 5px;
+  background: #262624;
+  color: #b6b5ae;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.race-facts,
+.race-stats {
+  margin: 0;
+}
+.race-facts div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+  font-size: 12px;
+}
+.race-facts dt {
+  color: #b6b5ae;
+}
+.race-facts dd {
+  margin: 0;
+  color: #d8d7d0;
+  text-align: right;
+}
+.race-facts dd b {
+  color: #fff;
+}
+.race-others {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.race-others li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.race-photo {
+  display: block;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--side);
+  box-shadow: 0 0 0 2px var(--side);
+}
+.race-photo img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Without the photo, just the colored circle. */
+  color: transparent;
+  font-size: 0;
+  object-fit: cover;
+  object-position: top;
+}
+.race-who {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+}
+.race-who b {
+  overflow: hidden;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.election-cockpit .race-who small {
+  color: color-mix(in srgb, var(--side) 75%, #fff);
+  font-size: 11px;
+}
+.race-others strong {
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.race-rest {
+  margin: 12px 0 0 !important;
+  color: #87877e;
+  font-size: 12px;
+}
+.race-all {
+  display: inline-block;
+  margin-top: 10px;
+  padding-bottom: 3px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.35);
+  color: #eeede8;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.race-all:hover {
+  border-color: #eeede8;
+}
+.race-stats {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.race-stats dt {
+  color: #87877e;
+  font-size: 10px;
+  white-space: nowrap;
+}
+.race-stats dd {
+  margin: 3px 0 0;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.race-chart-card {
+  display: flex;
+  min-height: 230px;
+  flex: 1;
+  flex-direction: column;
+}
+/* Without the legend (no data yet) the top percentage would touch the title. */
+.race-chart-card > h2 + .race-chart {
+  margin-top: 18px;
+}
+.race-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 8px 0 10px;
+  padding: 0;
+  list-style: none;
+  color: #d8d7d0;
+  font-size: 11px;
+}
+.race-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.race-legend li::before {
+  content: '';
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--side);
+}
+.race-chart {
+  position: relative;
+  display: flex;
+  min-height: 150px;
+  flex: 1;
+  flex-direction: column;
+}
+.race-chart-grid {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-left: 30px;
+}
+.race-chart-grid span {
+  position: relative;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.race-chart-grid span.is-half {
+  border-top: 1px dashed rgba(255, 255, 255, 0.22);
+}
+.election-cockpit .race-chart-grid small {
+  position: absolute;
+  top: -7px;
+  left: -30px;
+  color: #6f6f67;
+  font-size: 9px;
+}
+.race-chart p {
+  position: absolute;
+  inset: 0 0 18px 30px;
+  display: grid;
+  place-items: center;
+  margin: 0 !important;
+  padding: 0 10px;
+  color: #87877e !important;
+  font-size: 11px !important;
+  line-height: 1.5;
+  text-align: center;
+}
+.race-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0 0 30px;
+}
+.election-cockpit .race-chart-axis small {
+  color: #6f6f67;
+  font-size: 9px;
+}
+.race-facts dd small {
+  display: block;
+  margin-top: 2px;
+  color: #87877e;
+  font-size: 11px;
+}
+/* Narrow columns: the three totals share the width evenly and labels may wrap. */
+.race-stats {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.race-stats dt {
+  white-space: normal;
+  line-height: 1.25;
+}
+.race-stats dd {
+  font-size: 14px;
+}
+.race-stats div:nth-child(2) {
+  text-align: center;
+}
+.race-stats div:nth-child(3) {
+  text-align: right;
+}
+
+/* Live chart: lines drawn over the grid, with a dot at each line's latest value. */
+.race-chart-axis {
+  height: 18px;
+  box-sizing: border-box;
+}
+.race-chart-plot {
+  position: absolute;
+  inset: 0 0 18px 30px;
+}
+.race-chart-plot svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.election-cockpit .race-chart-plot i {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px #151514;
+  transform: translate(-50%, -50%);
+}
+.race-note {
+  margin: 10px 0 0 !important;
+  color: #e0b84a !important;
+  font-size: 11px !important;
+}
+@media (max-width: 768px) {
+  .race-column {
+    order: 1;
+    margin: 10px;
+    overflow: visible;
+  }
+}
+.race-share {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+.election-cockpit .race-share small,
+.race-share small {
+  color: #87877e;
+  font-size: 10px;
+}

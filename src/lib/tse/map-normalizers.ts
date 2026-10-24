@@ -33,7 +33,7 @@ function contender(candidate: CandidateResult, colors: CandidateColors): MapCand
 export function normalizeState(input: StateInput, colors: CandidateColors): StateMapResult {
   const { snapshot: s } = input;
   const base = {
-    candidates: s?.candidates.map(c => contender(c, colors)) ?? [],
+    candidates: s?.candidates.map((c) => contender(c, colors)) ?? [],
     validVotes: s?.progress.validVotes ?? null,
     eligibleVoters: s?.progress.eligibleVoters ?? null,
     uf: input.uf,

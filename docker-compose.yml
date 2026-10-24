@@ -1,0 +1,102 @@
+# Production on a DigitalOcean Droplet: see docs/DEPLOY_DIGITALOCEAN.md.
+#   docker compose --env-file .env.production up -d --build
+# Variables come from .env.production (copy deploy/env.production.example); --env-file also
+# feeds the ${...} substitutions below (DOMAIN, POSTGRES_PASSWORD, DATABASE_URL).
+#
+# Three app processes share the load (one Node process uses one CPU core; the load test topped out
+# between 1,000 and 3,000 people with a single one). Redis carries the chat, the room limit and
+# the login rate limits between them. Each process keeps its own TSE cache and history directory,
+# so their timelines never interleave on disk.
+
+x-app: &app
+  build: .
+  image: apuracao-app
+  restart: unless-stopped
+  env_file: .env.production
+  volumes:
+    - tse-cache:/app/.cache
+    - app-data:/app/.data
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  expose:
+    - '3000'
+
+x-app-env: &app-env # Compose-internal Postgres unless .env.production points to a Managed Database.
+  DATABASE_URL: ${DATABASE_URL:-postgres://apuracao:${POSTGRES_PASSWORD}@db:5432/apuracao}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+
+services:
+  app1:
+    <<: *app
+    environment:
+      <<: *app-env
+      TSE_CACHE_DIR: /app/.cache/tse-1
+  app2:
+    <<: *app
+    environment:
+      <<: *app-env
+      TSE_CACHE_DIR: /app/.cache/tse-2
+  app3:
+    <<: *app
+    environment:
+      <<: *app-env
+      TSE_CACHE_DIR: /app/.cache/tse-3
+
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    # Chat events and short-lived counters only: nothing to keep on disk.
+    command: [redis-server, --save, '', --appendonly, 'no']
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  db:
+    image: postgres:17-alpine
+    # Commits do not wait for the disk: at peak every panel writes its watched time every few
+    # seconds. A crash loses at most the last instants of those counters (payments are always
+    # re-checked with Mercado Pago).
+    command: [postgres, -c, synchronous_commit=off, -c, shared_buffers=512MB]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: apuracao
+      POSTGRES_DB: apuracao
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pg-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U apuracao -d apuracao']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp'
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+      EXTRA_DOMAINS: ${EXTRA_DOMAINS:-}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - app1
+      - app2
+      - app3
+
+volumes:
+  tse-cache:
+  app-data:
+  pg-data:
+  caddy-data:
+  caddy-config:

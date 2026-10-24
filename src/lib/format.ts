@@ -23,3 +23,7 @@ export const dateTime = (value: string | null | undefined) =>
         timeStyle: 'medium',
       }).format(new Date(value))
     : '—';
+
+/** "2º turno · 2026" from the snapshot's round; without data, just the year. */
+export const roundLabel = (turn?: string | null) =>
+  turn ? `${turn}º turno · 2026` : 'Eleições 2026';

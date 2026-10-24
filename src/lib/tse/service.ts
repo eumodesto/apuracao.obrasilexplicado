@@ -6,19 +6,22 @@ import { TseClient } from './client';
 import { CONFIG_URL, discoverElection, normalizeGeography } from './config';
 import { normalizeResult } from './normalizers';
 import { querySchema } from './schemas';
+import { simulatedTransport, simulationEnabled, tseCacheDir } from './simulation';
 import { geographyUrl, resultUrl } from './urls';
 import type { ElectionResponse, Geography, Scope } from './types';
 const runtime = globalThis as typeof globalThis & { tseClient?: TseClient };
 export const client = (runtime.tseClient ??= new TseClient(
-  new FileBackedCache(
-    path.resolve(/* turbopackIgnore: true */ process.env.TSE_CACHE_DIR || '.cache/tse'),
-  ),
+  new FileBackedCache(path.resolve(/* turbopackIgnore: true */ tseCacheDir())),
+  simulationEnabled() ? simulatedTransport(fetch) : fetch,
 ));
+client.serveStale = true;
 function setting(value: string | undefined, fallback: number, min: number) {
   const n = Number(value);
   return Number.isFinite(n) && n >= min ? n : fallback;
 }
 export const POLL_MS = setting(process.env.TSE_POLL_INTERVAL_MS, 3000, 3000);
+/** How often browsers ask this server for results (X-Poll-After); the TSE itself is read every POLL_MS. */
+export const CLIENT_POLL_MS = setting(process.env.CLIENT_POLL_INTERVAL_MS, 10000, 3000);
 export const STALE_MS = setting(process.env.TSE_STALE_AFTER_MS, 120000, 30000);
 export async function catalog() {
   const config = await client.read(CONFIG_URL, discoverElection, 3_600_000);
@@ -94,7 +97,7 @@ export async function president(params: Record<string, string>): Promise<Electio
     stale,
     issue,
     checkedAt,
-    nextPollMs: Math.max(POLL_MS, Math.min(60000, result.nextAttempt - Date.now())),
+    nextPollMs: Math.max(CLIENT_POLL_MS, Math.min(60000, result.nextAttempt - Date.now())),
     staleAfterMs: STALE_MS,
   };
 }

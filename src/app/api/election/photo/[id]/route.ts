@@ -1,3 +1,5 @@
+import { firstRoundNational } from '@/lib/tse/first-round';
+import { governorCandidate } from '@/lib/tse/governors';
 import { client, president } from '@/lib/tse/service';
 type Photo = { bytes: ArrayBuffer; type: string };
 const photos = new Map<string, Photo>();
@@ -13,7 +15,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
       return new Response(null, { status: 503 });
     const flight = (async () => {
       const data = await president({});
-      const candidate = data.snapshot?.candidates.find((c) => c.id === id);
+      // Candidates of the active round (President and governor runoffs), or of the 1st round.
+      const candidate =
+        data.snapshot?.candidates.find((c) => c.id === id) ??
+        (await firstRoundNational().catch(() => null))?.candidates.find((c) => c.id === id) ??
+        (await governorCandidate(id).catch(() => null));
       if (!candidate) return null;
       const previous = queue;
       let release!: () => void;
