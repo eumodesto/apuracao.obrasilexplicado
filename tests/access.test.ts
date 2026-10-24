@@ -3,7 +3,7 @@ import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { accessStatus, watchedSeconds } from '../src/lib/access/access';
+import { accessStatus, usedFreeSeconds, watchedSeconds } from '../src/lib/access/access';
 import {
   applyPayment,
   openPix,
@@ -36,6 +36,7 @@ const blankProfile = {
   partyConsentAt: null,
   onboardedAt: null,
   createdAt: null,
+  freeStartedAt: null,
   pausedAt: null,
   pausedReason: null,
   deletedAt: null,
@@ -790,6 +791,27 @@ describe('visitors without an account', () => {
     expect((await store.getUser(profile.id))!.freeSecondsUsed).toBe(60);
     expect(
       accessStatus((await store.getUser(profile.id))!, T0, { ...limits, free: 60 }).state,
+    ).toBe('locked');
+  });
+
+  it('counts visitor free time by wall clock so a reload cannot restart the minute', async () => {
+    const store = new FileAccessStore();
+    expect(await store.createGuest('guest:clock', 'Visitante 9999', T0)).toBe('ok');
+    await store.touch('guest:clock', T0, 30, true);
+    const afterFirst = (await store.getUser('guest:clock'))!;
+    expect(afterFirst.freeStartedAt).toBe(T0);
+    expect(afterFirst.freeSecondsUsed).toBe(0);
+    // Sparse polls / reload 45 s later: activity gap is capped at 30, wall clock is 45.
+    await store.touch('guest:clock', T0 + 45_000, 30, true);
+    const afterGap = (await store.getUser('guest:clock'))!;
+    expect(afterGap.freeSecondsUsed).toBe(45);
+    expect(usedFreeSeconds(afterGap, T0 + 45_000)).toBe(45);
+    expect(
+      accessStatus(afterGap, T0 + 45_000, { free: 60, price: 5 }).remainingSeconds,
+    ).toBe(15);
+    // Status alone (no new touch) still advances with wall clock.
+    expect(
+      accessStatus(afterGap, T0 + 60_000, { free: 60, price: 5 }).state,
     ).toBe('locked');
   });
 

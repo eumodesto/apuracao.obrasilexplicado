@@ -18,14 +18,24 @@ const GUEST_TTL_SECONDS = 365 * 24 * 60 * 60;
 /** "Visitante 1234": four digits, more when the name is taken. */
 export const guestName = (digits = 4) => `Visitante ${randomInt(10 ** (digits - 1), 10 ** digits)}`;
 
+function guestIdFromToken(token: string | null | undefined) {
+  const saved = verify<{ id: string }>(token ?? undefined, sessionSecret());
+  return saved?.id && saved.id.startsWith('guest:') ? saved.id : null;
+}
+
 /**
  * Signs this browser in as its visitor: the one it already had, or a new one. Free time is counted
  * on that account like on any other.
+ *
+ * `resume` is an optional signed token from localStorage when the HttpOnly cookie was lost.
  */
-export async function startGuest(store: AccessStore = accessStore()) {
+export async function startGuest(
+  store: AccessStore = accessStore(),
+  resume: string | null = null,
+) {
   const jar = await cookies();
-  const saved = verify<{ id: string }>(jar.get(GUEST_COOKIE)?.value, sessionSecret());
-  let id = saved?.id && saved.id.startsWith('guest:') ? saved.id : null;
+  let id =
+    guestIdFromToken(jar.get(GUEST_COOKIE)?.value) ?? guestIdFromToken(resume ?? undefined);
   const existing = id ? await store.getUser(id) : null;
   if (!existing || existing.deletedAt || !isGuest(existing)) {
     id = `guest:${randomUUID()}`;
@@ -34,11 +44,8 @@ export async function startGuest(store: AccessStore = accessStore()) {
       created = (await store.createGuest(id, guestName(attempt < 4 ? 4 : 6), Date.now())) === 'ok';
     if (!created) throw new Error('Could not create a visitor account.');
   }
-  jar.set(
-    GUEST_COOKIE,
-    sign({ id }, sessionSecret(), GUEST_TTL_SECONDS),
-    cookieOptions(GUEST_TTL_SECONDS),
-  );
+  const token = sign({ id }, sessionSecret(), GUEST_TTL_SECONDS);
+  jar.set(GUEST_COOKIE, token, cookieOptions(GUEST_TTL_SECONDS));
   await signIn({ sub: id!, email: '', name: 'Visitante' }, store);
-  return id!;
+  return { id: id!, resume: token };
 }

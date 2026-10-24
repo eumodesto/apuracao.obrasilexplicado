@@ -1,7 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
-import { watchedSeconds } from './access';
+import { isGuest, watchedSeconds } from './access';
 import type {
   AccessStats,
   AccessStore,
@@ -30,6 +30,7 @@ const newUser = (id: string): AccessUser => ({
   email: '',
   name: '',
   freeSecondsUsed: 0,
+  freeStartedAt: null,
   lastSeenAt: null,
   paidAt: null,
   paymentId: null,
@@ -177,8 +178,18 @@ export class FileAccessStore implements AccessStore {
     return this.change((data) => {
       const user = data.users[id];
       if (!user) return null;
-      if (user.paidAt === null && count)
+      if (user.paidAt === null && count) {
         user.freeSecondsUsed += watchedSeconds(user.lastSeenAt, now, maxGapSeconds);
+        // Visitors: wall-clock anchor so the same browser cannot restart the free minute on reload.
+        if (isGuest(user)) {
+          if (user.freeStartedAt == null)
+            user.freeStartedAt = now - Math.max(0, user.freeSecondsUsed) * 1000;
+          user.freeSecondsUsed = Math.max(
+            user.freeSecondsUsed,
+            Math.max(0, (now - user.freeStartedAt) / 1000),
+          );
+        }
+      }
       user.lastSeenAt = now;
       return { ...user };
     });
@@ -326,6 +337,7 @@ type UserRow = {
   email: string;
   name: string;
   free_seconds_used: number;
+  free_started_at: Date | null;
   last_seen_at: Date | null;
   paid_at: Date | null;
   payment_id: string | null;
@@ -361,6 +373,7 @@ const toUser = (row: UserRow): AccessUser => ({
   email: row.email,
   name: row.name,
   freeSecondsUsed: Number(row.free_seconds_used),
+  freeStartedAt: row.free_started_at?.getTime() ?? null,
   lastSeenAt: row.last_seen_at?.getTime() ?? null,
   paidAt: row.paid_at?.getTime() ?? null,
   paymentId: row.payment_id,
@@ -434,7 +447,8 @@ export class PostgresAccessStore implements AccessStore {
         ADD COLUMN IF NOT EXISTS paused_reason text,
         ADD COLUMN IF NOT EXISTS deleted_at timestamptz,
         ADD COLUMN IF NOT EXISTS photo_version bigint,
-        ADD COLUMN IF NOT EXISTS sticker_credits integer NOT NULL DEFAULT 0;
+        ADD COLUMN IF NOT EXISTS sticker_credits integer NOT NULL DEFAULT 0,
+        ADD COLUMN IF NOT EXISTS free_started_at timestamptz;
       ALTER TABLE access_payments
         ADD COLUMN IF NOT EXISTS purpose text NOT NULL DEFAULT 'access',
         ADD COLUMN IF NOT EXISTS method text NOT NULL DEFAULT 'pix',
@@ -517,11 +531,32 @@ export class PostgresAccessStore implements AccessStore {
   async touch(id: string, now: number, maxGapSeconds: number, count = true) {
     await this.schema();
     const at = new Date(now);
+    // Guest free minute: anchor free_started_at on the first counting touch, then keep
+    // free_seconds_used at least as high as wall clock so a reload cannot restart the minute.
     const [row] = await this.sql<UserRow[]>`
       UPDATE access_users SET
-        free_seconds_used = free_seconds_used + CASE
-          WHEN paid_at IS NOT NULL OR last_seen_at IS NULL OR NOT ${count} THEN 0
-          ELSE LEAST(GREATEST(EXTRACT(EPOCH FROM (${at}::timestamptz - last_seen_at)), 0), ${maxGapSeconds})
+        free_started_at = CASE
+          WHEN ${count} AND paid_at IS NULL AND free_started_at IS NULL AND id LIKE 'guest:%'
+            THEN ${at}::timestamptz - (GREATEST(free_seconds_used, 0) * interval '1 second')
+          ELSE free_started_at
+        END,
+        free_seconds_used = CASE
+          WHEN paid_at IS NOT NULL OR NOT ${count} THEN free_seconds_used
+          ELSE GREATEST(
+            free_seconds_used + CASE
+              WHEN last_seen_at IS NULL THEN 0
+              ELSE LEAST(GREATEST(EXTRACT(EPOCH FROM (${at}::timestamptz - last_seen_at)), 0), ${maxGapSeconds})
+            END,
+            CASE
+              WHEN id LIKE 'guest:%' THEN EXTRACT(EPOCH FROM (
+                ${at}::timestamptz - COALESCE(
+                  free_started_at,
+                  ${at}::timestamptz - (GREATEST(free_seconds_used, 0) * interval '1 second')
+                )
+              ))
+              ELSE free_seconds_used
+            END
+          )
         END,
         last_seen_at = ${at}
       WHERE id = ${id}
