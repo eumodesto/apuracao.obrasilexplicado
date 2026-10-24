@@ -1,5 +1,6 @@
-import { accessStatus } from './access';
-import { MAX_ACTIVITY_GAP_SECONDS } from './config';
+import { accessStatus, isGuest } from './access';
+import { freeSeconds, MAX_ACTIVITY_GAP_SECONDS } from './config';
+import { bindContext } from './device';
 import { countStarted } from './live';
 import { readSession, type Session } from './session';
 import { accessStore } from './store';
@@ -58,6 +59,21 @@ export async function currentAccess(
       (await store.upsertUser({ id: session.sub, email: session.email, name: session.name }));
     if (recent.size > 50_000) recent.clear();
     recent.set(session.sub, { user, store, checkedAt: now });
+    // Share free-minute usage across browser profiles on the same IP / device id.
+    if (user.paidAt === null && (isGuest(user) || user.freeSecondsUsed > 0)) {
+      try {
+        const bind = await bindContext();
+        const spent = Math.max(user.freeSecondsUsed, await store.maxFreeQuota(bind.keys));
+        if (spent > user.freeSecondsUsed) {
+          await store.inheritFreeTime(user.id, Math.min(spent, freeSeconds()));
+          user = (await store.getUser(user.id)) ?? user;
+          recent.set(session.sub, { user, store, checkedAt: now });
+        }
+        if (user.freeSecondsUsed > 0) await store.bumpFreeQuota(bind.keys, user.freeSecondsUsed);
+      } catch (error) {
+        console.error('[access] free quota sync failed', error);
+      }
+    }
   }
   return {
     user,

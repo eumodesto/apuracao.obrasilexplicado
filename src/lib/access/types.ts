@@ -132,4 +132,10 @@ export interface AccessStore {
   inheritFreeTime(id: string, seconds: number): Promise<void>;
   /** New visitor account with this display name; 'taken' when the name is in use. */
   createGuest(id: string, username: string, now: number): Promise<'ok' | 'taken'>;
+  /** Highest free seconds already spent for this IP / device key (anti multi-profile). */
+  getFreeQuota(key: string): Promise<number>;
+  /** Raises the recorded free usage for each key to at least `seconds`. */
+  bumpFreeQuota(keys: string[], seconds: number): Promise<void>;
+  /** Max free seconds already spent across the given keys. */
+  maxFreeQuota(keys: string[]): Promise<number>;
 }

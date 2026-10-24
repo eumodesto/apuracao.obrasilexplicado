@@ -813,6 +813,18 @@ describe('visitors without an account', () => {
     });
   });
 
+  it('shares free-minute usage across IP and device so a new browser profile stays locked', async () => {
+    const store = new FileAccessStore();
+    await store.bumpFreeQuota(['ip:1.2.3.4', 'dev:abc'], 60);
+    expect(await store.maxFreeQuota(['ip:1.2.3.4'])).toBe(60);
+    expect(await store.maxFreeQuota(['dev:other'])).toBe(0);
+    expect(await store.createGuest('guest:b', 'Visitante 7777', T0)).toBe('ok');
+    await store.inheritFreeTime('guest:b', await store.maxFreeQuota(['ip:1.2.3.4']));
+    expect(accessStatus((await store.getUser('guest:b'))!, T0, { free: 60, price: 5 }).state).toBe(
+      'locked',
+    );
+  });
+
   it('keeps people from taking a name that looks like a visitor', () => {
     expect(usernameProblem('visitante1234')).not.toBeNull();
   });
