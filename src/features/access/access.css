@@ -52,7 +52,7 @@
   backdrop-filter: blur(6px);
 }
 .paywall {
-  width: min(100%, 440px);
+  width: min(100%, 480px);
   padding: 28px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-top: 4px solid #0b6b3a;
@@ -72,23 +72,49 @@
 }
 .paywall h2 {
   margin: 0 0 10px;
-  font: 400 28px/1.15 var(--font-sans);
+  font: 400 30px/1.2 var(--font-sans);
 }
 .paywall-text {
   margin: 0 0 18px;
   color: #b6b5ae;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 17px;
+  line-height: 1.55;
 }
 .paywall-text b {
   color: #eeede8;
+}
+.paywall-cause {
+  margin: 0 0 16px;
+  overflow: hidden;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0e0e0d;
+}
+.paywall-cause img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+.paywall-cause figcaption {
+  margin: 0;
+  padding: 14px 16px;
+  color: #d8d7d0;
+  font-size: 16px;
+  line-height: 1.5;
+  background: linear-gradient(180deg, #1a221c 0%, #141814 100%);
+  border-top: 1px solid rgba(109, 167, 131, 0.35);
+}
+.paywall-cause figcaption b {
+  color: #f5c518;
 }
 .paywall-list {
   margin: 0 0 22px;
   padding: 0;
   list-style: none;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 16px;
+  line-height: 1.45;
 }
 .paywall-list li {
   position: relative;
@@ -129,11 +155,20 @@
   color: #f2b8bd;
   font-size: 14px;
 }
+.paywall-qr-stage {
+  display: grid;
+  place-items: center;
+  margin: 8px 0 18px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #fff;
+}
 .paywall-qr {
   display: block;
-  width: 220px;
-  height: 220px;
-  margin: 0 auto 18px;
+  width: min(240px, 68vw);
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
   border-radius: 9px;
   background: #fff;
   image-rendering: pixelated;
@@ -141,10 +176,15 @@
 .paywall-qr.is-simulated {
   display: grid;
   place-items: center;
+  width: 220px;
+  height: 220px;
   border: 2px dashed #87877e;
   background: #1d1d1a;
   color: #87877e;
   font-size: 14px;
+}
+.pix-alone .paywall-text {
+  text-align: center;
 }
 .paywall-code-label {
   display: block;
@@ -459,6 +499,14 @@ body:has(.access-badge) {
   background: #0b6b3a;
   color: #fff;
 }
+.paywall .checkout-tabs button {
+  min-height: 48px;
+  font-size: 16px;
+}
+.paywall .paywall-pay {
+  min-height: 54px;
+  font-size: 18px;
+}
 .checkout-pane {
   display: grid;
   gap: 10px;
@@ -466,9 +514,49 @@ body:has(.access-badge) {
 .checkout-card {
   min-height: 40px;
 }
-/* Sign up or in inside the dialog (visitors). */
+/* Sign up or in inside the dialog (visitors): larger type for easier reading. */
 .paywall-auth {
   margin-top: 8px;
+}
+.paywall-auth .login-form.is-easy .login-label {
+  margin-top: 4px;
+  font-size: 16px;
+  color: #d8d7d0;
+}
+.paywall-auth .login-form.is-easy .login-input {
+  height: 52px;
+  margin-bottom: 14px;
+  font-size: 18px;
+}
+.paywall-auth .login-form.is-easy .login-dev,
+.paywall-auth .login-form.is-easy .login-submit {
+  min-height: 54px;
+  margin-top: 8px;
+  font-size: 18px;
+}
+.paywall-auth .login-mode-switch {
+  margin: 0 0 18px;
+  color: #87877e;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: center;
+}
+.paywall-auth .login-mode-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #b6b5ae;
+  font: inherit;
+  font-size: 15px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.paywall-auth .login-mode-link:hover {
+  color: #eeede8;
+}
+.paywall-auth .login-fine {
+  font-size: 14px;
 }
 /* Sticker packs. */
 .shop-packs {

@@ -92,14 +92,6 @@ export default function PrivacyPage() {
             código de autorização. No Pix, o pagamento acontece no app do seu banco.
           </li>
         </ul>
-        <h3>No aviso de início da apuração</h3>
-        <ul>
-          <li>
-            Se você pedir para ser avisado, guardamos o <b>e-mail</b> informado, usado só para esse
-            aviso.
-          </li>
-        </ul>
-
         <h2>3. Para que usamos e com qual base legal</h2>
         <ul>
           <li>
@@ -113,9 +105,6 @@ export default function PrivacyPage() {
           </li>
           <li>
             <b>Partido apoiado</b>: consentimento específico e destacado (art. 11, I).
-          </li>
-          <li>
-            <b>Aviso de início da apuração</b>: consentimento (art. 7º, I).
           </li>
           <li>
             <b>Registros financeiros</b>: cumprimento de obrigação legal (art. 7º, II).
@@ -177,9 +166,6 @@ export default function PrivacyPage() {
           <li>
             Registros de pagamento: pelo prazo exigido pela legislação fiscal e contábil, mesmo após
             a exclusão da conta (sem os seus dados de perfil).
-          </li>
-          <li>
-            E-mail do aviso de início da apuração: até o aviso ser enviado ou você pedir a remoção.
           </li>
           <li>Endereço IP para limite de tentativas: alguns minutos.</li>
         </ul>

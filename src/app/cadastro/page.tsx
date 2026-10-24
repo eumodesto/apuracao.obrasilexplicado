@@ -23,7 +23,8 @@ export default async function SignUpPage() {
         <p className="login-eyebrow">Resultados Brasil · Eleições 2026</p>
         <h1 id="signup-title">Quase lá</h1>
         <p className="login-text">
-          Escolha como você vai aparecer no chat. Seu tempo grátis só começa depois deste passo.
+          Escolha seu nome e toque no lado que você apoia. Em seguida você libera o acesso à
+          apuração.
         </p>
         <ProfileForm
           parties={PARTIES}

@@ -11,7 +11,7 @@ export function adminUser(user: AccessUser, now = Date.now()) {
     username: user.username,
     party: user.party,
     photo: photoRef(user),
-    paid: hasPaidAccess(user, now),
+    paid: hasPaidAccess(user),
     paidAt: user.paidAt,
     staff: isStaff(user),
     admin: isAdmin(user),

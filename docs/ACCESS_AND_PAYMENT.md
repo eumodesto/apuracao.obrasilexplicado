@@ -1,6 +1,6 @@
 # Login, tempo grátis e pagamento Pix
 
-O painel exige login com e-mail (ou nome de usuário) e senha. Cada conta tem 1 minuto grátis de acompanhamento. Depois, um popup oferece o acesso até o fim da apuração por R$ 5,00, pago uma única vez no Pix pelo Mercado Pago.
+O painel abre com 1 minuto grátis. Depois, um popup pede criar conta (destaque) ou entrar. Em seguida, o pagamento único de R$ 5,00 no Mercado Pago (Pix ou cartão) libera o painel **para sempre**; parte do valor ajuda o Natal de crianças carentes.
 
 ## Jornada (a partir de 21/10/2026)
 
@@ -8,9 +8,9 @@ O painel exige login com e-mail (ou nome de usuário) e senha. Cada conta tem 1 
 2. O visitante tem o **tempo grátis** (`FREE_SECONDS`, padrão 60 s) para ver o painel e **escrever no chat** (texto; figurinhas não).
 3. Quando acaba, o popup pede **Criar conta** (aba aberta por padrão) ou **Entrar**. Ao criar a conta ou entrar, o tempo já usado pelo visitante passa para a conta (`inheritFreeTime`): não há segundo minuto.
 4. Conta nova → `/cadastro` (nome de usuário e partido) → painel com o popup de **pagamento**: **Pix** (QR Code e copia e cola, como antes) ou **Cartão**, com o formulário do Mercado Pago (Card Payment Brick) dentro do site. O número do cartão vai do navegador para o Mercado Pago, que devolve um token; só o token chega ao servidor (`POST /api/billing/card`). O valor cobrado é sempre o do servidor.
-5. Pagamento aprovado → acesso até `PAID_ACCESS_ENDS_AT`.
+5. Pagamento aprovado no Mercado Pago → acesso vitalício (sem data de fim).
 
-O tempo grátis só corre depois que o TSE publica o primeiro resultado. Para testar antes, `FREE_TIME_BEFORE_COUNT=true`.
+O tempo grátis corre desde a primeira visita ao painel. Para pausar até o TSE publicar o primeiro resultado, `FREE_TIME_WAIT_FOR_COUNT=true`.
 
 ## Figurinhas (pacotes)
 
@@ -23,7 +23,7 @@ O tempo grátis só corre depois que o TSE publica o primeiro resultado. Para te
 | Variável                 | Para quê                                                                       |
 | ------------------------ | ------------------------------------------------------------------------------ |
 | `MP_PUBLIC_KEY`          | Chave pública do Mercado Pago para o formulário de cartão. Sem ela, só Pix.    |
-| `FREE_TIME_BEFORE_COUNT` | `true` para o tempo grátis correr antes de o TSE publicar resultados (testes). |
+| `FREE_TIME_WAIT_FOR_COUNT` | `true` pausa o minuto grátis até o TSE publicar o primeiro resultado.        |
 | `OPEN_ACCESS`            | `true` libera tudo para todos (testes). Desligue antes da apuração.            |
 
 ## Fluxo (detalhes)
@@ -40,7 +40,7 @@ O tempo grátis só corre depois que o TSE publica o primeiro resultado. Para te
    - a **consulta** que o popup faz a cada 4 s (`GET /api/billing/status`), que pergunta ao Mercado Pago pelo pagamento pendente. Esse caminho também funciona em `localhost`, onde o webhook não chega.
 9. O acesso só é liberado quando o Mercado Pago informa o pagamento como `approved`, em BRL, com valor maior ou igual ao preço e com `external_reference` igual à conta que abriu a cobrança. O corpo do webhook nunca é usado diretamente: o pagamento é sempre consultado de volta na API do Mercado Pago.
 10. O pagamento fica ligado à conta, não ao aparelho. Quem já pagou entra com a mesma conta em qualquer aparelho e o acesso é liberado na hora; a tela de login lembra isso em "Já pagou?". Não há envio de e-mail.
-11. O acesso pago vale até `PAID_ACCESS_ENDS_AT` (padrão: 31/10/2026, 23h59 de Brasília).
+11. O acesso pago é vitalício: basta `paidAt` na conta. `PAID_ACCESS_ENDS_AT` ficou legado e não limita mais o acesso.
 
 Rotas públicas, sem verificação de acesso: `/login`, `/api/election/geography`, `/api/election/photo/*` (geografia e fotos não são resultados).
 
@@ -75,7 +75,7 @@ Variáveis em `.env.example`:
 | `DATABASE_URL`        | Postgres (Neon, Supabase etc.). Obrigatória na Vercel. As tabelas `access_users` e `access_payments` são criadas no primeiro uso. |
 | `FREE_SECONDS`        | Tempo grátis por conta, em segundos. Padrão: 60.                                                                                  |
 | `ACCESS_PRICE_BRL`    | Preço. Padrão: 5.00.                                                                                                              |
-| `PAID_ACCESS_ENDS_AT` | Fim do acesso pago (ISO 8601).                                                                                                    |
+| `PAID_ACCESS_ENDS_AT` | Legado; ignorado. O acesso pago é vitalício.                                                                                      |
 
 Gere um `SESSION_SECRET` com:
 

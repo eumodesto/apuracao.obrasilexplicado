@@ -5,7 +5,7 @@ import { brl } from './format';
 const PAYMENT_POLL_MS = 4000;
 const SDK_URL = 'https://sdk.mercadopago.com/js/v2';
 
-type Pix = {
+export type PixCharge = {
   id: string;
   amount: number;
   qrCode: string;
@@ -18,20 +18,23 @@ type Pix = {
 export type CheckoutItem = { pack?: string; amount: number };
 
 /**
- * Pix or card for one purchase. Pix shows the copy-and-paste code and waits for the bank; the card
- * form is Mercado Pago's own (Bricks): the card number goes from the browser to Mercado Pago, which
- * returns a token, and only the token reaches this site. `onPaid` runs once it is approved.
+ * Pix or card for one purchase. When `onPixReady` is set, the Pix QR opens in a separate step
+ * (access paywall). Otherwise the QR is shown inline (sticker shop). Card uses Mercado Pago's
+ * Brick: the card number never reaches this site. `onPaid` runs once it is approved.
  */
 export function Checkout({
   item,
   publicKey,
   simulated,
   onPaid,
+  onPixReady,
 }: {
   item: CheckoutItem;
   publicKey: string | null;
   simulated: boolean;
   onPaid: () => void;
+  /** When set, Pix QR is handed to the parent instead of rendering inline. */
+  onPixReady?: (pix: PixCharge) => void;
 }) {
   const [method, setMethod] = useState<'pix' | 'card'>('pix');
   return (
@@ -51,7 +54,12 @@ export function Checkout({
         ))}
       </div>
       {method === 'pix' ? (
-        <PixPane item={item} simulated={simulated} onPaid={onPaid} />
+        <PixPane
+          item={item}
+          simulated={simulated}
+          onPaid={onPaid}
+          onPixReady={onPixReady}
+        />
       ) : (
         <CardPane item={item} publicKey={publicKey} simulated={simulated} onPaid={onPaid} />
       )}
@@ -63,15 +71,16 @@ function PixPane({
   item,
   simulated,
   onPaid,
+  onPixReady,
 }: {
   item: CheckoutItem;
   simulated: boolean;
   onPaid: () => void;
+  onPixReady?: (pix: PixCharge) => void;
 }) {
-  const [pix, setPix] = useState<Pix | null>(null);
+  const [pix, setPix] = useState<PixCharge | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
 
   const open = async () => {
     setLoading(true);
@@ -85,49 +94,12 @@ function PixPane({
       const body = await response.json();
       if (!response.ok) throw new Error(body.error);
       if (!item.pack && body.access?.state === 'paid') return onPaid();
+      if (onPixReady) return onPixReady(body.payment as PixCharge);
       setPix(body.payment);
     } catch (problem) {
       setError(problem instanceof Error && problem.message ? problem.message : 'Falha de conexão.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const pixId = pix?.id ?? null;
-  useEffect(() => {
-    if (!pixId) return;
-    let stopped = false;
-    let timer: ReturnType<typeof setTimeout>;
-    const check = async () => {
-      try {
-        const response = await fetch('/api/billing/status');
-        const body = await response.json();
-        if (stopped) return;
-        if (body.paymentStatus === 'approved' || (!item.pack && body.access?.state === 'paid'))
-          return onPaid();
-        if (body.paymentStatus === 'rejected' || body.paymentStatus === 'cancelled') {
-          setPix(null);
-          return setError('O pagamento não foi aprovado. Gere um novo Pix.');
-        }
-      } catch {
-        // Keep waiting; the next check retries.
-      }
-      if (!stopped) timer = setTimeout(check, PAYMENT_POLL_MS);
-    };
-    timer = setTimeout(check, PAYMENT_POLL_MS);
-    return () => {
-      stopped = true;
-      clearTimeout(timer);
-    };
-  }, [pixId, item.pack, onPaid]);
-
-  const copy = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2500);
-    } catch {
-      setCopied(false);
     }
   };
 
@@ -144,13 +116,78 @@ function PixPane({
         </button>
       </div>
     );
+
   return (
-    <div className="checkout-pane">
+    <PixPaymentPanel
+      pix={pix}
+      pack={!!item.pack}
+      simulated={simulated}
+      onPaid={onPaid}
+      onExpired={() => {
+        setPix(null);
+        setError('O pagamento não foi aprovado. Gere um novo Pix.');
+      }}
+    />
+  );
+}
+
+/** QR Code + copia e cola + espera da confirmação. Used alone in the Pix modal. */
+export function PixPaymentPanel({
+  pix,
+  pack = false,
+  simulated,
+  onPaid,
+  onExpired,
+}: {
+  pix: PixCharge;
+  pack?: boolean;
+  simulated: boolean;
+  onPaid: () => void;
+  onExpired?: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const check = async () => {
+      try {
+        const response = await fetch('/api/billing/status');
+        const body = await response.json();
+        if (stopped) return;
+        if (body.paymentStatus === 'approved' || (!pack && body.access?.state === 'paid'))
+          return onPaid();
+        if (body.paymentStatus === 'rejected' || body.paymentStatus === 'cancelled')
+          return onExpired?.();
+      } catch {
+        // Keep waiting; the next check retries.
+      }
+      if (!stopped) timer = setTimeout(check, PAYMENT_POLL_MS);
+    };
+    timer = setTimeout(check, PAYMENT_POLL_MS);
+    return () => {
+      stopped = true;
+      clearTimeout(timer);
+    };
+  }, [pix.id, pack, onPaid, onExpired]);
+
+  const copy = async (code: string) => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="checkout-pane pix-alone">
       <p className="paywall-text">
         Copie o código e cole no app do seu banco, em <b>Pix Copia e Cola</b>, ou leia o QR Code com
-        outro celular.
+        a câmera do celular.
       </p>
-      <div className="paywall-qr-wide">
+      <div className="paywall-qr-stage">
         <PixQr pix={pix} />
       </div>
       <label className="paywall-code-label" htmlFor="pix-code">
@@ -162,10 +199,6 @@ function PixPane({
           {copied ? 'Código copiado!' : 'Copiar código Pix'}
         </button>
       </div>
-      <details className="paywall-qr-narrow">
-        <summary>Mostrar QR Code para pagar em outro aparelho</summary>
-        <PixQr pix={pix} />
-      </details>
       <p className="paywall-waiting" aria-live="polite">
         <span className="paywall-spinner" aria-hidden="true" />
         Aguardando a confirmação do pagamento…
@@ -192,15 +225,15 @@ function PixPane({
   );
 }
 
-function PixQr({ pix }: { pix: Pix }) {
+function PixQr({ pix }: { pix: PixCharge }) {
   return pix.qrCodeBase64 ? (
     // eslint-disable-next-line @next/next/no-img-element
     <img
       className="paywall-qr"
       src={`data:image/png;base64,${pix.qrCodeBase64}`}
       alt="QR Code do Pix"
-      width={220}
-      height={220}
+      width={240}
+      height={240}
     />
   ) : (
     <div className="paywall-qr is-simulated">QR Code simulado</div>

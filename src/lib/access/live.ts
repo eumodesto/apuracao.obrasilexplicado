@@ -9,11 +9,13 @@ const country: Scope = { type: 'country', code: 'br', state: 'br', name: 'Brasil
 let memo: { at: number; value: Promise<boolean> } | null = null;
 
 /**
- * Whether the national count has started (results published), read from the existing cache only.
- * Free time is not spent while the panel can only say "waiting for the TSE".
+ * Whether free time should be spent on this request. By default it runs from the first visit, so
+ * the minute starts as soon as the panel opens. Set FREE_TIME_WAIT_FOR_COUNT=true to pause until
+ * the TSE publishes the first national result (old behaviour).
  */
 export function countStarted(now = Date.now()): Promise<boolean> {
-  // Testing switch: spend free time before the TSE publishes anything (journey tests).
+  if (process.env.FREE_TIME_WAIT_FOR_COUNT !== 'true') return Promise.resolve(true);
+  // Legacy / testing: do not spend free time while the panel can only say "waiting for the TSE".
   if (process.env.FREE_TIME_BEFORE_COUNT === 'true') return Promise.resolve(true);
   if (memo && now - memo.at < CHECK_MS) return memo.value;
   const value = (async () => {

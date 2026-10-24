@@ -111,6 +111,29 @@
   font-size: 12px;
   line-height: 1.5;
 }
+.login-mode-switch {
+  margin: 0 0 16px;
+  color: #87877e;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.login-mode-link {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #b6b5ae;
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.login-mode-link:hover {
+  color: #eeede8;
+}
+.login-form.is-easy .login-dev {
+  width: 100%;
+  cursor: pointer;
+}
 .login :focus-visible {
   outline: 3px solid #f5c518;
   outline-offset: 3px;

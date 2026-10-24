@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { Party } from '@/lib/profile/parties';
 
 type Check = { state: 'idle' | 'checking' | 'ok' | 'error'; message?: string | null };
-type Errors = Partial<Record<'username' | 'party' | 'consent' | 'form', string>>;
+type Errors = Partial<Record<'username' | 'party' | 'form', string>>;
 
 const CHECK_DELAY_MS = 400;
 
@@ -21,11 +21,13 @@ export function ProfileForm({
   const [username, setUsername] = useState(suggestion);
   const [check, setCheck] = useState<Check>({ state: 'idle' });
   const [party, setParty] = useState('');
-  const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
   const [sending, setSending] = useState(false);
   const usernameInput = useRef<HTMLInputElement>(null);
-  const needsConsent = party !== '' && party !== noParty;
+  const usernameRef = useRef(username);
+  const checkRef = useRef(check);
+  usernameRef.current = username;
+  checkRef.current = check;
 
   // Checks availability while typing, keeping only the answer for the latest text.
   useEffect(() => {
@@ -53,23 +55,32 @@ export function ProfileForm({
     };
   }, [username, router]);
 
-  const submit = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const finish = async (chosen: string) => {
+    if (sending) return;
+    const name = usernameRef.current.trim().replace(/^@/, '');
     const next: Errors = {};
-    if (!username.trim()) next.username = 'Escolha um nome de usuário.';
-    if (!party) next.party = 'Escolha uma opção.';
-    if (needsConsent && !consent) next.consent = 'Marque a autorização para continuar.';
+    if (!name) next.username = 'Escolha um nome de usuário.';
+    else if (checkRef.current.state === 'error')
+      next.username = checkRef.current.message ?? 'Esse nome não pode ser usado.';
+    else if (checkRef.current.state === 'checking' || checkRef.current.state === 'idle')
+      next.username = 'Aguarde a verificação do nome de usuário.';
     setErrors(next);
     if (Object.keys(next).length) {
-      if (next.username) usernameInput.current?.focus();
+      usernameInput.current?.focus();
       return;
     }
+    setParty(chosen);
     setSending(true);
     try {
       const response = await fetch('/api/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, party, consent: needsConsent && consent }),
+        // Choosing a side is the authorization to show it on the chat badge.
+        body: JSON.stringify({
+          username: name,
+          party: chosen,
+          consent: chosen !== noParty,
+        }),
       });
       if (response.status === 401) return router.replace('/login');
       const body = await response.json();
@@ -79,11 +90,13 @@ export function ProfileForm({
           setCheck({ state: 'error', message: body.error });
           usernameInput.current?.focus();
         }
+        setParty('');
         return setSending(false);
       }
       router.replace('/');
     } catch {
       setErrors({ form: 'Falha de conexão. Tente novamente.' });
+      setParty('');
       setSending(false);
     }
   };
@@ -99,7 +112,12 @@ export function ProfileForm({
           : null);
 
   return (
-    <form className="signup-form" onSubmit={submit} noValidate>
+    <form
+      className="signup-form"
+      onSubmit={(event) => event.preventDefault()}
+      noValidate
+      aria-busy={sending}
+    >
       <label className="signup-label" htmlFor="username">
         Nome de usuário
       </label>
@@ -119,6 +137,7 @@ export function ProfileForm({
           autoCapitalize="none"
           spellCheck={false}
           maxLength={21}
+          disabled={sending}
           aria-describedby="username-help username-status"
           aria-invalid={!!errors.username || check.state === 'error'}
         />
@@ -137,9 +156,13 @@ export function ProfileForm({
 
       <fieldset
         className="signup-parties"
+        disabled={sending}
         aria-describedby={errors.party ? 'party-error' : undefined}
       >
         <legend className="signup-label">Quem você apoia para Presidente</legend>
+        <p className="signup-help signup-pick-hint">
+          {sending ? 'Abrindo o painel…' : 'Toque em um lado para continuar.'}
+        </p>
         <div className="signup-sides">
           {parties.map((option) => (
             <SideCard
@@ -147,7 +170,8 @@ export function ProfileForm({
               party={option}
               checked={party === option.code}
               dimmed={party !== '' && party !== option.code}
-              onChange={setParty}
+              disabled={sending}
+              onChange={finish}
             />
           ))}
         </div>
@@ -157,7 +181,8 @@ export function ProfileForm({
             name="party"
             value={noParty}
             checked={party === noParty}
-            onChange={() => setParty(noParty)}
+            disabled={sending}
+            onChange={() => finish(noParty)}
           />
           <span>Prefiro não informar</span>
         </label>
@@ -168,45 +193,11 @@ export function ProfileForm({
         )}
       </fieldset>
 
-      {needsConsent && (
-        <div className="signup-consent">
-          <label>
-            <input
-              type="checkbox"
-              checked={consent}
-              onChange={(e) => {
-                setConsent(e.target.checked);
-                setErrors((current) => ({ ...current, consent: undefined }));
-              }}
-            />
-            <span>
-              Autorizo o Resultados Brasil a guardar o lado que apoio e mostrá-lo junto do meu nome
-              no chat. Posso trocar ou apagar essa informação quando quiser.
-            </span>
-          </label>
-          <p className="signup-help">
-            Opinião política é um dado sensível pela LGPD (art. 11). Ela só é usada para o selo no
-            chat, nunca é vendida nem compartilhada.{' '}
-            <a href="/privacidade" target="_blank" rel="noopener">
-              Política de Privacidade
-            </a>
-          </p>
-          {errors.consent && (
-            <p className="signup-status is-error" role="alert">
-              {errors.consent}
-            </p>
-          )}
-        </div>
-      )}
-
       {errors.form && (
         <p className="login-error" role="alert">
           {errors.form}
         </p>
       )}
-      <button className="login-dev signup-submit" type="submit" disabled={sending}>
-        {sending ? 'Salvando…' : 'Entrar no painel'}
-      </button>
     </form>
   );
 }
@@ -216,11 +207,13 @@ function SideCard({
   party,
   checked,
   dimmed,
+  disabled,
   onChange,
 }: {
   party: Party;
   checked: boolean;
   dimmed: boolean;
+  disabled?: boolean;
   onChange: (value: string) => void;
 }) {
   const left = party.side === 'esquerda';
@@ -235,6 +228,7 @@ function SideCard({
         name="party"
         value={party.code}
         checked={checked}
+        disabled={disabled}
         onChange={() => onChange(party.code)}
       />
       <svg className="signup-side-art" viewBox="0 0 200 240" aria-hidden="true">

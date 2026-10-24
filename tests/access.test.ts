@@ -26,7 +26,7 @@ import { sign, verify } from '../src/lib/access/signed';
 import { FileAccessStore } from '../src/lib/access/store';
 
 const T0 = Date.parse('2026-10-25T17:00:00-03:00');
-const limits = { free: 300, endsAt: Date.parse('2026-10-31T23:59:59-03:00'), price: 5 };
+const limits = { free: 300, price: 5 };
 const profile = { id: 'google:1', email: 'ana@example.com', name: 'Ana' };
 const blankProfile = {
   sessionId: null,
@@ -70,7 +70,7 @@ describe('free time', () => {
     expect(watchedSeconds(T0, T0 - 5_000, 20)).toBe(0);
   });
 
-  it('is free, then locked after five watched minutes, and paid until the end of the count', () => {
+  it('is free, then locked after five watched minutes, and paid for life after payment', () => {
     const user = {
       ...profile,
       freeSecondsUsed: 0,
@@ -86,8 +86,9 @@ describe('free time', () => {
     });
     expect(accessStatus({ ...user, freeSecondsUsed: 300 }, T0, limits).state).toBe('locked');
     const paid = { ...user, freeSecondsUsed: 300, paidAt: T0 };
-    expect(accessStatus(paid, T0, limits).state).toBe('paid');
-    expect(accessStatus(paid, limits.endsAt, limits).state).toBe('locked');
+    expect(accessStatus(paid, T0, limits)).toMatchObject({ state: 'paid', paidUntil: null });
+    // Years later the paid account is still unlocked.
+    expect(accessStatus(paid, T0 + 10 * 365 * 24 * 60 * 60 * 1000, limits).state).toBe('paid');
   });
 
   it('accumulates watched time in the store without double counting parallel requests', async () => {

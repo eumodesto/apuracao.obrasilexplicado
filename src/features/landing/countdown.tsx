@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { BrazilMap } from './brazil-map';
 import { FirstRoundBand } from './round-band';
-import { CountdownClock, NotifyForm } from './countdown-client';
+import { CountdownClock } from './countdown-client';
 import { SiteHeader } from './site-header';
 import './landing.css';
 
@@ -34,7 +34,6 @@ export function Countdown({ startsAt }: { startsAt: number }) {
             <span>A contagem começa em</span>
             <CountdownClock startsAt={startsAt} />
           </div>
-          <NotifyForm />
         </section>
         <BrazilMap locked label="Mapa do Brasil, bloqueado até o início da apuração" />
       </main>

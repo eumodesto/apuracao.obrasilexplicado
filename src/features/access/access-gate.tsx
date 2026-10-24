@@ -4,7 +4,7 @@ import { PasswordForm } from '@/app/login/password-form';
 import '@/app/login/login.css';
 import { STICKER_PACKS } from '@/lib/access/packs';
 import type { AccessStatus } from '@/lib/access/types';
-import { Checkout, type CheckoutItem } from './checkout';
+import { Checkout, PixPaymentPanel, type CheckoutItem, type PixCharge } from './checkout';
 import { brl, clock } from './format';
 import './access.css';
 
@@ -110,7 +110,7 @@ export function AccessGate({
   }, [heartbeat]);
 
   useEffect(() => {
-    // Before the count starts the server does not spend free time, so neither does the clock.
+    // Free time is counted on the server from the first visit; this clock only mirrors it.
     if (status.state !== 'free' || status.waiting) return;
     const tick = setInterval(() => {
       if (document.hidden || left.current <= 0) return;
@@ -174,7 +174,7 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
       )}
       {status.state === 'paid' && (
         <span className="access-badge-time">
-          {status.staff ? 'Acesso da equipe' : 'Acesso liberado'}
+          {status.staff ? 'Acesso da equipe' : 'Acesso vitalício'}
         </span>
       )}
       {status.guest ? (
@@ -237,9 +237,7 @@ function Paywall({
   onClose?: () => void;
 }) {
   const [paid, setPaid] = useState(false);
-  const until = new Date(status.paidUntil).toLocaleDateString('pt-BR', {
-    timeZone: 'America/Sao_Paulo',
-  });
+  const [pix, setPix] = useState<PixCharge | null>(null);
   const done = useCallback(() => setPaid(true), []);
   // After paying, the page loads again with every result (the locked page was served without).
   useEffect(() => {
@@ -255,13 +253,29 @@ function Paywall({
           {onClose ? 'Crie sua conta para continuar' : 'Seu minuto grátis acabou'}
         </h2>
         <p className="paywall-text">
-          Crie sua conta ou entre para continuar acompanhando a apuração e conversando no chat.
-          Depois é só liberar o acesso até o resultado final por <b>{brl(status.price)}</b>, no Pix
-          ou no cartão.
+          Crie sua conta para continuar vendo a apuração ao vivo e o chat. É rápido — só e-mail e
+          senha.
         </p>
         <div className="paywall-auth">
-          <PasswordForm next="/" initialMode="criar" />
+          <PasswordForm next="/" initialMode="criar" emphasizeSignup />
         </div>
+      </Dialog>
+    );
+
+  // Second step: QR Code alone, after "Pagar com Pix".
+  if (pix && !paid)
+    return (
+      <Dialog label="pix-title">
+        <h2 id="pix-title">Pague com Pix</h2>
+        <PixPaymentPanel
+          pix={pix}
+          simulated={simulatedPayment}
+          onPaid={done}
+          onExpired={() => setPix(null)}
+        />
+        <button type="button" className="shop-back" onClick={() => setPix(null)}>
+          ← Voltar
+        </button>
       </Dialog>
     );
 
@@ -271,29 +285,41 @@ function Paywall({
         <>
           <h2 id="paywall-title">Pagamento confirmado</h2>
           <p className="paywall-text" aria-live="polite">
-            Obrigado! Liberando a apuração…
+            Obrigado! Acesso liberado para sempre. Abrindo o painel…
           </p>
         </>
       ) : (
         <>
           <h2 id="paywall-title">
-            {onClose ? 'Libere a apuração completa' : 'Seu tempo grátis acabou'}
+            {onClose ? 'Libere a apuração completa' : 'Ajude e continue com a apuração'}
           </h2>
+          <figure className="paywall-cause">
+            <img
+              src="/access/natal-criancas.jpg"
+              alt="Crianças celebrando o Natal com uma árvore iluminada e presentes"
+              width={880}
+              height={495}
+            />
+            <figcaption>
+              Parte dos <b>{brl(status.price)}</b> vai para crianças carentes terem um Natal melhor.
+            </figcaption>
+          </figure>
           <p className="paywall-text">
-            Continue acompanhando a apuração em tempo real até o resultado final por{' '}
-            <b>{brl(status.price)}</b>, pago uma única vez.
+            Pagamento único de <b>{brl(status.price)}</b> pelo Mercado Pago (Pix ou cartão). Depois
+            disso, o painel fica liberado <b>para sempre</b>, sem limite de tempo.
           </p>
           <ul className="paywall-list">
-            <li>Chat ao vivo com quem está acompanhando</li>
-            <li>Resultados oficiais do TSE atualizados ao vivo</li>
-            <li>Mapa por estado, município e zona eleitoral</li>
-            <li>Acesso até o fim da apuração ({until})</li>
+            <li>Acesso vitalício à apuração e ao chat</li>
+            <li>Resultados oficiais do TSE ao vivo</li>
+            <li>Mapa por estado, município e zona</li>
+            <li>Parte do valor ajuda o Natal de crianças carentes</li>
           </ul>
           <Checkout
             item={{ amount: status.price }}
             publicKey={publicKey}
             simulated={simulatedPayment}
             onPaid={done}
+            onPixReady={setPix}
           />
         </>
       )}

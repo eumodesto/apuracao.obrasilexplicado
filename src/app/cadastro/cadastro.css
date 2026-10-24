@@ -68,6 +68,11 @@
   font-size: 12px;
   line-height: 1.5;
 }
+.signup-pick-hint {
+  margin: 4px 0 12px !important;
+  color: #d8d7d0 !important;
+  font-size: 15px !important;
+}
 .signup-parties {
   margin: 22px 0 0;
   padding: 0;

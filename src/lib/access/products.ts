@@ -16,7 +16,7 @@ export const accessProduct = (): Product => ({
   purpose: 'access',
   amount: priceBrl(),
   credits: null,
-  description: 'Resultados Brasil — acesso à apuração até o resultado final',
+  description: 'Resultados Brasil — acesso vitalício à apuração',
 });
 
 /** The pack with this id, or null. Prices always come from here, never from the browser. */

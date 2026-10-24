@@ -75,8 +75,9 @@ export type AccessStatus = {
   remainingSeconds: number;
   freeSeconds: number;
   price: number;
-  paidUntil: string;
-  /** True while the count has not started: free time is not being spent. */
+  /** End of paid access, or null when access is lifetime (after one payment). */
+  paidUntil: string | null;
+  /** True while free time is paused (only with FREE_TIME_WAIT_FOR_COUNT). */
   waiting: boolean;
   /** Team access (STAFF_EMAILS): always paid, never asked to pay. */
   staff: boolean;

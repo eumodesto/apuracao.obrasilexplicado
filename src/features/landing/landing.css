@@ -102,73 +102,6 @@ body:has(.landing) {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-.landing-notify {
-  margin: 26px 0 0;
-}
-.landing-notify label,
-.landing-notify p {
-  display: block;
-  margin: 0 0 12px;
-  color: #d8d7d0;
-  font-size: 14px;
-  line-height: 1.5;
-}
-.landing-notify-row {
-  display: flex;
-  gap: 8px;
-}
-.landing-notify input {
-  flex: 1;
-  min-width: 0;
-  height: 44px;
-  padding: 0 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 999px;
-  background: #0e0e0d;
-  color: #eeede8;
-  font: inherit;
-  font-size: 16px;
-}
-.landing-notify input::placeholder {
-  color: #6f6f67;
-}
-.landing-notify button {
-  flex: none;
-  min-width: 94px;
-  height: 44px;
-  padding: 0 18px;
-  border: 0;
-  border-radius: 999px;
-  background: #f4f3ef;
-  color: #151513;
-  font-size: 14px;
-  font-weight: 700;
-}
-.landing-notify button:hover:not(:disabled) {
-  background: #fff;
-}
-.landing-notify button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-.landing-fine {
-  margin: 14px 0 0 !important;
-  color: #87877e !important;
-  font-size: 12px !important;
-}
-.landing-notify-error {
-  margin: 12px 0 0 !important;
-  color: #f2b8bd !important;
-  font-size: 13px !important;
-}
-.landing-notify.is-done p {
-  margin: 0;
-  padding: 12px 14px;
-  border-left: 3px solid #6da783;
-  border-radius: 0 10px 10px 0;
-  background: #1b221d;
-}
-
 .brazil-map {
   position: relative;
   width: 100%;
@@ -230,13 +163,5 @@ body:has(.landing) {
   }
   .site-brand small {
     display: none;
-  }
-  .landing-notify-row {
-    flex-direction: column;
-  }
-  .landing-notify input,
-  .landing-notify button {
-    flex: none;
-    width: 100%;
   }
 }

@@ -58,8 +58,8 @@ export function priceBrl() {
 }
 
 /**
- * When the 2nd-round count opens to the public (polls close at 17h in Brasília). Before it, the
- * home page shows a countdown instead of the panel.
+ * When the 2nd-round count opens (polls close at 17h in Brasília). Before it, the panel still
+ * opens on `/`, but the left column and "Por região" keep showing the official 1st round.
  */
 export function countStartsAt() {
   const value = Date.parse(process.env.COUNT_STARTS_AT || '2026-10-25T17:00:00-03:00');
@@ -67,7 +67,7 @@ export function countStartsAt() {
   return value;
 }
 
-/** Whether the public count has started (the panel replaces the countdown). */
+/** Whether the 2nd-round count window has started (swap 1st-round boards for live ones). */
 export const countIsOpen = (now = Date.now()) => now >= countStartsAt();
 
 /**
@@ -76,9 +76,12 @@ export const countIsOpen = (now = Date.now()) => now >= countStartsAt();
  */
 export const openAccess = () => process.env.OPEN_ACCESS === 'true';
 
-/** Paid access lasts until the end of the count, not for a fixed duration. */
+/**
+ * Legacy end date for paid access. Unused: one payment now unlocks the panel for life.
+ * Kept so old env files and docs that still set PAID_ACCESS_ENDS_AT do not break.
+ */
 export function paidAccessEndsAt() {
-  const value = Date.parse(process.env.PAID_ACCESS_ENDS_AT || '2026-10-31T23:59:59-03:00');
+  const value = Date.parse(process.env.PAID_ACCESS_ENDS_AT || '2099-12-31T23:59:59-03:00');
   if (Number.isNaN(value)) throw new Error('PAID_ACCESS_ENDS_AT must be an ISO date.');
   return value;
 }
