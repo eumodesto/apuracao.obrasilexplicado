@@ -152,7 +152,7 @@ export function PixPaymentPanel({
     let timer: ReturnType<typeof setTimeout>;
     const check = async () => {
       try {
-        const response = await fetch('/api/billing/status');
+        const response = await fetch(`/api/billing/status?id=${encodeURIComponent(pix.id)}`);
         const body = await response.json();
         if (stopped) return;
         if (body.paymentStatus === 'approved' || (!pack && body.access?.state === 'paid'))
