@@ -171,15 +171,23 @@ export async function applyPayment(
   return true;
 }
 
-/** Checks the user's latest pending charge with Mercado Pago (covers missed or local webhooks). */
+/**
+ * Checks a pending charge with Mercado Pago (covers missed or local webhooks): the one the screen
+ * is watching when `paymentId` is given, otherwise the user's latest. Watching by id matters: a
+ * card attempt made after the Pix opened becomes the latest, and the paid Pix must still count.
+ */
 export async function refreshPayment(
   user: AccessUser,
   store: AccessStore,
   mp: MercadoPago | null,
   now = Date.now(),
+  paymentId?: string | null,
 ) {
-  const latest = await store.latestPayment(user.id);
-  if (!latest || latest.status !== 'pending' || !mp) return latest;
-  await applyPayment(await mp.getPayment(latest.id), store, now);
-  return store.getPayment(latest.id);
+  const payment = paymentId
+    ? await store.getPayment(paymentId)
+    : await store.latestPayment(user.id);
+  if (!payment || payment.userId !== user.id) return null;
+  if (payment.status !== 'pending' || !mp) return payment;
+  await applyPayment(await mp.getPayment(payment.id), store, now);
+  return store.getPayment(payment.id);
 }

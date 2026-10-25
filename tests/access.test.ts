@@ -215,6 +215,42 @@ describe('Pix payment', () => {
     expect((await store.getUser(profile.id))!.paymentId).toBe('123');
   });
 
+  it('confirms the watched Pix even after a declined card became the latest charge', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    await openPix(user, store, fakeMercadoPago(remote()), T0, P5);
+    const declined = {
+      createCard: vi.fn(async () =>
+        remote({ id: 'card-9', status: 'rejected', statusDetail: 'cc_rejected_other_reason' }),
+      ),
+    } as unknown as MercadoPago;
+    const card = {
+      token: 't',
+      installments: 1,
+      paymentMethodId: 'visa',
+      issuerId: null,
+      identification: null,
+    };
+    await payWithCard(user, store, declined, card, P5, T0 + 60_000);
+    expect((await store.latestPayment(user.id))!.id).toBe('card-9');
+
+    const mp = fakeMercadoPago(remote({ status: 'approved' }));
+    const payment = await refreshPayment(user, store, mp, T0 + 120_000, '123');
+    expect(mp.getPayment).toHaveBeenCalledWith('123');
+    expect(payment).toMatchObject({ id: '123', status: 'approved' });
+    expect((await store.getUser(profile.id))!.paymentId).toBe('123');
+  });
+
+  it('does not refresh a charge that belongs to someone else', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile),
+      other = await store.upsertUser({ ...profile, id: 'google:2', email: 'bia@example.com' });
+    await openPix(user, store, fakeMercadoPago(remote()), T0, P5);
+    const mp = fakeMercadoPago(remote({ status: 'approved' }));
+    expect(await refreshPayment(other, store, mp, T0, '123')).toBeNull();
+    expect(mp.getPayment).not.toHaveBeenCalled();
+  });
+
   it('simulates a charge without Mercado Pago', async () => {
     const store = new FileAccessStore(),
       user = await store.upsertUser(profile);
