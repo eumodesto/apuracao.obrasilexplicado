@@ -152,18 +152,34 @@
   background: #1d1d1b;
 }
 
-/* Right column: the region card stays compact and the rest of the column is free below it. */
+/*
+ * Right column fills the grid cell (min-height:0) and clips. The governors card is the
+ * scrollport — otherwise the panel grows with the list and the cockpit (overflow:hidden) cuts it.
+ */
+.election-cockpit .cockpit-grid > .context-panel {
+  min-height: 0;
+  align-self: stretch;
+}
 .election-cockpit .context-panel.has-region-board {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
   padding: 0;
   border: 0;
   background: none;
-  overflow: visible;
+  /* Column can scroll if region + governors + updates exceed the cell. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.election-cockpit .context-panel.has-region-board > .region-board,
+.election-cockpit .context-panel.has-region-board > .update-feed {
+  flex: 0 0 auto;
 }
 .election-cockpit .context-panel.has-region-board > .update-feed {
-  flex: 1;
   margin: 0;
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);

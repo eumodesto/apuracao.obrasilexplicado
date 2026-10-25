@@ -12,7 +12,8 @@ export type AuditEntry = {
     | 'delete_message'
     | 'remove_photo'
     | 'create_user'
-    | 'set_password';
+    | 'set_password'
+    | 'grant_access';
   target: string;
   detail: string | null;
 };

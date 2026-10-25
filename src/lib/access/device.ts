@@ -36,6 +36,7 @@ export async function readDeviceId(resumeDevice: string | null = null) {
   return normalizeDeviceId(fromCookie) ?? normalizeDeviceId(resumeDevice);
 }
 
+/** Only call from a Route Handler or Server Action — never from a Server Component. */
 export async function rememberDeviceId(deviceId: string) {
   const id = normalizeDeviceId(deviceId) ?? randomUUID();
   (await cookies()).set(
@@ -46,11 +47,27 @@ export async function rememberDeviceId(deviceId: string) {
   return id;
 }
 
-export async function bindContext(request?: Request, resumeDevice: string | null = null) {
+export type BindOptions = {
+  /** Persist `rb_device`. Must be true only in Route Handlers / Server Actions. */
+  write?: boolean;
+};
+
+/**
+ * IP + device keys for the free-minute pool.
+ * Default is read-only (safe in Server Components). Pass `{ write: true }` from route handlers
+ * so the device cookie can be set.
+ */
+export async function bindContext(
+  request?: Request,
+  resumeDevice: string | null = null,
+  options: BindOptions = {},
+) {
   const ip = request
     ? clientIp(request)
     : (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
   const existing = await readDeviceId(resumeDevice);
-  const deviceId = await rememberDeviceId(existing ?? randomUUID());
+  const deviceId = options.write
+    ? await rememberDeviceId(existing ?? randomUUID())
+    : existing;
   return { ip, deviceId, keys: freeQuotaKeys(ip, deviceId) };
 }

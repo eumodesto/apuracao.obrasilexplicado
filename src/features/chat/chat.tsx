@@ -584,7 +584,7 @@ function Composer({
   };
 
   const left = MAX_MESSAGE_LENGTH - text.length;
-  // Today only the 13 has a pack: other parties (or none) see a short note instead.
+  // Party packs + Apuração: empty only if somehow nothing is registered for this person.
   const hasPack = stickersFor(party?.code).length > 0;
   const status = sending
     ? 'Enviando…'

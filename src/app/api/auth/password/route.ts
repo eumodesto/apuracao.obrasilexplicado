@@ -40,7 +40,7 @@ export async function POST(request: Request) {
   // Free minute already used as a visitor — or on this IP/device via another browser profile —
   // carries into the account so signing up does not unlock another minute.
   const before = await activeSession();
-  const bind = await bindContext(request, normalizeDeviceId(body?.deviceId));
+  const bind = await bindContext(request, normalizeDeviceId(body?.deviceId), { write: true });
   const store = accessStore();
   const spent = Math.max(
     before && isGuest(before.user) ? before.user.freeSecondsUsed : 0,

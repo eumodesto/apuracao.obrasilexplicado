@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 /** Sign-up after the first login. The free time does not run here. */
 export default async function SignUpPage() {
   const active = await activeSession();
-  if (!active) redirect('/login');
+  if (!active) redirect('/');
   if (active.user.onboardedAt !== null) redirect('/');
   return (
     <main className="login" id="conteudo">
@@ -23,8 +23,7 @@ export default async function SignUpPage() {
         <p className="login-eyebrow">Resultados Brasil · Eleições 2026</p>
         <h1 id="signup-title">Quase lá</h1>
         <p className="login-text">
-          Escolha seu nome e toque no lado que você apoia. Em seguida você libera o acesso à
-          apuração.
+          Escolha seu nome de usuário e toque no lado que você apoia para entrar no painel.
         </p>
         <ProfileForm
           parties={PARTIES}

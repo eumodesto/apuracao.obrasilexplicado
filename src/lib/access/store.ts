@@ -149,12 +149,20 @@ export class FileAccessStore implements AccessStore {
       const user = data.users[id];
       if (!user) return 'missing' as const;
       const key = usernameKey(profile.username);
-      if (
-        Object.values(data.users).some(
-          (other) => other.id !== id && other.username && usernameKey(other.username) === key,
-        )
-      )
-        return 'taken' as const;
+      const conflict = Object.values(data.users).find(
+        (other) => other.id !== id && other.username && usernameKey(other.username) === key,
+      );
+      if (conflict) {
+        // Legacy `dev:` test login used a second id for the same e-mail and kept the username.
+        const legacyShadow =
+          !!user.email &&
+          !!conflict.email &&
+          user.email.toLowerCase() === conflict.email.toLowerCase() &&
+          ((conflict.id.startsWith('dev:') && user.id.startsWith('email:')) ||
+            (conflict.id.startsWith('email:') && user.id.startsWith('dev:')));
+        if (!legacyShadow) return 'taken' as const;
+        conflict.username = null;
+      }
       Object.assign(user, {
         ...profile,
         onboardedAt: user.onboardedAt ?? now,
@@ -518,6 +526,19 @@ export class PostgresAccessStore implements AccessStore {
 
   async saveProfile(id: string, profile: ProfileInput, now: number) {
     await this.schema();
+    const [mine] = await this.sql<{ email: string }[]>`
+      SELECT email FROM access_users WHERE id = ${id}`;
+    if (!mine) return 'missing' as const;
+    // Free the name if a legacy `dev:` / `email:` twin for the same e-mail still holds it.
+    await this.sql`
+      UPDATE access_users SET username = NULL
+      WHERE id <> ${id}
+        AND lower(username) = ${usernameKey(profile.username)}
+        AND lower(email) = ${mine.email.toLowerCase()}
+        AND (
+          (id LIKE 'dev:%' AND ${id} LIKE 'email:%')
+          OR (id LIKE 'email:%' AND ${id} LIKE 'dev:%')
+        )`;
     try {
       const rows = await this.sql`
         UPDATE access_users SET

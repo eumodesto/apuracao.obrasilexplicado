@@ -21,10 +21,9 @@ export type Sticker = {
 };
 
 /**
- * Every sticker people can send. Today only the neutral "Apuração" pack (about the count itself, no
- * candidate, party or number), open to everyone: visitors and free accounts are offered access when
- * they tap one. The party packs were taken
- * out (21/10/2026); partyPack(...) brings one back.
+ * Every sticker people can send. The neutral "Apuração" pack is open to everyone (visitors and free
+ * accounts are offered access when they tap one). Party packs (partyPack) are only in the tray for
+ * people who chose that party at sign-up.
  */
 export const STICKERS: Sticker[] = [
   ...sharedPack(null, 'apuracao', 'Apuração', [
@@ -37,6 +36,34 @@ export const STICKERS: Sticker[] = [
     ['que-emocao', 'Que emoção!'],
     ['atualiza-ai', 'Atualiza aí!'],
     ['hoje-ninguem-dorme', 'Hoje ninguém dorme'],
+  ]),
+  ...partyPack('PT', '13', '#c8102e', '#8f0f1d', [
+    ['faz-o-l', 'Faz o L'],
+    ['bandeira-lula', 'Bandeira Lula'],
+    ['lula-13-alckmin', 'Lula 13 Alckmin'],
+    ['100-porcento-lula', '100% Lula'],
+    ['sem-medo-de-ser-feliz', 'Sem medo de ser Feliz!'],
+    ['botao-lula', 'Lula'],
+    ['lula-13-presidente', 'Lula 13 Presidente'],
+    ['lula-canarinho', 'Lula'],
+    ['13-lula-presidente', '13 Lula Presidente'],
+    ['dito-isso-lula-tetra', 'Dito isso, Lula tetra.'],
+    ['o-meu-voto-e-secreto', 'O meu voto é secreto'],
+    ['dia-25-vote-lula', 'Dia 25 vote Lula'],
+    ['meu-voto-e-secreto-estrela', 'Meu voto é secreto!'],
+  ]),
+  ...partyPack('PL', '22', '#1f4e9c', '#0f2d5c', [
+    ['nois-e-peao', 'Nois e peao'],
+    ['camisa-22', 'Camisa 22'],
+    ['peao-injaulado', 'Peao injaulado'],
+    ['vamos-la', 'Vamos la'],
+    ['hehehr', 'hehehr'],
+    ['meu-presidente', 'Meu presidente'],
+    ['kkkakkkksk', 'Kkkakkkksk'],
+    ['o-brasil-e-nosso', 'o brasil e nosso'],
+    ['kkk-forcado', 'Kkk forçado'],
+    ['juntos-somos-mais', 'Juntos somos mais'],
+    ['flavio-presidencial', 'Flávio 22'],
   ]),
 ];
 

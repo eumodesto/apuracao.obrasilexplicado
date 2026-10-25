@@ -5,7 +5,7 @@ O painel abre com 1 minuto grátis. Depois, um popup pede criar conta (destaque)
 ## Jornada (a partir de 21/10/2026)
 
 1. `https://portaleleicao.com.br/` abre o painel **sem login**. Quem chega sem sessão vira um visitante (`guest:<uuid>`, aparece no chat como "Visitante 1234", avatar cinza) por `POST /api/guest`. O cookie `rb_guest` (1 ano) lembra o visitante deste navegador: sair e voltar não dá outro minuto; uma aba anônima dá (aceito).
-2. O visitante tem o **tempo grátis** (`FREE_SECONDS`, padrão 30 s) para ver o painel e **escrever no chat** (texto; figurinhas não).
+2. O visitante tem o **tempo grátis** (`FREE_SECONDS`, padrão 60 s) para ver o painel e **escrever no chat** (texto; figurinhas não).
 3. Quando acaba, o popup pede **Criar conta** (aba aberta por padrão) ou **Entrar**. Ao criar a conta ou entrar, o tempo já usado pelo visitante passa para a conta (`inheritFreeTime`): não há segundo minuto.
 4. Conta nova → `/cadastro` (nome de usuário e partido) → painel com o popup de **pagamento**: **Pix** (QR Code e copia e cola, como antes) ou **Cartão**, com o formulário do Mercado Pago (Card Payment Brick) dentro do site. O número do cartão vai do navegador para o Mercado Pago, que devolve um token; só o token chega ao servidor (`POST /api/billing/card`). O valor cobrado é sempre o do servidor.
 5. Pagamento aprovado no Mercado Pago → acesso vitalício (sem data de fim).
@@ -73,7 +73,7 @@ Variáveis em `.env.example`:
 | `MP_ACCESS_TOKEN`     | Access Token de produção do Mercado Pago.                                                                                         |
 | `MP_WEBHOOK_SECRET`   | Assinatura secreta dos webhooks. Opcional, mas recomendada: com ela, avisos sem assinatura válida são recusados.                  |
 | `DATABASE_URL`        | Postgres (Neon, Supabase etc.). Obrigatória na Vercel. As tabelas `access_users` e `access_payments` são criadas no primeiro uso. |
-| `FREE_SECONDS`        | Tempo grátis por conta, em segundos. Padrão: 30.                                                                                  |
+| `FREE_SECONDS`        | Tempo grátis por conta, em segundos. Padrão: 60.                                                                                  |
 | `ACCESS_PRICE_BRL`    | Preço. Padrão: 5.00.                                                                                                              |
 | `PAID_ACCESS_ENDS_AT` | Legado; ignorado. O acesso pago é vitalício.                                                                                      |
 

@@ -107,6 +107,10 @@ describe('accounts created by an administrator', () => {
     expect(
       await adminCreateAccount({ email: 'Equipe@Example.com', password: 'senha-forte-1' }, s),
     ).toEqual({ ok: true, id: 'email:equipe@example.com', email: 'equipe@example.com' });
+    expect(await s.access.getUser('email:equipe@example.com')).toMatchObject({
+      paidAt: expect.any(Number),
+      paymentId: 'admin:grant',
+    });
     expect(
       await adminCreateAccount({ email: 'equipe@example.com', password: 'outra-senha-2' }, s),
     ).toMatchObject({ ok: false, status: 409 });

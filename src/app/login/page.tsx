@@ -25,8 +25,10 @@ export default async function LoginPage({
   // Where to go after signing in (e.g. /admin); only paths of this site.
   const next = safeNext(requested);
   const active = await activeSession();
+  // Panel opens as a visitor first — /login is only for real accounts (or errors /admin).
+  if (active && isGuest(active.user) && !erro) redirect('/');
+  if (!active && !erro && next === '/') redirect('/');
   // A suspended or deleted account stays here, with the reason, instead of looping back.
-  // A visitor (no account yet) stays here to sign in or sign up.
   if (active && !isGuest(active.user) && !active.user.pausedAt && !active.user.deletedAt)
     redirect(next);
   return (
@@ -63,7 +65,8 @@ export default async function LoginPage({
               Entrar como visitante de teste
             </button>
             <p className="login-fine">
-              Só em desenvolvimento: entra sem senha, e cada e-mail é uma conta diferente.
+              Só em desenvolvimento: entra sem senha. Use o mesmo e-mail da conta com senha (admin
+              incluso) — é a mesma conta.
             </p>
           </form>
         )}

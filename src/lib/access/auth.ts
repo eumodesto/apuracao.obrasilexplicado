@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto';
+import { isStaff } from './access';
 import { forgetAccess } from './guard';
 import { readSession, startSession, type Session } from './session';
 import { accessStore } from './store';
@@ -10,6 +11,10 @@ import type { AccessStore } from './types';
  */
 export async function signIn(profile: Omit<Session, 'sid'>, store: AccessStore = accessStore()) {
   await store.upsertUser({ id: profile.sub, email: profile.email, name: profile.name });
+  const user = await store.getUser(profile.sub);
+  // Staff/admin must not burn the free minute (touch only looks at paidAt).
+  if (user && user.paidAt === null && isStaff(user))
+    await store.markPaid(profile.sub, 'staff:grant', Date.now());
   const sid = randomBytes(18).toString('base64url');
   await store.startSession(profile.sub, sid);
   forgetAccess(profile.sub);

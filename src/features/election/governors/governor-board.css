@@ -1,16 +1,27 @@
 /* Governor runoffs: same card language as "Por região". */
 .governor-board {
-  flex-shrink: 0;
-  padding: 14px 14px 10px;
+  display: flex;
+  flex-direction: column;
+  /* Do not shrink below a usable height — flex was crushing this to ~100px. */
+  flex: 1 0 280px;
+  min-height: 280px;
+  max-height: min(56dvh, 580px);
+  padding: 14px 14px 0;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   background: #151514;
   color: #eeede8;
   font-family: var(--font-sans);
 }
+.election-cockpit .context-panel.has-region-board > .governor-board {
+  flex: 1 0 280px;
+  min-height: 280px;
+  max-height: min(56dvh, 580px);
+}
 .election-cockpit .context-panel.has-region-board > .governor-board > h2,
 .governor-board > h2 {
   display: flex;
+  flex: 0 0 auto;
   align-items: baseline;
   gap: 8px;
   margin: 0 0 6px;
@@ -26,6 +37,30 @@
   color: #b6b5ae;
   font-size: 10px;
   font-weight: 400;
+}
+.gb-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  margin: 0 -14px;
+  padding: 0 14px 10px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+  scrollbar-color: rgba(255, 255, 255, 0.45) rgba(255, 255, 255, 0.06);
+  -webkit-overflow-scrolling: touch;
+}
+.gb-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+.gb-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+}
+.gb-scroll::-webkit-scrollbar-thumb {
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.45);
 }
 .governor-board ul {
   margin: 0;
@@ -152,13 +187,13 @@
   background: #fff;
   transform: translateX(-50%);
 }
-/* The right column scrolls when the cards are taller than the screen. */
-.election-cockpit .context-panel.has-region-board {
-  overflow-y: auto;
-  scrollbar-width: thin;
-}
 @media (prefers-reduced-motion: reduce) {
   .gb-bar i {
     transition: none;
+  }
+}
+@media (max-width: 768px) {
+  .governor-board {
+    max-height: min(60dvh, 480px);
   }
 }

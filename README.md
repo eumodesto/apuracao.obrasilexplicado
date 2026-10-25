@@ -62,7 +62,7 @@ Respostas válidas são persistidas atomicamente em `.cache/tse`, permitindo rec
 
 ETag e Last-Modified são enviados nas revalidações. 304 reutiliza o objeto normalizado, sem reprocessamento. A API interna tem ETag próprio, incluindo o estado de disponibilidade. O cliente conserva snapshots por abrangência e não troca resultados de um local pelos de outro.
 
-404/400: pausa inicial de cinco minutos; 429/403: pelo menos 610 segundos e respeito a Retry-After; 5xx, timeout, conexão, JSON/schema inválidos: pausa inicial de dez segundos. Erros repetidos ampliam a pausa até uma hora. 404/429/403 suspendem também outras buscas JSON do processo, evitando insistência contra possível bloqueio. O snapshot válido anterior permanece disponível.
+404/400: pausa só naquela URL (30 s, no máximo 2 min) — arquivo municipal ou zona ausente não congela o nacional. 429/403: pelo menos 610 segundos, respeito a Retry-After, e pausa de todas as buscas JSON do processo. 5xx, timeout, conexão, JSON/schema inválidos: pausa inicial de dez segundos, até uma hora. O snapshot válido anterior permanece disponível.
 
 **Antes de usar múltiplas réplicas ou serverless**, implemente armazenamento compartilhado e coordenação distribuída (lock/lease e limite por IP). Trocar somente o armazenamento não distribui o single-flight. A interface `SnapshotCache` desacopla o armazenamento do domínio, mas este repositório não configura Redis nem a infraestrutura de escala. O teste de 1.000 chamadas comprova deduplicação de concorrência dentro de um processo; não é um teste de carga de produção.
 

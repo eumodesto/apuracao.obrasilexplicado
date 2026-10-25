@@ -157,11 +157,14 @@ export class TseClient {
       } else {
         if (!response.ok) {
           const retry = response.headers.get('retry-after');
-          const retryMs = retry
-            ? /^\d+$/.test(retry)
-              ? Number(retry) * 1000
-              : Math.max(0, Date.parse(retry) - this.now())
-            : 0;
+          let retryMs = 0;
+          if (retry) {
+            if (/^\d+$/.test(retry)) retryMs = Number(retry) * 1000;
+            else {
+              const until = Date.parse(retry) - this.now();
+              retryMs = Number.isFinite(until) ? Math.max(0, until) : 0;
+            }
+          }
           throw new UpstreamError(`HTTP ${response.status}`, retryMs);
         }
         const body = await response.text();
@@ -208,19 +211,19 @@ export class TseClient {
           : error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
             ? 'timeout'
             : 'connection error';
-      const base =
-        issue === 'HTTP 404' || issue === 'HTTP 400'
-          ? 300_000
-          : issue === 'HTTP 429' || issue === 'HTTP 403'
-            ? 610_000
-            : 10_000;
+      // 404/400 stay per-URL (missing municipal/zone/photo files must not freeze the national feed).
+      // Only rate-limit style responses pause every JSON fetch in this process.
+      const missing = issue === 'HTTP 404' || issue === 'HTTP 400';
+      const rateLimited = issue === 'HTTP 429' || issue === 'HTTP 403';
+      const base = missing ? 30_000 : rateLimited ? 610_000 : 10_000;
+      const cap = missing ? 120_000 : 3_600_000;
+      const suggested = error instanceof UpstreamError ? error.retryMs : 0;
       const delay = Math.max(
-        Math.min(base * 2 ** Math.min(state.failures - 1, 6), 3_600_000),
-        error instanceof UpstreamError ? error.retryMs : 0,
+        Math.min(base * 2 ** Math.min(state.failures - 1, 6), cap),
+        Number.isFinite(suggested) ? suggested : 0,
       );
       state.nextAttempt = this.now() + delay;
-      if (issue === 'HTTP 429' || issue === 'HTTP 403' || issue === 'HTTP 404')
-        this.blockedUntil = state.nextAttempt;
+      if (rateLimited) this.blockedUntil = state.nextAttempt;
       state.issue = issue;
       console.warn(
         `[TSE] ${issue} — backing off; ${state.value ? 'keeping previous snapshot' : 'no snapshot'}`,

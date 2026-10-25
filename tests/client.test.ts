@@ -105,7 +105,19 @@ describe('Conditional requests and resilient snapshots', () => {
     const { client } = setup([new Response(null, { status: 404 })]);
     const r = await client.read(url, parse, 3000);
     expect(r.value).toBeNull();
-    expect(r.nextAttempt).toBeGreaterThan(1000000 + 299000);
+    expect(r.nextAttempt).toBeGreaterThan(1000000 + 29_000);
+    expect(r.nextAttempt).toBeLessThanOrEqual(1000000 + 120_000);
+  });
+  it('keeps 404 backoff on that URL only', async () => {
+    const { client, fetcher } = setup([
+      new Response(null, { status: 404 }),
+      success(),
+    ]);
+    await client.read(url, parse, 3000);
+    const other = await client.read(`${url}?other=1`, parse, 3000);
+    expect(other.value).toEqual({ votes: 0 });
+    expect(fetcher).toHaveBeenCalledTimes(2);
+    expect(client.cooldownUntil).toBe(0);
   });
   it('honors Retry-After and blocks different resources after 429', async () => {
     const { client, fetcher } = setup([
@@ -115,6 +127,12 @@ describe('Conditional requests and resilient snapshots', () => {
     expect(r.nextAttempt).toBe(2200000);
     await client.read(url + '2', parse, 3000);
     expect(fetcher).toHaveBeenCalledTimes(1);
+  });
+  it('ignores malformed Retry-After instead of disabling backoff', async () => {
+    const { client } = setup([new Response(null, { status: 429, headers: { 'retry-after': 'soon' } })]);
+    const r = await client.read(url, parse, 3000);
+    expect(Number.isFinite(r.nextAttempt)).toBe(true);
+    expect(r.nextAttempt).toBeGreaterThanOrEqual(1000000 + 610_000);
   });
   it('restores validated cached data after process restart even when TSE fails', async () => {
     const cache = new MemoryCache();

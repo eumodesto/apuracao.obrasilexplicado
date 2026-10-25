@@ -152,6 +152,7 @@ export function AccessGate({
 }
 
 function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: number }) {
+  const { offerAccess } = useAccess();
   return (
     <div className="access-badge" role="status">
       <span id={BADGE_SLOT_ID} className="access-badge-slot" />
@@ -178,9 +179,9 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
         </span>
       )}
       {status.guest ? (
-        <a className="access-badge-logout" href="/login">
+        <button type="button" className="access-badge-logout" onClick={offerAccess}>
           Entrar
-        </a>
+        </button>
       ) : (
         <form method="post" action="/api/auth/logout">
           <button type="submit" className="access-badge-logout" title={status.user.email}>

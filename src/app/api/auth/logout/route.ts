@@ -8,6 +8,7 @@ export async function POST(request: Request) {
   // Relative, so the browser stays on the host it used (localhost vs 127.0.0.1).
   // Optional ?next= brings the person back after signing in again (e.g. /admin).
   const next = safeNext(new URL(request.url).searchParams.get('next'));
-  const location = next === '/' ? '/login' : `/login?next=${encodeURIComponent(next)}`;
+  // Back to the panel as a new visitor — not the login modal.
+  const location = next === '/' ? '/' : `/login?next=${encodeURIComponent(next)}`;
   return new NextResponse(null, { status: 303, headers: { Location: location } });
 }

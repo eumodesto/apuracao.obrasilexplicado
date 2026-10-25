@@ -44,7 +44,7 @@ export async function startGuest(
       ? { resume: options }
       : (options ?? {});
   const jar = await cookies();
-  const bind = await bindContext(opts.request, opts.deviceId ?? null);
+  const bind = await bindContext(opts.request, opts.deviceId ?? null, { write: true });
   let id =
     guestIdFromToken(jar.get(GUEST_COOKIE)?.value) ?? guestIdFromToken(opts.resume ?? undefined);
   const existing = id ? await store.getUser(id) : null;

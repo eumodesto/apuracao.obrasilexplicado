@@ -31,7 +31,7 @@ export async function currentAccess(
   session: Session | null,
   store: AccessStore = accessStore(),
   now = Date.now(),
-  options: { started?: boolean; fresh?: boolean } = {},
+  options: { started?: boolean; fresh?: boolean; /** Set rb_device — only from Route Handlers. */ persistDevice?: boolean } = {},
 ) {
   if (!session) return null;
   // OPEN_ACCESS must not spend the free minute: otherwise turning it off locks every visitor.
@@ -60,9 +60,10 @@ export async function currentAccess(
     if (recent.size > 50_000) recent.clear();
     recent.set(session.sub, { user, store, checkedAt: now });
     // Share free-minute usage across browser profiles on the same IP / device id.
+    // Never write cookies here unless persistDevice (Route Handler): page.tsx is a Server Component.
     if (user.paidAt === null && (isGuest(user) || user.freeSecondsUsed > 0)) {
       try {
-        const bind = await bindContext();
+        const bind = await bindContext(undefined, null, { write: !!options.persistDevice });
         const spent = Math.max(user.freeSecondsUsed, await store.maxFreeQuota(bind.keys));
         if (spent > user.freeSecondsUsed) {
           await store.inheritFreeTime(user.id, Math.min(spent, freeSeconds()));
@@ -123,7 +124,9 @@ export function withAccess<C>(handler: Handler<C>): Handler<C> {
   return async (request, context) => {
     let access;
     try {
-      access = await currentAccess(await readSession());
+      access = await currentAccess(await readSession(), undefined, undefined, {
+        persistDevice: true,
+      });
     } catch (error) {
       console.error('[access] check failed', error);
       return Response.json({ error: 'Não foi possível verificar o acesso.' }, { status: 503 });

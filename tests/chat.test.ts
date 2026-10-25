@@ -274,9 +274,9 @@ describe('stickers', () => {
   it('has the neutral Apuração pack for everyone, with every picture in place', async () => {
     const { existsSync } = await import('node:fs');
     const { STICKERS, stickersFor } = await import('../src/lib/chat/stickers');
-    expect(STICKERS).toHaveLength(9);
-    expect(stickersFor('PT')).toHaveLength(9);
-    expect(stickersFor('PL')).toHaveLength(9);
+    expect(STICKERS).toHaveLength(33);
+    expect(stickersFor('PT')).toHaveLength(22);
+    expect(stickersFor('PL')).toHaveLength(20);
     expect(stickersFor('none')).toHaveLength(9);
     expect(stickersFor(null)).toHaveLength(9);
     for (const sticker of STICKERS)
@@ -284,6 +284,16 @@ describe('stickers', () => {
     const state = instance(new NoSlowBus());
     expect(await sendSticker(ana, 'apuracao-que-emocao', state, T0)).toMatchObject({ ok: true });
     expect(await sendSticker(bia, 'apuracao-que-emocao', state, T0)).toMatchObject({ ok: true });
+    expect(await sendSticker(bia, '22-vamos-la', state, T0)).toMatchObject({ ok: true });
+    expect(await sendSticker(ana, '22-vamos-la', state, T0)).toMatchObject({
+      ok: false,
+      status: 403,
+    });
+    expect(await sendSticker(ana, '13-faz-o-l', state, T0)).toMatchObject({ ok: true });
+    expect(await sendSticker(bia, '13-faz-o-l', state, T0)).toMatchObject({
+      ok: false,
+      status: 403,
+    });
     expect(
       await sendSticker(
         { ...ana, userId: 'google:cid', party: null },

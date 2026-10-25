@@ -226,7 +226,7 @@ function NewUserForm({ onCreated }: { onCreated: (email: string) => void }) {
         if (!result.ok) return setMessage({ error: true, text: result.error ?? 'Erro.' });
         setMessage({
           error: false,
-          text: `Conta ${email.trim().toLowerCase()} criada. No primeiro acesso, a pessoa escolhe o nome de usuário.`,
+          text: `Conta ${email.trim().toLowerCase()} criada com acesso liberado. No primeiro acesso, a pessoa escolhe o nome de usuário.`,
         });
         onCreated(email.trim().toLowerCase());
         setEmail('');
@@ -444,9 +444,9 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
           <p className="admin-user-reason">Motivo da suspensão: {user.pausedReason}</p>
         )}
       </div>
-      {!user.deletedAt && !user.admin && (
+      {!user.deletedAt && (
         <div className="admin-user-actions">
-          {mode === 'pause' ? (
+          {mode === 'pause' && !user.admin ? (
             <form
               className="admin-inline"
               onSubmit={(event) => {
@@ -508,7 +508,7 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
                 Cancelar
               </button>
             </form>
-          ) : mode === 'delete' ? (
+          ) : mode === 'delete' && !user.admin ? (
             <div className="admin-inline">
               <span>Excluir a conta e apagar as mensagens dela? Não dá para desfazer.</span>
               <button
@@ -529,24 +529,25 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
             </div>
           ) : (
             <>
-              {user.pausedAt ? (
-                <button
-                  type="button"
-                  className="admin-button"
-                  disabled={busy}
-                  onClick={() => act({ action: 'unpause' })}
-                >
-                  Reativar
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  className="admin-button is-warn"
-                  onClick={() => setMode('pause')}
-                >
-                  Suspender
-                </button>
-              )}
+              {!user.admin &&
+                (user.pausedAt ? (
+                  <button
+                    type="button"
+                    className="admin-button"
+                    disabled={busy}
+                    onClick={() => act({ action: 'unpause' })}
+                  >
+                    Reativar
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    className="admin-button is-warn"
+                    onClick={() => setMode('pause')}
+                  >
+                    Suspender
+                  </button>
+                ))}
               <button
                 type="button"
                 className="admin-button is-ghost"
@@ -554,7 +555,17 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
               >
                 Trocar senha
               </button>
-              {user.photo && (
+              {!user.admin && !user.paid && !user.staff && (
+                <button
+                  type="button"
+                  className="admin-button"
+                  disabled={busy}
+                  onClick={() => act({ action: 'grant_access' })}
+                >
+                  Liberar acesso
+                </button>
+              )}
+              {!user.admin && user.photo && (
                 <button
                   type="button"
                   className="admin-button is-ghost"
@@ -564,13 +575,15 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
                   Remover foto
                 </button>
               )}
-              <button
-                type="button"
-                className="admin-button is-danger is-ghost"
-                onClick={() => setMode('delete')}
-              >
-                Excluir
-              </button>
+              {!user.admin && (
+                <button
+                  type="button"
+                  className="admin-button is-danger is-ghost"
+                  onClick={() => setMode('delete')}
+                >
+                  Excluir
+                </button>
+              )}
             </>
           )}
           {error && (
@@ -728,6 +741,7 @@ const ACTIONS: Record<AuditEntry['action'], string> = {
   remove_photo: 'removeu a foto de',
   create_user: 'criou a conta',
   set_password: 'trocou a senha de',
+  grant_access: 'liberou o acesso de',
 };
 
 function AuditTab() {

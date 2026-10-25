@@ -34,17 +34,21 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
           redirect: 'error',
         });
         if (!r.ok) {
-          retryAt.set(id, Date.now() + 600000);
+          retryAt.set(id, Date.now() + (r.status === 404 ? 600_000 : 60_000));
+          // Only share cooldown with JSON fetches on rate-limit style responses.
+          // A missing candidate photo must never pause the national TSE feed.
           if (r.status === 429 || r.status === 403) {
             const retry = r.headers.get('retry-after');
-            const delay = retry
-              ? /^\d+$/.test(retry)
-                ? Number(retry) * 1000
-                : Date.parse(retry) - Date.now()
-              : 0;
-            client.pause(Math.max(610000, Number.isFinite(delay) ? delay : 0));
+            let delay = 0;
+            if (retry) {
+              if (/^\d+$/.test(retry)) delay = Number(retry) * 1000;
+              else {
+                const until = Date.parse(retry) - Date.now();
+                delay = Number.isFinite(until) ? Math.max(0, until) : 0;
+              }
+            }
+            client.pause(Math.max(610_000, delay));
           }
-          if (r.status === 404) client.pause(300000);
           return null;
         }
         const type = r.headers.get('content-type') ?? '';

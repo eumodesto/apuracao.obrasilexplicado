@@ -78,11 +78,13 @@ export function GovernorBoard() {
         Governadores
         <small>{data.turn ? `${data.turn}º turno` : '2º turno'}</small>
       </h2>
-      <ul>
-        {data.races.map((race) => (
-          <Race key={race.uf} race={race} />
-        ))}
-      </ul>
+      <div className="gb-scroll">
+        <ul>
+          {data.races.map((race) => (
+            <Race key={race.uf} race={race} />
+          ))}
+        </ul>
+      </div>
     </section>
   );
 }

@@ -1,3 +1,5 @@
+import { randomUUID } from 'node:crypto';
+import { isAdmin } from '@/lib/access/access';
 import { adminSetPassword } from '@/lib/access/credentials';
 import { forgetAccess } from '@/lib/access/guard';
 import { accessStore } from '@/lib/access/store';
@@ -17,8 +19,18 @@ export const POST = withAdmin<{ params: Promise<{ id: string }> }>(
     const store = accessStore();
     const user = await store.getUser(id);
     if (!user) return Response.json({ error: 'Conta não encontrada.' }, { status: 404 });
-    if (user.id === admin.user.id)
-      return Response.json({ error: 'Você não pode alterar a própria conta.' }, { status: 400 });
+    const self = user.id === admin.user.id;
+    const targetAdmin = isAdmin(user);
+    // Password reset is allowed for any account (including own / other admins). Other actions are not.
+    if (action !== 'set_password') {
+      if (self)
+        return Response.json({ error: 'Você não pode alterar a própria conta.' }, { status: 400 });
+      if (targetAdmin)
+        return Response.json(
+          { error: 'Não é possível suspender ou excluir outro administrador.' },
+          { status: 400 },
+        );
+    }
     const now = Date.now();
     let detail: string | null = null;
     if (action === 'pause') {
@@ -34,6 +46,13 @@ export const POST = withAdmin<{ params: Promise<{ id: string }> }>(
       if (user.deletedAt) return Response.json({ error: 'Conta excluída.' }, { status: 409 });
       const result = await adminSetPassword(id, body?.password);
       if (!result.ok) return Response.json({ error: result.error }, { status: result.status });
+      // Ends every active session so the old password cannot keep being used.
+      await store.startSession(id, `pw-reset:${randomUUID()}`);
+    } else if (action === 'grant_access') {
+      if (user.deletedAt) return Response.json({ error: 'Conta excluída.' }, { status: 409 });
+      if (user.paidAt != null)
+        return Response.json({ error: 'Esta conta já tem acesso liberado.' }, { status: 409 });
+      await store.markPaid(id, 'admin:grant', now);
     } else if (action === 'remove_photo') {
       if (user.photoVersion == null)
         return Response.json({ error: 'A conta não tem foto.' }, { status: 409 });
@@ -54,7 +73,7 @@ export const POST = withAdmin<{ params: Promise<{ id: string }> }>(
       action:
         action === 'delete'
           ? 'delete_user'
-          : (action as 'pause' | 'unpause' | 'remove_photo' | 'set_password'),
+          : (action as 'pause' | 'unpause' | 'remove_photo' | 'set_password' | 'grant_access'),
       target: user.username ? `@${user.username}` : id,
       detail,
     });

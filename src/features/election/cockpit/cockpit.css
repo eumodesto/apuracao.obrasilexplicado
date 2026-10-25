@@ -2247,8 +2247,17 @@
   .territory-alternative {
     padding: 8px;
   }
-  .context-panel {
+  .context-panel:not(.has-region-board) {
     overflow: visible;
+  }
+  .context-panel.has-region-board {
+    max-height: min(70dvh, 640px);
+    overflow: hidden;
+  }
+  .context-panel.has-region-board > .governor-board {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
   }
   .region-sidebar summary {
     min-height: 74px;
@@ -2618,4 +2627,17 @@
     width: 20px;
     height: 20px;
   }
+}
+
+/* Right column: grid cell bounded; governors keep min-height so the list is scrollable. */
+.election-cockpit .cockpit-grid > .context-panel.has-region-board {
+  min-height: 0;
+  align-self: stretch;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+.election-cockpit .cockpit-grid > .context-panel.has-region-board > .governor-board {
+  flex: 1 0 280px;
+  min-height: 280px;
+  max-height: min(56dvh, 580px);
 }

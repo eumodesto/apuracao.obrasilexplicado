@@ -49,7 +49,7 @@ export function adminEmails() {
 export function freeSeconds() {
   // An empty variable means "not set", not zero seconds.
   const value = Number(process.env.FREE_SECONDS || NaN);
-  return Number.isFinite(value) && value >= 0 ? value : 30;
+  return Number.isFinite(value) && value >= 0 ? value : 60;
 }
 
 export function priceBrl() {

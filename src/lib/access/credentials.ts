@@ -88,6 +88,8 @@ export async function adminCreateAccount(
   if (!(await passwords.create(id, await hashPassword(String(input.password)))))
     return { ok: false, status: 409, error: 'Já existe uma conta com este e-mail.' };
   await access.upsertUser({ id, email, name: email.split('@')[0] });
+  // Admin-created accounts get full panel access without Mercado Pago.
+  await access.markPaid(id, 'admin:grant', Date.now());
   return { ok: true, id, email };
 }
 
