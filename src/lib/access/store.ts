@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
+import { ensureSchema } from '@/lib/db/migrate';
 import { watchedSeconds } from './access';
 import type {
   AccessStats,
@@ -340,6 +341,15 @@ export class FileAccessStore implements AccessStore {
     });
   }
 
+  async setEmail(id: string, email: string) {
+    return this.change((data) => {
+      const user = data.users[id];
+      if (!user || user.deletedAt) return false;
+      user.email = email;
+      return true;
+    });
+  }
+
   async setPhoto(id: string, version: number | null) {
     return this.change((data) => {
       const user = data.users[id];
@@ -457,7 +467,8 @@ export class PostgresAccessStore implements AccessStore {
   }
 
   private schema() {
-    this.ready ??= this.sql`
+    // Bump the version whenever this DDL changes (see lib/db/migrate).
+    this.ready ??= ensureSchema(this.sql, 'access', 1, `
       CREATE TABLE IF NOT EXISTS access_users (
         id text PRIMARY KEY,
         email text NOT NULL,
@@ -502,8 +513,7 @@ export class PostgresAccessStore implements AccessStore {
         seconds_used double precision NOT NULL DEFAULT 0,
         updated_at timestamptz NOT NULL DEFAULT now()
       );
-    `
-      .simple()
+    `)
       .catch((error) => {
         // Let the next request retry instead of caching the failure.
         this.ready = null;
@@ -746,6 +756,14 @@ export class PostgresAccessStore implements AccessStore {
         party_consent_at = NULL, session_id = NULL, photo_version = NULL,
         deleted_at = ${new Date(at)}
       WHERE id = ${id} RETURNING id`;
+    return rows.length > 0;
+  }
+
+  async setEmail(id: string, email: string) {
+    await this.schema();
+    const rows = await this.sql`
+      UPDATE access_users SET email = ${email}
+      WHERE id = ${id} AND deleted_at IS NULL RETURNING id`;
     return rows.length > 0;
   }
 

@@ -178,7 +178,10 @@ export class TseClient {
         let value: T;
         try {
           value = parse(raw);
-        } catch {
+        } catch (error) {
+          const detail =
+            error instanceof Error ? error.message.replace(/\s+/g, ' ').slice(0, 160) : 'unknown';
+          console.warn(`[TSE] schema rejected ${url}: ${detail}`);
           throw new UpstreamError('unexpected schema');
         }
         // CDN nodes may temporarily serve an older generation. Never regress timestamp.

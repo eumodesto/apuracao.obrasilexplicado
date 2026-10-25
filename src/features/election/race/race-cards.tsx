@@ -1,4 +1,6 @@
 import type { BandSide } from '@/features/landing/round-band-model';
+import { ProjectionCard } from '@/features/election/projection/projection-card';
+import type { ProjectionModel } from '@/features/election/projection/projection-model';
 import type { RaceCandidate, RaceModel } from './race-model';
 import './race.css';
 
@@ -30,7 +32,7 @@ export type ChartSeries = {
 
 type Fact = { label: string; value: string; detail?: string };
 
-/** Left column: the "Brasil" card and the "Ao longo da apuração" chart card. */
+/** Left column: official TSE card, projection card, then the observed chart. */
 export function RaceCards({
   model,
   tag,
@@ -39,9 +41,10 @@ export function RaceCards({
   emptyChart,
   allCandidates = true,
   note,
+  projection,
 }: {
   model: RaceModel;
-  /** "1º turno · 100% apurado" */
+  /** Turn/progress hint; the visible source badge is always TSE. */
   tag: string;
   /** Second line under "Diferença" (2nd-round date, or sections counted). */
   fact: Fact;
@@ -51,25 +54,46 @@ export function RaceCards({
   /** Link to the page with every candidate (the 1st-round result). */
   allCandidates?: boolean;
   note?: string;
+  /** Own-model estimate; kept visually separate from the official card. */
+  projection: ProjectionModel;
 }) {
-  // With only the two finalists (the 2nd round), they are the rows of the card.
-  const rows: RaceCandidate[] = model.others.length
-    ? model.others
-    : model.finalists.map((side) => ({
-        id: side.id,
-        name: side.name,
-        party: `${side.party} ${side.number}`,
-        color: side.color,
-        percentage: side.percentage,
-        votes: side.votes,
-      }));
+  const [left, right] = model.finalists;
+  // Extra candidates (1st round) keep the list; the 2nd round uses the dual official pair.
+  const rows: RaceCandidate[] = model.others;
   return (
     <div className="race-column">
-      <section className="race-card" aria-labelledby="race-title">
+      <section className="race-card race-card-official" aria-labelledby="race-title">
         <header className="race-card-top">
-          <h1 id="race-title">Brasil</h1>
-          <span className="race-tag">{tag}</span>
+          <h1 id="race-title">
+            Brasil <span className="race-title-sub">— Apuração oficial</span>
+          </h1>
+          <span className="race-tag is-tse" title={tag}>
+            TSE
+          </span>
         </header>
+        <div className="race-official-pair" aria-label="Resultado oficial do TSE">
+          {[left, right].map((side, index) => (
+            <div
+              key={side.id}
+              className={index ? 'race-official-side is-right' : 'race-official-side'}
+              style={{ '--side': side.color } as React.CSSProperties}
+            >
+              <span className="race-official-name">{side.name}</span>
+              <strong>
+                {decimal(side.percentage, 2)}
+                <small>%</small>
+              </strong>
+              <small className="race-official-party">
+                {side.party} {side.number}
+              </small>
+            </div>
+          ))}
+        </div>
+        <div className="race-official-bar" aria-hidden="true">
+          <span style={{ width: `${Math.min(100, left.percentage)}%`, background: left.color }} />
+          <span style={{ width: `${Math.min(100, right.percentage)}%`, background: right.color }} />
+        </div>
+        <p className="race-official-counted">{countedLabel(model.counted)} das seções apuradas</p>
         <dl className="race-facts">
           <div>
             <dt>Diferença</dt>
@@ -106,7 +130,7 @@ export function RaceCards({
                   <small>{candidate.party}</small>
                 </span>
                 <span className="race-share">
-                  <strong>{decimal(candidate.percentage, rows === model.others ? 1 : 2)}%</strong>
+                  <strong>{decimal(candidate.percentage, 1)}%</strong>
                   {candidate.votes != null && <small>{whole(candidate.votes)} votos</small>}
                 </span>
               </li>
@@ -141,22 +165,36 @@ export function RaceCards({
         </dl>
         {note && <p className="race-note">{note}</p>}
       </section>
+      <ProjectionCard model={projection} />
       <RaceChart sides={model.finalists} series={series} empty={emptyChart} />
     </div>
   );
 }
 
-/** Before the first valid votes: the same two cards, waiting. */
-export function RaceWaiting({ tag, text }: { tag: string; text: string }) {
+/** Before the first valid votes: official card + projection waiting + empty chart. */
+export function RaceWaiting({
+  tag,
+  text,
+  projection,
+}: {
+  tag: string;
+  text: string;
+  projection: ProjectionModel;
+}) {
   return (
     <div className="race-column">
-      <section className="race-card" aria-labelledby="race-title">
+      <section className="race-card race-card-official" aria-labelledby="race-title">
         <header className="race-card-top">
-          <h1 id="race-title">Brasil</h1>
-          <span className="race-tag">{tag}</span>
+          <h1 id="race-title">
+            Brasil <span className="race-title-sub">— Apuração oficial</span>
+          </h1>
+          <span className="race-tag is-tse" title={tag}>
+            TSE
+          </span>
         </header>
         <p className="race-rest">{text}</p>
       </section>
+      <ProjectionCard model={projection} />
       <RaceChart sides={null} series={[]} empty={text} />
     </div>
   );

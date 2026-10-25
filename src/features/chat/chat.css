@@ -1,3 +1,21 @@
+.chat-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  color: #b6b5ae;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.chat-presence svg {
+  flex: none;
+  opacity: 0.85;
+}
+.chat-presence b {
+  color: #eeede8;
+  font-weight: 700;
+}
 .chat-launcher {
   display: inline-flex;
   align-items: center;
@@ -462,6 +480,17 @@
   .chat-launcher {
     min-height: 36px;
   }
+  .chat-presence {
+    font-size: 11px;
+  }
+  .chat-presence span {
+    display: none;
+  }
+  .chat-presence b::after {
+    content: ' agora';
+    font-weight: 400;
+    color: #b6b5ae;
+  }
 }
 
 /* With the chat open beside the panel, the floating badge moves to its left. */
@@ -550,6 +579,17 @@
   letter-spacing: -0.2px;
   text-transform: uppercase;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.chat-sticker.is-ink-dark {
+  color: #1a1a17;
+  border-color: #d8d8d0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+.chat-sticker.is-ink-dark .chat-sticker-emoji {
+  filter: none;
+}
+.chat-sticker.is-ink-dark .chat-sticker-text {
+  text-shadow: none;
 }
 .chat-stickers {
   margin: 0 0 10px;
@@ -1006,6 +1046,9 @@
 }
 .chat-stickers-grid button[aria-disabled='true'] {
   cursor: not-allowed;
+}
+.chat-stickers-grid button[data-locked='true'] {
+  opacity: 0.55;
 }
 .chat-stickers-grid button[aria-disabled='true']:hover {
   transform: none;

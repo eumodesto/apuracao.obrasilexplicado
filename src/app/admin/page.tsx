@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { isGuest } from '@/lib/access/access';
 import { activeSession } from '@/lib/access/auth';
 import { adminEmails, isDevelopment } from '@/lib/access/config';
 import { adminSession } from '@/lib/admin/guard';
@@ -11,15 +12,19 @@ export const metadata: Metadata = {
   robots: { index: false },
 };
 
-/** Internal area: accounts, chat moderation and the audit log. Invisible to everyone else. */
+/**
+ * Internal area: accounts, chat moderation and the audit log.
+ * Non-admins (guests, username accounts, empty session) go to the e-mail login —
+ * never a bare 404, which on phones looked like the page “didn’t load”.
+ */
 export default async function AdminPage() {
   const admin = await adminSession();
   if (admin) return <AdminApp me={admin.user.email} />;
   const active = await activeSession();
-  if (!active) redirect('/login?next=/admin');
-  // In production the area does not reveal itself; locally, say what is missing.
-  if (!isDevelopment()) notFound();
-  return <AdminHelp email={active.user.email} configured={[...adminEmails()]} />;
+  // Locally, explain why a signed-in non-admin cannot open the area.
+  if (isDevelopment() && active && !isGuest(active.user))
+    return <AdminHelp email={active.user.email} configured={[...adminEmails()]} />;
+  redirect('/login?next=/admin');
 }
 
 function AdminHelp({ email, configured }: { email: string; configured: string[] }) {

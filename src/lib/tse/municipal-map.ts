@@ -58,7 +58,10 @@ function remember(metric: MunicipalMetric) {
     known.set(metric.uf + metric.code, metric);
 }
 let baselineRestored = false;
+let lastNationalRestore = 0;
 let knownElection: string | null = null;
+/** Background batches per UF start at most this often, so they never crowd the TSE queue. */
+const REFRESH_MS = 30_000;
 /** Starts over when the active election changes (1st → 2nd round), so results never mix. */
 async function restoreBaseline() {
   const { config } = await catalog();
@@ -67,6 +70,7 @@ async function restoreBaseline() {
   if (knownElection !== election) {
     known.clear();
     baselineRestored = false;
+    lastNationalRestore = 0;
     knownElection = election;
   }
   if (baselineRestored) return;
@@ -80,6 +84,7 @@ export async function cachedMunicipalities() {
   await restoreBaseline();
   const { config, geography } = await catalog();
   if (!config.value || !geography?.value) throw new Error('Catálogo indisponível');
+  const restoreDue = Date.now() - lastNationalRestore >= REFRESH_MS;
   let total = 0;
   for (const region of geography.value.filter((r) => r.code !== 'zz')) {
     total += region.municipalities.length;
@@ -91,12 +96,15 @@ export async function cachedMunicipalities() {
         name: town.name,
       };
       const url = resultUrl(config.value, scope);
-      const entry = await client.restore(url, (raw) =>
-        normalizeResult(raw, config.value!, scope, url),
-      );
+      // Reading the durable cache costs a file lookup per municipality (5,570 of them): do it
+      // only when the 30 s refresh is due; in between the in-memory state is enough.
+      const entry = restoreDue
+        ? await client.restore(url, (raw) => normalizeResult(raw, config.value!, scope, url))
+        : client.peek<ElectionSnapshot>(url);
       if (entry?.value) remember(municipalMetric(entry.value, !!entry.issue));
     }
   }
+  if (restoreDue) lastNationalRestore = Date.now();
   const results = knownMunicipalities();
   return {
     uf: 'br',
@@ -109,8 +117,6 @@ export async function cachedMunicipalities() {
 }
 const latest = new Map<string, Awaited<ReturnType<typeof read>>>();
 const startedAt = new Map<string, number>();
-/** Background batches per UF start at most this often, so they never crowd the TSE queue. */
-const REFRESH_MS = 30_000;
 /**
  * After a UF's first answer, readers get the latest one at once while the next batch of
  * municipalities is collected in the background (a batch can take up to 12 s of TSE reads).

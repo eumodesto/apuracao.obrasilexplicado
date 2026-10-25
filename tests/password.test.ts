@@ -21,13 +21,22 @@ describe('password hashing', () => {
 describe('sign up and sign in with username and password', () => {
   it('creates one account per username and signs in by username', async () => {
     const s = stores();
-    const created = await signUp({ username: 'AnaVota', password: 'a' }, s);
-    expect(created).toMatchObject({ ok: true, profile: { sub: 'user:anavota', name: 'AnaVota' } });
+    const created = await signUp(
+      { username: 'AnaVota', password: 'a', email: 'ana@example.com' },
+      s,
+    );
+    expect(created).toMatchObject({
+      ok: true,
+      profile: { sub: 'user:anavota', name: 'AnaVota', email: 'ana@example.com' },
+    });
     expect(await s.access.getUser('user:anavota')).toMatchObject({
       username: 'AnaVota',
+      email: 'ana@example.com',
       onboardedAt: null,
     });
-    expect(await signUp({ username: 'anavota', password: 'outra' }, s)).toMatchObject({
+    expect(
+      await signUp({ username: 'anavota', password: 'outra', email: 'outra@example.com' }, s),
+    ).toMatchObject({
       ok: false,
       status: 409,
     });
@@ -39,24 +48,34 @@ describe('sign up and sign in with username and password', () => {
 
   it('refuses wrong passwords and unknown accounts with the same message', async () => {
     const s = stores();
-    await signUp({ username: 'bia_vota', password: 'x' }, s);
+    await signUp({ username: 'bia_vota', password: 'x', email: 'bia@example.com' }, s);
     const wrong = await logIn({ login: 'bia_vota', password: 'errada' }, s);
     const unknown = await logIn({ login: 'ninguem_aqui', password: 'x' }, s);
     expect(wrong).toMatchObject({ ok: false, status: 401 });
     expect(unknown).toEqual(wrong);
   });
 
-  it('refuses empty passwords and invalid usernames', async () => {
+  it('refuses empty passwords, invalid usernames and missing e-mail', async () => {
     const s = stores();
-    expect(await signUp({ username: 'cid_vota', password: '' }, s)).toMatchObject({
+    expect(
+      await signUp({ username: 'cid_vota', password: '', email: 'cid@example.com' }, s),
+    ).toMatchObject({
       ok: false,
       status: 400,
     });
-    expect(await signUp({ username: 'ab', password: 'x' }, s)).toMatchObject({
+    expect(await signUp({ username: 'ab', password: 'x', email: 'ab@example.com' }, s)).toMatchObject(
+      {
+        ok: false,
+        status: 400,
+      },
+    );
+    expect(
+      await signUp({ username: 'admin', password: 'x', email: 'admin@example.com' }, s),
+    ).toMatchObject({
       ok: false,
       status: 400,
     });
-    expect(await signUp({ username: 'admin', password: 'x' }, s)).toMatchObject({
+    expect(await signUp({ username: 'eva_vota', password: 'x', email: '' }, s)).toMatchObject({
       ok: false,
       status: 400,
     });
@@ -64,16 +83,44 @@ describe('sign up and sign in with username and password', () => {
 
   it('does not reopen a deleted account', async () => {
     const s = stores();
-    await signUp({ username: 'dani_vota', password: 'x' }, s);
+    await signUp({ username: 'dani_vota', password: 'x', email: 'dani@example.com' }, s);
     await s.access.anonymize('user:dani_vota', Date.now());
     expect(await logIn({ login: 'dani_vota', password: 'x' }, s)).toMatchObject({
       ok: false,
       status: 401,
     });
-    expect(await signUp({ username: 'dani_vota', password: 'y' }, s)).toMatchObject({
+    expect(
+      await signUp({ username: 'dani_vota', password: 'y', email: 'dani2@example.com' }, s),
+    ).toMatchObject({
       ok: false,
       status: 403,
     });
+  });
+});
+
+describe('e-mail checked before it reaches Mercado Pago', () => {
+  it('accepts real addresses and rejects typos, placeholders and bad formats', async () => {
+    const { checkEmail } = await import('../src/lib/access/password');
+    expect(checkEmail(' Ana.Souza+x@Gmail.com ')).toEqual({ ok: true, email: 'ana.souza+x@gmail.com' });
+    expect(checkEmail('ana@empresa.com.br')).toMatchObject({ ok: true });
+    expect(checkEmail('ana@gmai.com')).toEqual({
+      ok: false,
+      error: 'Confira o e-mail: você quis dizer ana@gmail.com?',
+    });
+    expect(checkEmail('ana@hotmail.con')).toMatchObject({ ok: false });
+    for (const bad of ['', 'ana', 'ana@', '@x.com', 'a..b@x.com', 'ana@x', 'ana@x.c', 'ana@@x.com'])
+      expect(checkEmail(bad)).toMatchObject({ ok: false });
+    expect(checkEmail('ana@pagadores.portaleleicao.com.br')).toMatchObject({ ok: false });
+  });
+
+  it('is required for admin-created accounts', async () => {
+    const { adminCreateAccount } = await import('../src/lib/access/credentials');
+    const s = stores();
+    for (const email of ['', 'sem-arroba', 'x@gmai.com'])
+      expect(
+        await adminCreateAccount({ username: 'SemEmail', email, password: 'senhaforte' }, s),
+      ).toMatchObject({ ok: false, status: 400 });
+    expect(await s.access.getUser('user:sememail')).toBeNull();
   });
 });
 
@@ -83,31 +130,48 @@ describe('accounts created by an administrator', () => {
     process.env.ADMIN_EMAILS = saved;
   });
 
-  it('creates team accounts by e-mail and resets passwords', async () => {
-    process.env.ADMIN_EMAILS = 'equipe@example.com';
+  it('creates unlocked username accounts and resets passwords', async () => {
     const { adminCreateAccount, adminSetPassword } = await import('../src/lib/access/credentials');
     const s = stores();
-    expect(
-      await adminCreateAccount({ email: 'Equipe@Example.com', password: 'x' }, s),
-    ).toEqual({ ok: true, id: 'email:equipe@example.com', email: 'equipe@example.com' });
-    expect(await s.access.getUser('email:equipe@example.com')).toMatchObject({
+    expect(await adminCreateAccount(
+        { username: 'EquipeUm', email: 'Equipe.Um@Example.com', password: 'senhaforte' },
+        s,
+      )).toEqual({
+      ok: true,
+      id: 'user:equipeum',
+      username: 'EquipeUm',
+    });
+    const created = await s.access.getUser('user:equipeum');
+    expect(created).toMatchObject({
+      username: 'EquipeUm',
+      email: 'equipe.um@example.com',
       paidAt: expect.any(Number),
       paymentId: 'admin:grant',
     });
+    const { accessStatus, isGrantedAccess } = await import('../src/lib/access/access');
+    expect(isGrantedAccess(created!)).toBe(true);
+    expect(accessStatus(created!, Date.now())).toMatchObject({
+      state: 'paid',
+      granted: true,
+      staff: false,
+    });
     expect(
-      await adminCreateAccount({ email: 'equipe@example.com', password: 'outra' }, s),
+      await adminCreateAccount(
+        { username: 'equipeum', email: 'outro@example.com', password: 'outrasenha' },
+        s,
+      ),
     ).toMatchObject({ ok: false, status: 409 });
-    expect(await logIn({ login: 'equipe@example.com', password: 'x' }, s)).toMatchObject({
+    expect(await logIn({ login: 'EquipeUm', password: 'senhaforte' }, s)).toMatchObject({
       ok: true,
     });
-    expect(await adminSetPassword('email:equipe@example.com', '', s.passwords)).toMatchObject({
+    expect(await adminSetPassword('user:equipeum', '', s.passwords)).toMatchObject({
       ok: false,
     });
-    await adminSetPassword('email:equipe@example.com', 'nova', s.passwords);
-    expect(await logIn({ login: 'equipe@example.com', password: 'x' }, s)).toMatchObject({
+    await adminSetPassword('user:equipeum', 'novasenha1', s.passwords);
+    expect(await logIn({ login: 'EquipeUm', password: 'senhaforte' }, s)).toMatchObject({
       ok: false,
     });
-    expect(await logIn({ login: 'equipe@example.com', password: 'nova' }, s)).toMatchObject({
+    expect(await logIn({ login: 'EquipeUm', password: 'novasenha1' }, s)).toMatchObject({
       ok: true,
     });
   });

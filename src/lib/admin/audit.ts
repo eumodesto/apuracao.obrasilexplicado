@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
+import { ensureSchema } from '@/lib/db/migrate';
 
 export type AuditEntry = {
   at: number;
@@ -66,7 +67,7 @@ export class PostgresAuditStore implements AuditStore {
   }
 
   private schema() {
-    this.ready ??= this.sql`
+    this.ready ??= ensureSchema(this.sql, 'admin_audit', 1, `
       CREATE TABLE IF NOT EXISTS admin_audit (
         id bigserial PRIMARY KEY,
         at timestamptz NOT NULL,
@@ -76,9 +77,7 @@ export class PostgresAuditStore implements AuditStore {
         detail text
       );
       CREATE INDEX IF NOT EXISTS admin_audit_at ON admin_audit (at DESC);
-    `
-      .simple()
-      .catch((error) => {
+    `).catch((error) => {
         this.ready = null;
         throw error;
       });

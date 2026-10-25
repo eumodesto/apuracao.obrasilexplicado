@@ -22,16 +22,20 @@ export const GET = withAdmin(async (request) => {
   );
 });
 
-/** Creates an account with e-mail and password (team e-mails included, unlike the public sign-up). */
+/** Creates an account with username, e-mail and password, already unlocked for the panel. */
 export const POST = withAdmin(async (request, _context, admin) => {
   const body = await request.json().catch(() => null);
-  const result = await adminCreateAccount({ email: body?.email, password: body?.password });
+  const result = await adminCreateAccount({
+    username: body?.username ?? body?.login,
+    email: body?.email,
+    password: body?.password,
+  });
   if (!result.ok) return Response.json({ error: result.error }, { status: result.status });
   await auditStore().add({
     at: Date.now(),
-    admin: admin.user.email,
+    admin: admin.user.email || admin.user.id,
     action: 'create_user',
-    target: result.email,
+    target: result.username,
     detail: null,
   });
   const user = await accessStore().getUser(result.id);

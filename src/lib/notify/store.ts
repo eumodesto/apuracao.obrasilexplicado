@@ -1,6 +1,7 @@
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
+import { ensureSchema } from '@/lib/db/migrate';
 
 /** E-mails that asked to be told when the count starts. */
 export interface NotifyStore {
@@ -60,15 +61,13 @@ export class PostgresNotifyStore implements NotifyStore {
   }
 
   private schema() {
-    this.ready ??= this.sql`
+    this.ready ??= ensureSchema(this.sql, 'notify', 1, `
       CREATE TABLE IF NOT EXISTS notify_signups (
         email text PRIMARY KEY,
         created_at timestamptz NOT NULL,
         notified_at timestamptz
       );
-    `
-      .simple()
-      .catch((error) => {
+    `).catch((error) => {
         this.ready = null;
         throw error;
       });

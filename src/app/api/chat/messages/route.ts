@@ -2,11 +2,12 @@ import { forgetAccess } from '@/lib/access/guard';
 import { accessStore } from '@/lib/access/store';
 import { chatAccess } from '@/lib/chat/access';
 import { sendMessage, sendSticker } from '@/lib/chat/service';
+import { isFreeSticker, stickerById } from '@/lib/chat/stickers';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 /**
- * Sends a chat message or sticker. Text: anyone with access, free minute included. Stickers: paid
- * access, one from the sender's packs each (the team sends without spending).
+ * Sends a chat message or sticker. Text and free stickers: anyone with access (free minute
+ * included). Paid/party stickers: paid access, one credit each (the team sends without spending).
  */
 export async function POST(request: Request) {
   const chat = await chatAccess({ fresh: true });
@@ -15,14 +16,16 @@ export async function POST(request: Request) {
   let stickers: number | null = null;
   let result;
   if (body?.sticker !== undefined) {
-    if (!chat.paid)
+    const catalog = typeof body.sticker === 'string' ? stickerById(body.sticker) : null;
+    const free = isFreeSticker(catalog);
+    if (!free && !chat.paid)
       return Response.json(
-        { error: 'Figurinhas são para quem liberou o acesso.', code: 'payment_required' },
+        { error: 'Figurinhas exclusivas são para quem liberou o acesso.', code: 'payment_required' },
         { status: 402 },
       );
-    const staff = chat.access.status.staff;
+    const complimentary = chat.access.status.staff || chat.access.status.granted;
     result = await sendSticker(chat.author, body.sticker, undefined, undefined, async () => {
-      if (staff) return true;
+      if (free || complimentary) return true;
       stickers = await accessStore().useStickerCredit(chat.author.userId);
       // The balance shown on the next page load comes from the database, not a cached copy.
       forgetAccess(chat.author.userId);

@@ -71,9 +71,13 @@ describe('left column (race cards)', () => {
           },
         ],
         emptyChart: 'vazio',
+        projection: { state: 'unavailable', reason: 'Aguardando dados suficientes' },
       }),
     );
     expect(html.match(/<polyline/g)).toHaveLength(2);
+    expect(html).toContain('Apuração oficial');
+    expect(html).toContain('Projeção eleitoral');
+    expect(html).toContain('Modelo próprio');
     expect(html).toContain(`stroke="${first.color}"`);
     // Under 50% counted, the axis ends at the last counted share instead of 100%.
     expect(html).toContain('<small>40%</small>');
@@ -91,6 +95,7 @@ describe('left column (race cards)', () => {
         fact: { label: 'Seções apuradas', value: '0 de 2' },
         series: model.finalists.map((side) => ({ side, points: [{ x: 1, y: 50 }] })),
         emptyChart: 'A curva aparece após duas observações.',
+        projection: { state: 'unavailable', reason: 'Aguardando dados suficientes' },
       }),
     );
     expect(html).not.toContain('<polyline');

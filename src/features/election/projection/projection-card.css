@@ -1,0 +1,158 @@
+/* Distinct from the official TSE card: gold edge, own title, always a disclaimer. */
+.projection-card {
+  flex-shrink: 0;
+  padding: 14px;
+  border: 1px solid rgba(245, 197, 24, 0.45);
+  border-radius: 12px;
+  background: #151514;
+  color: #eeede8;
+  font-family: var(--font-sans);
+  box-shadow: inset 0 0 0 1px rgba(245, 197, 24, 0.08);
+}
+.projection-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.election-cockpit .projection-card h2,
+.projection-card h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #f5c518;
+  font: 600 14px/1.2 var(--font-sans);
+  letter-spacing: 0;
+}
+.projection-card h2 svg {
+  flex: none;
+  color: #f5c518;
+}
+.projection-card-badge {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #262624;
+  color: #b6b5ae;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.projection-card-wait {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 10px 8px 14px;
+  text-align: center;
+}
+.projection-card-hourglass {
+  font-size: 22px;
+  line-height: 1;
+  opacity: 0.85;
+}
+.projection-card-wait-title {
+  margin: 0;
+  color: #eeede8;
+  font-size: 14px;
+  font-weight: 600;
+}
+.projection-card-wait-text {
+  margin: 0;
+  max-width: 28em;
+  color: #87877e;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.projection-card-body {
+  display: grid;
+  gap: 10px;
+}
+.projection-card-lead {
+  margin: 0;
+  color: #b6b5ae;
+  font-size: 12px;
+}
+.projection-card-lead b {
+  color: #f5c518;
+  font-weight: 700;
+}
+.projection-card-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.projection-card-side {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+.projection-card-side:last-child {
+  text-align: right;
+  align-items: flex-end;
+}
+.projection-card-name {
+  overflow: hidden;
+  color: var(--side);
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.projection-card-side strong {
+  color: #fff;
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.projection-card-side strong small {
+  margin-left: 1px;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.7;
+}
+.projection-card-bar {
+  display: flex;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.projection-card-bar > span {
+  display: block;
+  height: 100%;
+}
+.projection-card-meta {
+  margin: 0;
+  color: #87877e;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+.projection-card-note {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  color: #87877e;
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .projection-card {
+    padding: 12px;
+  }
+  .projection-card-side strong {
+    font-size: 20px;
+  }
+  .projection-card-note {
+    font-size: 10px;
+  }
+}

@@ -6,7 +6,8 @@ import type { Author } from './service';
 
 /**
  * Who may use the chat: signed-in, signed-up, on their active session and not locked out.
- * Free time (visitors included) reads and writes; stickers need paid access and a pack.
+ * Free time (visitors included) reads and writes. Free stickers are included; party packs need
+ * paid access and a credit.
  */
 export async function chatAccess(options: { fresh?: boolean; session?: Session | null } = {}) {
   const session = options.session === undefined ? await readSession() : options.session;
@@ -16,7 +17,12 @@ export async function chatAccess(options: { fresh?: boolean; session?: Session |
   if (access.status.state === 'locked')
     return {
       problem: Response.json(
-        { error: 'O tempo gratuito acabou.', code: 'locked' },
+        {
+          error: access.status.guest
+            ? 'Crie sua conta para continuar.'
+            : 'Libere o acesso para continuar.',
+          code: access.status.guest ? 'signup' : 'payment_required',
+        },
         { status: 402 },
       ),
     };

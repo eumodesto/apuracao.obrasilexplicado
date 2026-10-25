@@ -194,7 +194,7 @@ export function BootShell({
             <section className="compact-chart">
               <h2>Ao longo da apuração</h2>
               <div className="boot-chart">Aguardando observações oficiais</div>
-              <p>Observações reais · votos válidos · sem projeção</p>
+              <p>Observações reais · votos válidos · projeção à parte</p>
             </section>
           </section>
         )}

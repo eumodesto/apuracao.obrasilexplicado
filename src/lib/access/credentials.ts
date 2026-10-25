@@ -1,5 +1,6 @@
 import { cleanUsername, usernameProblem } from '@/lib/profile/username';
 import {
+  checkEmail,
   cleanEmail,
   emailAccountId,
   hashPassword,
@@ -20,11 +21,11 @@ const fail = (status: number, error: string): CredentialResult => ({ ok: false, 
 const WRONG = 'Nome de usuário ou senha incorretos.';
 
 /**
- * New account with username and password. The person still picks a party on /cadastro.
- * Team/admin accounts are not created here (they use e-mail via adminCreateAccount).
+ * New account with username, e-mail and password. The person still picks a party on /cadastro.
+ * Team/admin e-mails are not created here (use `scripts/set-password.mjs`).
  */
 export async function signUp(
-  input: { username: unknown; password: unknown },
+  input: { username: unknown; password: unknown; email: unknown },
   stores: { access?: AccessStore; passwords?: PasswordStore } = {},
 ): Promise<CredentialResult> {
   const access = stores.access ?? accessStore(),
@@ -32,6 +33,9 @@ export async function signUp(
   const username = cleanUsername(String(input.username ?? ''));
   const problem = usernameProblem(username);
   if (problem) return fail(400, problem);
+  const checked = checkEmail(input.email);
+  if (!checked.ok) return fail(400, checked.error);
+  const email = checked.email;
   const password = String(input.password ?? '');
   const passProblem = passwordProblem(password);
   if (passProblem) return fail(400, passProblem);
@@ -43,12 +47,12 @@ export async function signUp(
   if (existing) return fail(409, 'Esse nome já está em uso. Escolha outro.');
   if (!(await passwords.create(id, await hashPassword(password))))
     return fail(409, 'Esse nome já está em uso. Escolha outro.');
-  await access.upsertUser({ id, email: '', name: username });
+  await access.upsertUser({ id, email, name: username });
   const claimed = await access.claimUsername(id, username);
   if (claimed !== 'ok') {
     return fail(409, 'Esse nome já está em uso. Escolha outro.');
   }
-  return { ok: true, profile: { sub: id, email: '', name: username } };
+  return { ok: true, profile: { sub: id, email, name: username } };
 }
 
 /** Signs in with the username (or legacy e-mail), plus the password. */
@@ -79,28 +83,41 @@ export async function logIn(
 }
 
 /**
- * Account created by an administrator (/admin): any e-mail, including team and administrator
- * e-mails, which cannot sign up on the site. The person completes the sign-up on first login.
+ * Account created by an administrator (/admin): username, e-mail and password, with panel access
+ * already unlocked (no Mercado Pago charge). The e-mail is kept on the account so any later
+ * purchase (stickers) goes to Mercado Pago with a real payer. The person still picks a party on
+ * /cadastro at first login. Team/admin e-mails stay on `scripts/set-password.mjs`.
  */
 export async function adminCreateAccount(
-  input: { email: unknown; password: unknown },
+  input: { username: unknown; password: unknown; email: unknown },
   stores: { access?: AccessStore; passwords?: PasswordStore } = {},
-): Promise<{ ok: true; id: string; email: string } | { ok: false; status: number; error: string }> {
+): Promise<
+  { ok: true; id: string; username: string } | { ok: false; status: number; error: string }
+> {
   const access = stores.access ?? accessStore(),
     passwords = stores.passwords ?? passwordStore();
-  const email = cleanEmail(input.email);
-  if (!email) return { ok: false, status: 400, error: 'Digite um e-mail válido.' };
+  const username = cleanUsername(String(input.username ?? ''));
+  const nameProblem = usernameProblem(username);
+  if (nameProblem) return { ok: false, status: 400, error: nameProblem };
+  const checked = checkEmail(input.email);
+  if (!checked.ok) return { ok: false, status: 400, error: checked.error };
   const problem = passwordProblem(String(input.password ?? ''));
   if (problem) return { ok: false, status: 400, error: problem };
-  const id = emailAccountId(email);
+  if (await access.usernameTaken(username))
+    return { ok: false, status: 409, error: 'Esse nome já está em uso. Escolha outro.' };
+  const id = usernameAccountId(username);
   if ((await access.getUser(id))?.deletedAt)
     return { ok: false, status: 409, error: 'Esta conta foi excluída.' };
+  if (await access.getUser(id))
+    return { ok: false, status: 409, error: 'Esse nome já está em uso. Escolha outro.' };
   if (!(await passwords.create(id, await hashPassword(String(input.password)))))
-    return { ok: false, status: 409, error: 'Já existe uma conta com este e-mail.' };
-  await access.upsertUser({ id, email, name: email.split('@')[0] });
-  // Admin-created accounts get full panel access without Mercado Pago.
+    return { ok: false, status: 409, error: 'Esse nome já está em uso. Escolha outro.' };
+  await access.upsertUser({ id, email: checked.email, name: username });
+  const claimed = await access.claimUsername(id, username);
+  if (claimed !== 'ok')
+    return { ok: false, status: 409, error: 'Esse nome já está em uso. Escolha outro.' };
   await access.markPaid(id, 'admin:grant', Date.now());
-  return { ok: true, id, email };
+  return { ok: true, id, username };
 }
 
 /** New password for an existing account, set by an administrator. */

@@ -271,26 +271,34 @@ describe('no copy-and-paste in the chat', () => {
 });
 
 describe('stickers', () => {
-  it('has the neutral Apuração pack for everyone, with every picture in place', async () => {
+  it('has free reactions + Apuração for everyone, with every picture in place', async () => {
     const { existsSync } = await import('node:fs');
-    const { STICKERS, stickersFor } = await import('../src/lib/chat/stickers');
-    expect(STICKERS).toHaveLength(36);
-    expect(stickersFor('PT')).toHaveLength(25);
-    expect(stickersFor('PL')).toHaveLength(20);
-    expect(stickersFor('none')).toHaveLength(9);
-    expect(stickersFor(null)).toHaveLength(9);
+    const { STICKERS, stickersFor, isFreeSticker } = await import('../src/lib/chat/stickers');
+    // 4 reactions + 9 Apuração + 16 PT + 20 PL
+    expect(STICKERS).toHaveLength(49);
+    expect(stickersFor('PT')).toHaveLength(29);
+    expect(stickersFor('PL')).toHaveLength(33);
+    expect(stickersFor('none')).toHaveLength(13);
+    expect(stickersFor(null)).toHaveLength(13);
+    expect(STICKERS.filter(isFreeSticker)).toHaveLength(13);
     for (const sticker of STICKERS)
-      expect(existsSync(`public${sticker.image}`), sticker.image).toBe(true);
+      if (sticker.image) expect(existsSync(`public${sticker.image}`), sticker.image).toBe(true);
     const state = instance(new NoSlowBus());
-    expect(await sendSticker(ana, 'apuracao-que-emocao', state, T0)).toMatchObject({ ok: true });
-    expect(await sendSticker(bia, 'apuracao-que-emocao', state, T0)).toMatchObject({ ok: true });
-    expect(await sendSticker(bia, '22-vamos-la', state, T0)).toMatchObject({ ok: true });
-    expect(await sendSticker(ana, '22-vamos-la', state, T0)).toMatchObject({
+    expect(await sendSticker(ana, 'emoji-fogo', state, T0)).toMatchObject({ ok: true });
+    expect(await sendSticker(bia, 'emoji-festa', state, T0)).toMatchObject({ ok: true });
+    expect(await sendSticker(ana, 'apuracao-que-emocao', state, T0 + 6_000)).toMatchObject({
+      ok: true,
+    });
+    expect(await sendSticker(bia, 'apuracao-que-emocao', state, T0 + 6_000)).toMatchObject({
+      ok: true,
+    });
+    expect(await sendSticker(bia, '22-vamos-la', state, T0 + 12_000)).toMatchObject({ ok: true });
+    expect(await sendSticker(ana, '22-vamos-la', state, T0 + 12_000)).toMatchObject({
       ok: false,
       status: 403,
     });
-    expect(await sendSticker(ana, '13-faz-o-l', state, T0)).toMatchObject({ ok: true });
-    expect(await sendSticker(bia, '13-faz-o-l', state, T0)).toMatchObject({
+    expect(await sendSticker(ana, '13-faz-o-l', state, T0 + 18_000)).toMatchObject({ ok: true });
+    expect(await sendSticker(bia, '13-faz-o-l', state, T0 + 18_000)).toMatchObject({
       ok: false,
       status: 403,
     });

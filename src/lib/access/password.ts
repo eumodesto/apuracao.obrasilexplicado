@@ -7,6 +7,7 @@ import {
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
+import { ensureSchema } from '@/lib/db/migrate';
 
 /**
  * Passwords are stored only as scrypt hashes, in their own table, so they never travel with the
@@ -64,6 +65,67 @@ export const cleanEmail = (value: unknown) => {
     .toLowerCase();
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 };
+
+/** Domains people mistype, with the one they meant. Mercado Pago's risk check sees the e-mail. */
+const DOMAIN_TYPOS: Record<string, string> = {
+  'gmai.com': 'gmail.com',
+  'gmial.com': 'gmail.com',
+  'gamil.com': 'gmail.com',
+  'gmaill.com': 'gmail.com',
+  'gmil.com': 'gmail.com',
+  'gnail.com': 'gmail.com',
+  'gmeil.com': 'gmail.com',
+  'gemail.com': 'gmail.com',
+  'gmail.con': 'gmail.com',
+  'gmail.co': 'gmail.com',
+  'gmail.com.br': 'gmail.com',
+  'hotmai.com': 'hotmail.com',
+  'hotmial.com': 'hotmail.com',
+  'hotmal.com': 'hotmail.com',
+  'hotmil.com': 'hotmail.com',
+  'homail.com': 'hotmail.com',
+  'hotmail.con': 'hotmail.com',
+  'outlok.com': 'outlook.com',
+  'outloook.com': 'outlook.com',
+  'outlook.con': 'outlook.com',
+  'yaho.com': 'yahoo.com',
+  'yahooo.com': 'yahoo.com',
+  'yaoo.com': 'yahoo.com',
+  'yahoo.con': 'yahoo.com',
+  'icloud.con': 'icloud.com',
+  'iclod.com': 'icloud.com',
+};
+
+/** Addresses we invent for accounts without one: never valid for a real payer. */
+const SYNTHETIC_DOMAIN = '@pagadores.portaleleicao.com.br';
+
+export type EmailCheck = { ok: true; email: string } | { ok: false; error: string };
+
+/**
+ * A real, deliverable-looking e-mail: the payer e-mail Mercado Pago uses to approve and notify
+ * the payment. Rejects bad formats, our own placeholder domain and common domain typos.
+ */
+export function checkEmail(value: unknown): EmailCheck {
+  const email = cleanEmail(value);
+  if (!email) return { ok: false, error: 'Digite um e-mail válido.' };
+  const [local, domain] = email.split('@');
+  if (
+    email.endsWith(SYNTHETIC_DOMAIN) ||
+    !local ||
+    local.length > 64 ||
+    !/^[a-z0-9._%+'-]+$/.test(local) ||
+    local.startsWith('.') ||
+    local.endsWith('.') ||
+    local.includes('..') ||
+    !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(domain) ||
+    domain.split('.').some((part) => !part || part.startsWith('-') || part.endsWith('-')) ||
+    domain.split('.').pop()!.length < 2
+  )
+    return { ok: false, error: 'Digite um e-mail válido.' };
+  const meant = DOMAIN_TYPOS[domain];
+  if (meant) return { ok: false, error: `Confira o e-mail: você quis dizer ${local}@${meant}?` };
+  return { ok: true, email };
+}
 
 /** Accounts created with e-mail and password: one id per e-mail (staff / admin / legacy). */
 export const emailAccountId = (email: string) => `email:${email}`;
@@ -126,12 +188,12 @@ export class PostgresPasswordStore implements PasswordStore {
   }
 
   private schema() {
-    this.ready ??= this.sql`
+    this.ready ??= ensureSchema(this.sql, 'access_passwords', 1, `
       CREATE TABLE IF NOT EXISTS access_passwords (
         user_id text PRIMARY KEY,
         hash text NOT NULL,
         updated_at timestamptz NOT NULL DEFAULT now()
-      )`.catch((error) => {
+      )`).catch((error) => {
       this.ready = null;
       throw error;
     });

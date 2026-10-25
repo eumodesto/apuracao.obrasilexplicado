@@ -37,12 +37,27 @@ const partyLabel = (party: string) => PARTY_WORDS[party.trim().toUpperCase()] ??
 
 /**
  * Left-column summary of a finished (or counting) round, from the national result. With
- * `shown = 0` it covers only the two finalists, as the 2nd round will.
+ * `shown = 0` it covers only the two finalists, as the 2nd round will. Before the first
+ * valid votes, still returns the two names at zero so the panel is not empty.
  */
 export function raceModel(snapshot: ElectionSnapshot | null, shown = 3): RaceModel | null {
-  const analysis = validVoteAnalysis(snapshot);
   const band = roundBand(snapshot);
-  if (!snapshot || !analysis || !band || analysis.candidates.length < 2) return null;
+  if (!snapshot || !band) return null;
+  const analysis = validVoteAnalysis(snapshot);
+  if (!analysis || analysis.candidates.length < 2) {
+    if ((snapshot.progress.validVotes ?? 0) > 0) return null;
+    return {
+      counted: snapshot.progress.percentageCounted,
+      gap: { points: 0, votes: 0 },
+      finalists: [band.headline.first, band.headline.second],
+      others: [],
+      rest: { count: 0, percentage: 0 },
+      total: 2,
+      validVotes: 0,
+      turnout: null,
+      blankAndNull: null,
+    };
+  }
   const [first, second] = analysis.candidates;
   const party = new Map(snapshot.candidates.map((c) => [c.id, c.party]));
   const finalists = new Set([band.left.id, band.right.id]);
@@ -59,6 +74,7 @@ export function raceModel(snapshot: ElectionSnapshot | null, shown = 3): RaceMod
       party: `${partyLabel(party.get(c.id) ?? '')} ${c.number}`.trim(),
       color: c.color,
       percentage: c.percentage,
+      votes: c.votes,
     })),
     rest: { count: rest.length, percentage: rest.reduce((sum, c) => sum + c.percentage, 0) },
     total: analysis.candidates.length,

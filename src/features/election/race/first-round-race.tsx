@@ -1,4 +1,5 @@
 import { countStartsAt } from '@/lib/access/config';
+import { projectionModel } from '@/features/election/projection/projection-model';
 import { firstRoundNational } from '@/lib/tse/first-round';
 import { countedLabel, RaceCards } from './race-cards';
 import { raceModel } from './race-model';
@@ -6,7 +7,8 @@ import { raceModel } from './race-model';
 /** Left column with the official 1st-round result, shown until the 2nd-round count opens. */
 export async function FirstRoundRace() {
   // Only the two finalists, as the 2nd round will show.
-  const model = raceModel(await firstRoundNational().catch(() => null), 0);
+  const snapshot = await firstRoundNational().catch(() => null);
+  const model = raceModel(snapshot, 0);
   const startsAt = new Date(countStartsAt());
   const hour = startsAt.toLocaleTimeString('pt-BR', {
     hour: 'numeric',
@@ -27,6 +29,8 @@ export async function FirstRoundRace() {
       // The curve is built from observations of the live count, so it starts on the 25th.
       series={[]}
       emptyChart={`A curva do 2º turno aparece aqui quando a apuração começar, em ${date}, às ${parseInt(hour, 10)}h.`}
+      // 1st round is finished: card explains projection no longer applies.
+      projection={projectionModel(snapshot)}
     />
   );
 }

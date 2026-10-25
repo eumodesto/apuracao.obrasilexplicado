@@ -28,18 +28,42 @@ export function GuestStart() {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
+    // One slow or failed answer must not strand the visitor on this screen: each attempt gives up
+    // after 12 s and a few retries run on their own. A visitor already created is resumed (same
+    // device id / resume token), so retrying never mints a second free minute.
+    const attempts = 4;
+    const open = async () => {
+      const resume = window.localStorage.getItem(GUEST_RESUME_KEY);
+      const deviceId = readOrCreateDeviceId();
+      let failure: unknown = null;
+      for (let attempt = 0; attempt < attempts && !cancelled; attempt++) {
+        if (attempt) await new Promise((done) => setTimeout(done, 1_000 * attempt));
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 12_000);
+        try {
+          const response = await fetch('/api/guest', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ resume, deviceId }),
+            signal: controller.signal,
+          });
+          const body = await response.json().catch(() => ({}));
+          if (response.ok) return body;
+          failure = typeof body.error === 'string' ? new Error(body.error) : null;
+          // A 4xx (e.g. rate limit) is a real answer: show it instead of retrying.
+          if (response.status < 500) break;
+        } catch {
+          // Timeout or network failure (browser-language message, not worth showing): try again.
+        } finally {
+          clearTimeout(timeout);
+        }
+      }
+      throw failure ?? new Error('Falha de conexão. Recarregue a página.');
+    };
     (async () => {
       try {
-        const resume = window.localStorage.getItem(GUEST_RESUME_KEY);
-        const deviceId = readOrCreateDeviceId();
-        const response = await fetch('/api/guest', {
-          method: 'POST',
-          credentials: 'same-origin',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ resume, deviceId }),
-        });
-        const body = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(body.error);
+        const body = await open();
         try {
           if (typeof body.resume === 'string')
             window.localStorage.setItem(GUEST_RESUME_KEY, body.resume);

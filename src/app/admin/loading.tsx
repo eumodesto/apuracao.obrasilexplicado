@@ -1,6 +1,6 @@
 import './admin.css';
 
-/** The admin area's own loading state (the root one draws the election panel). */
+/** The admin area's own loading state (root loading is a neutral spinner). */
 export default function AdminLoading() {
   return (
     <div className="admin">

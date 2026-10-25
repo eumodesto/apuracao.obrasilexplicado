@@ -1,12 +1,34 @@
 import { firstRoundNational } from '@/lib/tse/first-round';
 import { governorCandidate } from '@/lib/tse/governors';
-import { client, president } from '@/lib/tse/service';
+import { catalog, client } from '@/lib/tse/service';
+import type { ElectionSnapshot } from '@/lib/tse/types';
+import { resultUrl } from '@/lib/tse/urls';
+
 type Photo = { bytes: ArrayBuffer; type: string };
 const photos = new Map<string, Photo>();
 const pending = new Map<string, Promise<Photo | null>>();
 const retryAt = new Map<string, number>();
 let queue = Promise.resolve();
 export const runtime = 'nodejs';
+
+/**
+ * Resolve a candidate without calling `president()` / TSE `read`. Photos must never schedule a
+ * national poll — only reuse the in-memory cache already warmed by the election APIs.
+ */
+async function candidateForPhoto(id: string) {
+  const fromFirst = (await firstRoundNational().catch(() => null))?.candidates.find(
+    (candidate) => candidate.id === id,
+  );
+  if (fromFirst) return fromFirst;
+  const fromGov = await governorCandidate(id).catch(() => null);
+  if (fromGov) return fromGov;
+  const { config, geography } = await catalog();
+  if (!config.value || !geography?.value) return null;
+  const country = { type: 'country' as const, code: 'br', state: 'br', name: 'Brasil' };
+  const warm = client.peek<ElectionSnapshot>(resultUrl(config.value, country));
+  return warm?.value?.candidates.find((candidate) => candidate.id === id) ?? null;
+}
+
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!/^\d{1,20}$/.test(id)) return new Response(null, { status: 400 });
@@ -14,12 +36,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     if (Date.now() < Math.max(retryAt.get(id) ?? 0, client.cooldownUntil))
       return new Response(null, { status: 503 });
     const flight = (async () => {
-      const data = await president({});
-      // Candidates of the active round (President and governor runoffs), or of the 1st round.
-      const candidate =
-        data.snapshot?.candidates.find((c) => c.id === id) ??
-        (await firstRoundNational().catch(() => null))?.candidates.find((c) => c.id === id) ??
-        (await governorCandidate(id).catch(() => null));
+      const candidate = await candidateForPhoto(id);
       if (!candidate) return null;
       const previous = queue;
       let release!: () => void;

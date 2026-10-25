@@ -1,4 +1,7 @@
-import { snapshotResponse } from '@/lib/tse/snapshot-response';
+import { cachedSnapshotResponse } from '@/lib/tse/snapshot-response';
+
+/** The TSE data moves every ~30 s; one encoded copy per UF is shared by every viewer. */
+const SHARED_MS = 3_000;
 import { cachedMunicipalities, municipalities } from '@/lib/tse/municipal-map';
 import { withAccess } from '@/lib/access/guard';
 export const dynamic = 'force-dynamic';
@@ -9,8 +12,9 @@ async function get(request: Request) {
   if (!/^[a-z]{2}$/.test(uf) || uf === 'zz' || [...params.keys()].some((k) => k !== 'state'))
     return Response.json({ error: 'UF inválida' }, { status: 400 });
   try {
-    const data = await (uf === 'br' ? cachedMunicipalities() : municipalities(uf));
-    return snapshotResponse(request, data);
+    return await cachedSnapshotResponse(request, `municipalities:${uf}`, SHARED_MS, () =>
+      uf === 'br' ? cachedMunicipalities() : municipalities(uf),
+    );
   } catch {
     return Response.json(
       { error: 'Dados municipais temporariamente indisponíveis' },

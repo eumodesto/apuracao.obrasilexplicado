@@ -61,12 +61,26 @@ function useJson<T>(url: string, version: number) {
   });
   useEffect(() => {
     let live = true;
-    fetch(url, { cache: 'no-store' })
-      .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
-      .then((data: T) => live && setState({ url, data, error: false }))
-      .catch(() => live && setState((current) => ({ ...current, url, error: true })));
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    // A request that never answers must not leave "Carregando…" forever: give up after 15 s and
+    // try again a few times before showing the error.
+    const load = (attempt: number) => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15_000);
+      fetch(url, { cache: 'no-store', signal: controller.signal })
+        .then((response) => (response.ok ? response.json() : Promise.reject(response.status)))
+        .then((data: T) => live && setState({ url, data, error: false }))
+        .catch(() => {
+          if (!live) return;
+          if (attempt < 3) retry = setTimeout(() => load(attempt + 1), 1_500 * (attempt + 1));
+          else setState((current) => ({ ...current, url, error: true }));
+        })
+        .finally(() => clearTimeout(timeout));
+    };
+    load(0);
     return () => {
       live = false;
+      clearTimeout(retry);
     };
   }, [url, version]);
   // A new address (another page or search) never shows the previous one's rows.
@@ -194,9 +208,10 @@ function OverviewTab({ onModerate }: { onModerate: () => void }) {
 
 type UsersPage = { users: AdminUser[]; total: number; page: number; pageSize: number };
 
-/** Creates an account with e-mail and password; team e-mails included (they cannot sign up). */
-function NewUserForm({ onCreated }: { onCreated: (email: string) => void }) {
+/** Creates an account with username, e-mail and password; access already unlocked (no charge). */
+function NewUserForm({ onCreated }: { onCreated: (username: string) => void }) {
   const [open, setOpen] = useState(false);
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -207,6 +222,7 @@ function NewUserForm({ onCreated }: { onCreated: (email: string) => void }) {
         <button type="button" className="admin-button" onClick={() => setOpen(true)}>
           + Novo usuário
         </button>
+        <p className="admin-hint">Acesso liberado na hora · sem cobrança no Mercado Pago</p>
         {message && !message.error && <p className="admin-hint">{message.text}</p>}
       </div>
     );
@@ -217,35 +233,55 @@ function NewUserForm({ onCreated }: { onCreated: (email: string) => void }) {
         event.preventDefault();
         setBusy(true);
         setMessage(null);
+        const login = username.replace(/^@+/, '').trim();
         const result = await send('/api/admin/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
+          body: JSON.stringify({ username: login, email: email.trim(), password }),
         });
         setBusy(false);
         if (!result.ok) return setMessage({ error: true, text: result.error ?? 'Erro.' });
         setMessage({
           error: false,
-          text: `Conta ${email.trim().toLowerCase()} criada com acesso liberado. No primeiro acesso, a pessoa escolhe o nome de usuário.`,
+          text: `Conta @${login} criada com acesso liberado (sem Mercado Pago).`,
         });
-        onCreated(email.trim().toLowerCase());
+        onCreated(login);
+        setUsername('');
         setEmail('');
         setPassword('');
         setOpen(false);
       }}
     >
+      <label className="sr-only" htmlFor="new-username">
+        Nome de usuário
+      </label>
+      <input
+        id="new-username"
+        type="text"
+        value={username}
+        onChange={(event) => setUsername(event.target.value.replace(/^@+/, '').replace(/\s+/g, ''))}
+        placeholder="@usuário"
+        autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        maxLength={20}
+        required
+        autoFocus
+      />
       <label className="sr-only" htmlFor="new-email">
-        E-mail
+        E-mail (usado no Mercado Pago)
       </label>
       <input
         id="new-email"
         type="email"
         value={email}
-        onChange={(event) => setEmail(event.target.value)}
-        placeholder="E-mail"
+        onChange={(event) => setEmail(event.target.value.replace(/\s+/g, ''))}
+        placeholder="E-mail do usuário"
         autoComplete="off"
+        autoCapitalize="none"
+        spellCheck={false}
+        maxLength={254}
         required
-        autoFocus
       />
       <label className="sr-only" htmlFor="new-password">
         Senha
@@ -289,9 +325,9 @@ function UsersTab({ initialQuery }: { initialQuery: string }) {
         Usuários
       </h2>
       <NewUserForm
-        onCreated={(email) => {
-          setDraft(email);
-          setQuery(email);
+        onCreated={(username) => {
+          setDraft(username);
+          setQuery(username);
           setPage(1);
           setVersion((v) => v + 1);
         }}
@@ -369,7 +405,8 @@ function StatusChip({ user }: { user: AdminUser }) {
   if (user.pausedAt) return <span className="admin-chip is-paused">Suspensa</span>;
   if (user.admin) return <span className="admin-chip is-admin">Admin</span>;
   if (user.staff) return <span className="admin-chip is-admin">Equipe</span>;
-  if (user.paid) return <span className="admin-chip is-paid">Pago</span>;
+  if (user.granted) return <span className="admin-chip is-admin">Liberado</span>;
+  if (user.paid) return <span className="admin-chip is-paid">Pago (MP)</span>;
   if (!user.onboardedAt) return <span className="admin-chip">Sem cadastro</span>;
   return <span className="admin-chip">Grátis</span>;
 }
@@ -426,8 +463,12 @@ function UserRow({ user, onChange }: { user: AdminUser; onChange: () => void }) 
             <dd>{when(user.lastSeenAt)}</dd>
           </div>
           <div>
-            <dt>Pagou</dt>
-            <dd>{when(user.paidAt)}</dd>
+            <dt>Acesso</dt>
+            <dd>
+              {user.paidAt
+                ? `${user.granted ? 'Liberado (admin)' : 'Pago (Mercado Pago)'} · ${when(user.paidAt)}`
+                : '—'}
+            </dd>
           </div>
           <div>
             <dt>Tempo grátis</dt>

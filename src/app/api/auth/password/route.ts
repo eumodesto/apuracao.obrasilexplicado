@@ -35,7 +35,11 @@ export async function POST(request: Request) {
     );
   const result =
     mode === 'criar'
-      ? await signUp({ username: body?.username ?? body?.login, password: body?.password })
+      ? await signUp({
+          username: body?.username ?? body?.login,
+          password: body?.password,
+          email: body?.email,
+        })
       : await logIn({ login: body?.login, password: body?.password });
   if (!result.ok) return Response.json({ error: result.error }, { status: result.status });
   // Free minute already used as a visitor — or on this IP/device via another browser profile —

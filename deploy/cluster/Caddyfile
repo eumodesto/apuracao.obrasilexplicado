@@ -24,6 +24,23 @@
 	handle @stream {
 		import app
 	}
+
+	@nextstatic path /_next/static/*
+	handle @nextstatic {
+		header {
+			-Cache-Control
+			Cache-Control "public, max-age=31536000, immutable"
+		}
+		encode zstd gzip
+		import app
+	}
+
+	@assets path /maps/* /stickers/*
+	handle @assets {
+		encode zstd gzip
+		import app
+	}
+
 	handle {
 		encode zstd gzip
 		import app
