@@ -1,4 +1,4 @@
-import { mercadoPago, openPix } from '@/lib/access/billing';
+import { ensurePayerEmail, mercadoPago, openPix, PayerEmailError } from '@/lib/access/billing';
 import { devPaymentEnabled } from '@/lib/access/config';
 import { currentAccess, sessionProblem } from '@/lib/access/guard';
 import { purchaseFor } from '@/lib/access/purchase';
@@ -24,7 +24,9 @@ export async function POST(request: Request) {
   if (!mp && !devPaymentEnabled())
     return Response.json({ error: 'Pagamento indisponível no momento.' }, { status: 503 });
   try {
-    const payment = await openPix(access.user, accessStore(), mp, Date.now(), purchase.product);
+    const store = accessStore();
+    const user = mp ? await ensurePayerEmail(access.user, store, body?.email) : access.user;
+    const payment = await openPix(user, store, mp, Date.now(), purchase.product);
     return Response.json(
       {
         access: access.status,
@@ -40,6 +42,8 @@ export async function POST(request: Request) {
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
+    if (error instanceof PayerEmailError)
+      return Response.json({ error: error.message, code: 'email_required' }, { status: 409 });
     console.error('[billing] Pix charge failed', error);
     return Response.json(
       { error: 'Não foi possível gerar o Pix. Tente novamente.' },

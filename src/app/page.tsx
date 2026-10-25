@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { AccessGate } from '@/features/access/access-gate';
 import { GuestStart } from '@/features/access/guest-start';
 import '@/features/access/access.css';
-import { ChatDock } from '@/features/chat/chat';
+import { ChatDockLazy } from '@/features/chat/chat-dock-lazy';
 import { FirstAccess } from '@/features/election/first-access/first-access';
 import { emptyBootResult, readBootCache } from '@/features/election/first-access/read-boot-cache';
 import { FirstRoundRace } from '@/features/election/race/first-round-race';
@@ -12,6 +12,7 @@ import { FirstRoundBand } from '@/features/landing/round-band';
 import { countIsOpen, devPaymentEnabled, mercadoPagoPublicKey } from '@/lib/access/config';
 import { currentAccess } from '@/lib/access/guard';
 import { readSession } from '@/lib/access/session';
+
 export const dynamic = 'force-dynamic';
 export default async function Page() {
   const access = await currentAccess(await readSession(), undefined, undefined, { fresh: true });
@@ -56,7 +57,7 @@ export default async function Page() {
           )
         }
       />
-      <ChatDock />
+      <ChatDockLazy />
     </AccessGate>
   );
 }

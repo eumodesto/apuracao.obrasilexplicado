@@ -21,13 +21,14 @@ export function normalizeDeviceId(value: unknown): string | null {
 }
 
 /**
- * Keys that share one free-minute pool. IP covers switching browser profiles on the same
- * network; device id covers clearing cookies in the same profile.
+ * Keys that share one free-minute pool.
+ * Prefer the device id: mobile CGNAT puts thousands of people behind one IPv4, so an IP pool
+ * locked everyone on the same carrier the moment the first visitor burned the free minute.
+ * Fall back to IP only when the browser has not sent a device id yet.
  */
 export function freeQuotaKeys(ip: string, deviceId: string | null) {
-  const keys = [`ip:${ip || 'local'}`];
-  if (deviceId) keys.push(`dev:${deviceId}`);
-  return keys;
+  if (deviceId) return [`dev:${deviceId}`];
+  return [`ip:${ip || 'local'}`];
 }
 
 export async function readDeviceId(resumeDevice: string | null = null) {

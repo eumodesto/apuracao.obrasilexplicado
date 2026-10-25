@@ -18,14 +18,32 @@ export type Sticker = {
   parties?: string[];
   /** Title of the group in the tray. */
   pack?: string;
+  /**
+   * Free for anyone with chat access (free minute included): no paid unlock and no sticker credit.
+   * Party/paid packs stay locked behind access + envios.
+   */
+  free?: boolean;
+  /** Dark text on a light card (emoji reactions). Default is light text on a colored card. */
+  ink?: 'light' | 'dark';
 };
 
 /**
- * Every sticker people can send. The neutral "Apuração" pack is open to everyone (visitors and free
- * accounts are offered access when they tap one). Party packs (partyPack) are only in the tray for
- * people who chose that party at sign-up.
+ * Every sticker people can send. Free packs (Reações + Apuração) are open to everyone with chat
+ * access. Party packs only appear for people who chose that party at sign-up.
  */
 export const STICKERS: Sticker[] = [
+  ...emojiPack(
+    'Reações',
+    '#ecece8',
+    '#e4e4de',
+    [
+      ['fogo', '🔥', 'Fogo'],
+      ['festa', '🎉', 'Festa'],
+      ['uau', '😮', 'Uau'],
+      ['haha', '😄', 'Haha'],
+    ],
+    { free: true, ink: 'dark' },
+  ),
   ...sharedPack(null, 'apuracao', 'Apuração', [
     ['segura-coracao', 'Segura coração'],
     ['que-contagem', 'Que contagem!'],
@@ -36,7 +54,7 @@ export const STICKERS: Sticker[] = [
     ['que-emocao', 'Que emoção!'],
     ['atualiza-ai', 'Atualiza aí!'],
     ['hoje-ninguem-dorme', 'Hoje ninguém dorme'],
-  ]),
+  ], { free: true }),
   ...partyPack('PT', '13', '#c8102e', '#8f0f1d', [
     ['faz-o-l', 'Faz o L'],
     ['bandeira-lula', 'Bandeira Lula'],
@@ -67,8 +85,37 @@ export const STICKERS: Sticker[] = [
     ['kkk-forcado', 'Kkk forçado'],
     ['juntos-somos-mais', 'Juntos somos mais'],
     ['flavio-presidencial', 'Flávio 22'],
+    ['flavio-22', 'Flávio 22'],
+    ['defenda-o-brasil', 'Defenda o Brasil'],
+    ['estou-com-ele', 'Estou com ele até o fim!'],
+    ['urna-flavio-22', 'Flávio Bolsonaro 22'],
+    ['flavio-thug-22', 'Flávio 22'],
+    ['flavio-pistolas', 'Flávio Bolsonaro'],
+    ['votei-no-pai', 'Votei no pai, vou votar no filho'],
+    ['brasil-vai-vencer', 'O Brasil vai vencer'],
+    ['flavio-22-badge', 'Flávio Bolsonaro 22'],
   ]),
 ];
+
+/** Emoji reaction cards (no image file). */
+export function emojiPack(
+  title: string,
+  from: string,
+  to: string,
+  items: [id: string, emoji: string, text: string][],
+  options: { free?: boolean; ink?: 'light' | 'dark' } = {},
+): Sticker[] {
+  return items.map(([id, emoji, text]) => ({
+    id: `emoji-${id}`,
+    emoji,
+    text,
+    from,
+    to,
+    pack: title,
+    ...(options.free ? { free: true } : {}),
+    ...(options.ink ? { ink: options.ink } : {}),
+  }));
+}
 
 /** Picture stickers in public/stickers/<folder>/<name>.webp, for these parties (null: everyone). */
 export function sharedPack(
@@ -76,6 +123,7 @@ export function sharedPack(
   folder: string,
   title: string,
   items: [name: string, text: string][],
+  options: { free?: boolean } = {},
 ): Sticker[] {
   return items.map(([name, text]) => ({
     id: `${folder}-${name}`,
@@ -86,6 +134,7 @@ export function sharedPack(
     image: `/stickers/${folder}/${name}.webp`,
     ...(parties ? { parties } : {}),
     pack: title,
+    ...(options.free ? { free: true } : {}),
   }));
 }
 
@@ -120,3 +169,5 @@ export const stickerById = (id: string | null | undefined) =>
 /** Stickers this person can use (their party's packs); empty means none for now. */
 export const stickersFor = (party: string | null | undefined) =>
   STICKERS.filter((sticker) => canUseSticker(sticker, party));
+
+export const isFreeSticker = (sticker: Sticker | null | undefined) => !!sticker?.free;

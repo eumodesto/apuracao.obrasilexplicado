@@ -1,4 +1,5 @@
 import postgres from 'postgres';
+import { ensureSchema } from '@/lib/db/migrate';
 import type { ChatMessage, ChatStore } from './types';
 
 /** In-process store for local development and tests: the history lives while the server runs. */
@@ -95,7 +96,7 @@ export class PostgresChatStore implements ChatStore {
   }
 
   private schema() {
-    this.ready ??= this.sql`
+    this.ready ??= ensureSchema(this.sql, 'chat', 1, `
       CREATE TABLE IF NOT EXISTS chat_messages (
         id text PRIMARY KEY,
         user_id text NOT NULL,
@@ -117,9 +118,7 @@ export class PostgresChatStore implements ChatStore {
         created_at timestamptz NOT NULL,
         PRIMARY KEY (message_id, user_id)
       );
-    `
-      .simple()
-      .catch((error) => {
+    `).catch((error) => {
         this.ready = null;
         throw error;
       });

@@ -83,9 +83,11 @@ export type AccessStatus = {
   waiting: boolean;
   /** Team access (STAFF_EMAILS): always paid, never asked to pay. */
   staff: boolean;
+  /** Access granted by admin/staff (`admin:grant`), not Mercado Pago. */
+  granted: boolean;
   /** Visitor without an account ("Visitante 1234"): asked to sign up when the free time ends. */
   guest: boolean;
-  /** Stickers left; staff send without spending. */
+  /** Stickers left; staff / admin-granted send without spending. */
   stickers: number;
   user: { name: string; email: string; username: string | null };
 };
@@ -103,6 +105,8 @@ export interface AccessStore {
    */
   claimUsername(id: string, username: string): Promise<'ok' | 'taken' | 'missing'>;
   usernameTaken(username: string, exceptId?: string): Promise<boolean>;
+  /** Saves the payer e-mail Mercado Pago needs; false when the account does not exist. */
+  setEmail(id: string, email: string): Promise<boolean>;
   /** The account with this username (case-insensitive), for signing in by username. */
   userIdByUsername(username: string): Promise<string | null>;
   /**

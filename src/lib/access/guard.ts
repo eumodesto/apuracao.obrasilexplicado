@@ -135,7 +135,13 @@ export function withAccess<C>(handler: Handler<C>): Handler<C> {
     if (problem || !access) return problem!;
     if (access.status.state === 'locked')
       return Response.json(
-        { error: 'O tempo gratuito acabou.', access: access.status },
+        {
+          error: access.status.guest
+            ? 'Crie sua conta para continuar.'
+            : 'Libere o acesso para continuar.',
+          access: access.status,
+          code: access.status.guest ? 'signup' : 'payment_required',
+        },
         { status: 402 },
       );
     return handler(request, context);

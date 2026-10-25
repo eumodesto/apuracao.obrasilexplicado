@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
-import { devLoginEnabled } from '@/lib/access/config';
-import { isGuest } from '@/lib/access/access';
+import { isAdmin, isGuest } from '@/lib/access/access';
 import { activeSession } from '@/lib/access/auth';
+import { devLoginEnabled } from '@/lib/access/config';
 import { safeNext } from '@/lib/access/next';
 import { PanelPreview } from './panel-preview';
 import { PasswordForm } from './password-form';
@@ -24,13 +24,43 @@ export default async function LoginPage({
   const { erro, next: requested } = await searchParams;
   // Where to go after signing in (e.g. /admin); only paths of this site.
   const next = safeNext(requested);
+  const adminEntry = next === '/admin';
   const active = await activeSession();
-  // Panel opens as a visitor first — /login is only for real accounts (or errors /admin).
-  if (active && isGuest(active.user) && !erro) redirect('/');
+  // Already the administrator: open the area.
+  if (active && isAdmin(active.user) && adminEntry) redirect('/admin');
+  // Panel opens as a visitor first — /login is only for real accounts (or errors / admin e-mail).
+  if (active && isGuest(active.user) && !erro && !adminEntry) redirect('/');
   if (!active && !erro && next === '/') redirect('/');
   // A suspended or deleted account stays here, with the reason, instead of looping back.
-  if (active && !isGuest(active.user) && !active.user.pausedAt && !active.user.deletedAt)
+  // Admin entry keeps the form so a username session can switch to the e-mail account.
+  if (
+    active &&
+    !isGuest(active.user) &&
+    !active.user.pausedAt &&
+    !active.user.deletedAt &&
+    !adminEntry
+  )
     redirect(next);
+
+  if (adminEntry) {
+    return (
+      <main className="login-admin" id="conteudo">
+        <h1>Admin</h1>
+        {erro && errors[erro] && (
+          <p className="login-error" role="alert">
+            {errors[erro]}
+          </p>
+        )}
+        <PasswordForm next={next} variant="email" />
+        {active && (
+          <form method="post" action="/api/auth/logout?next=/admin">
+            <button type="submit">Sair da conta atual</button>
+          </form>
+        )}
+      </main>
+    );
+  }
+
   return (
     <main className="login" id="conteudo">
       <PanelPreview />
@@ -46,7 +76,7 @@ export default async function LoginPage({
             {errors[erro]}
           </p>
         )}
-        <PasswordForm next={next} />
+        <PasswordForm next={next} variant="username" />
         {devLoginEnabled() && (
           <form className="login-dev-form" method="post" action="/api/auth/dev">
             <input type="hidden" name="next" value={next} />

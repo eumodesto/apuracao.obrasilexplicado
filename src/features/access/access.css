@@ -414,8 +414,8 @@ body:has(.access-badge) {
     display: flex;
     align-items: center;
     min-height: 40px;
-    /* The access badge (Chat, name, Sair) floats over the right end: keep the text clear of it. */
-    padding: 6px 330px 6px 18px;
+    /* The access badge (online, Chat, name, Sair) floats over the right end: keep text clear of it. */
+    padding: 6px 430px 6px 18px;
     line-height: 1.4;
     /* Above the map and the chart, which can spill past the grid; below the badge (z 40). */
     position: relative;

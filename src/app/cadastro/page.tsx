@@ -32,6 +32,7 @@ export default async function SignUpPage() {
           noParty={NO_PARTY}
           suggestion={active.user.username ?? suggestUsername(active.user.name)}
           lockedUsername={active.user.username}
+          needsEmail={!active.user.email?.trim()}
         />
       </section>
     </main>

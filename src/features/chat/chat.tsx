@@ -16,6 +16,12 @@ import type { PublicMessage } from '@/lib/chat/types';
 import { NO_PARTY, PARTIES, partyByCode, type Party } from '@/lib/profile/parties';
 import { Avatar } from './avatar';
 import { LiveSummary } from '@/features/election/live-summary';
+import {
+  claimPanel,
+  openFloatingPanel,
+  releasePanel,
+  subscribePanels,
+} from '@/features/election/projection/floating-panels';
 import { publishOnlineParties } from './online-parties';
 import { PhotoCapture } from './photo-capture';
 import './chat.css';
@@ -26,6 +32,7 @@ const NO_PARTY_COLOR = '#87877e';
 const fromNow = (ms = 0) => Date.now() + ms;
 /** Wide screens keep the chat docked beside the panel; smaller ones open it over it. */
 const DOCKED_QUERY = '(min-width: 1600px)';
+const MOBILE_QUERY = '(max-width: 768px)';
 /** Within this distance from the bottom the list follows new messages. */
 const STICKY_PX = 80;
 
@@ -44,6 +51,12 @@ const subscribeDocked = (onChange: () => void) => {
   return () => query.removeEventListener('change', onChange);
 };
 const isDocked = () => window.matchMedia(DOCKED_QUERY).matches;
+const subscribeMobile = (onChange: () => void) => {
+  const query = window.matchMedia(MOBILE_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+};
+const isMobile = () => window.matchMedia(MOBILE_QUERY).matches;
 const noSubscription = () => () => {};
 const badgeSlot = () => document.getElementById(BADGE_SLOT_ID);
 
@@ -59,6 +72,8 @@ export function ChatDock() {
   const { status, offerAccess, buyStickers, setStickers } = useAccess();
   // Open by default where it docks beside the panel; afterwards the reader decides.
   const docked = useSyncExternalStore(subscribeDocked, isDocked, () => false);
+  const mobile = useSyncExternalStore(subscribeMobile, isMobile, () => false);
+  const claimed = useSyncExternalStore(subscribePanels, openFloatingPanel, () => null);
   const [choice, setChoice] = useState<boolean | null>(null);
   const open = choice ?? docked;
   // The launcher lives in the floating badge rendered by AccessGate.
@@ -114,57 +129,71 @@ export function ChatDock() {
     };
   }, [open, scrollToEnd]);
 
+  // SSE: connect at once when the chat is open (desktop dock); otherwise wait a few seconds so
+  // the election panel's first paint and TSE polls are not competing with chat history.
   useEffect(() => {
-    const source = new EventSource('/api/chat/stream');
+    let source: EventSource | null = null;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
     const data = (event: Event) => JSON.parse((event as MessageEvent).data);
-    source.addEventListener('open', () => setConnected(true));
-    source.addEventListener('error', () => setConnected(false));
-    source.addEventListener('hello', (event) => {
-      const body = data(event);
-      setMessages((current) => merge(current, body.messages));
-      setOnline(body.online);
-      publishOnlineParties(body.parties);
-      setMe(body.me);
-      setCanWrite(body.canWrite);
-      setModerator(body.moderator === true);
-      setMyPhoto(body.photo ?? null);
-      setMyParty(body.party ?? null);
-      setConnected(true);
-    });
-    source.addEventListener('message', (event) => {
-      const { message } = data(event) as { message: PublicMessage };
-      setMessages((current) => merge(current, [message]));
-      if (!openRef.current || !atBottomRef.current) setUnread((count) => count + 1);
-    });
-    source.addEventListener('delete', (event) => {
-      const { id } = data(event);
-      setMessages((current) => current.filter((message) => message.id !== id));
-    });
-    source.addEventListener('online', (event) => {
-      const body = data(event);
-      setOnline(body.online);
-      publishOnlineParties(body.parties);
-    });
-    source.addEventListener('access', (event) => setCanWrite(data(event).canWrite));
-    source.addEventListener('end', (event) => {
-      source.close();
-      setConnected(false);
-      const { code } = data(event);
-      // A full navigation also stops the panel's other polls.
-      const target =
-        code === 'replaced'
-          ? '/login?erro=outro-aparelho'
-          : code === 'onboarding'
-            ? '/cadastro'
-            : code === 'paused'
-              ? '/login?erro=suspensa'
-              : code === 'deleted'
-                ? '/login?erro=excluida'
-                : null;
-      if (target) window.location.assign(target);
-    });
-    return () => source.close();
-  }, []);
+    const connect = () => {
+      if (cancelled || source) return;
+      source = new EventSource('/api/chat/stream');
+      source.addEventListener('open', () => setConnected(true));
+      source.addEventListener('error', () => setConnected(false));
+      source.addEventListener('hello', (event) => {
+        const body = data(event);
+        setMessages((current) => merge(current, body.messages));
+        setOnline(body.online);
+        publishOnlineParties(body.parties);
+        setMe(body.me);
+        setCanWrite(body.canWrite);
+        setModerator(body.moderator === true);
+        setMyPhoto(body.photo ?? null);
+        setMyParty(body.party ?? null);
+        setConnected(true);
+      });
+      source.addEventListener('message', (event) => {
+        const { message } = data(event) as { message: PublicMessage };
+        setMessages((current) => merge(current, [message]));
+        if (!openRef.current || !atBottomRef.current) setUnread((count) => count + 1);
+      });
+      source.addEventListener('delete', (event) => {
+        const { id } = data(event);
+        setMessages((current) => current.filter((message) => message.id !== id));
+      });
+      source.addEventListener('online', (event) => {
+        const body = data(event);
+        setOnline(body.online);
+        publishOnlineParties(body.parties);
+      });
+      source.addEventListener('access', (event) => setCanWrite(data(event).canWrite));
+      source.addEventListener('end', (event) => {
+        source?.close();
+        setConnected(false);
+        const { code } = data(event);
+        // A full navigation also stops the panel's other polls.
+        const target =
+          code === 'replaced'
+            ? '/login?erro=outro-aparelho'
+            : code === 'onboarding'
+              ? '/cadastro'
+              : code === 'paused'
+                ? '/login?erro=suspensa'
+                : code === 'deleted'
+                  ? '/login?erro=excluida'
+                  : null;
+        if (target) window.location.assign(target);
+      });
+    };
+    if (open) connect();
+    else timer = setTimeout(connect, 2500);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+      source?.close();
+    };
+  }, [open]);
 
   // Follow new messages only while the reader is at the bottom.
   useLayoutEffect(() => {
@@ -182,7 +211,23 @@ export function ChatDock() {
   const setOpen = (next: boolean) => {
     setChoice(next);
     if (next && atBottomRef.current) setUnread(0);
+    if (next && mobile) claimPanel('chat');
+    else if (!next) releasePanel('chat');
   };
+
+  // Phones: Projeção claimed the viewport → close chat so both are not full overlays.
+  useEffect(() => {
+    if (mobile && claimed === 'projection' && open) setChoice(false);
+  }, [claimed, mobile, open]);
+
+  useEffect(() => {
+    if (!open) {
+      releasePanel('chat');
+      return;
+    }
+    if (mobile) claimPanel('chat');
+    else releasePanel('chat');
+  }, [open, mobile]);
 
   const sendReport = async (id: string) => {
     setReport({ id, state: 'sending' });
@@ -210,35 +255,56 @@ export function ChatDock() {
   const myColor = partyByCode(myParty)?.color ?? NO_PARTY_COLOR;
   const myNumber = partyByCode(myParty)?.number;
 
-  const launcher = (
-    <button
-      type="button"
-      className={open ? 'chat-launcher is-open' : 'chat-launcher'}
-      onClick={() => setOpen(!open)}
-      aria-expanded={open}
-      aria-controls="chat-panel"
-    >
-      <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-        <path
-          d="M4 5h16v11H9l-5 4V5Z"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
-      Chat
-      {unread > 0 && !open && (
-        <span className="chat-launcher-count" aria-label={`${unread} mensagens novas`}>
-          {unread > 99 ? '99+' : unread}
-        </span>
-      )}
-    </button>
+  const presenceLabel =
+    online === null
+      ? 'Contando quem está online'
+      : `${online.toLocaleString('pt-BR')} ${online === 1 ? 'pessoa' : 'pessoas'} agora`;
+
+  const badge = (
+    <>
+      <span className="chat-presence" role="status" aria-live="polite" title={presenceLabel}>
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.75"
+            strokeLinejoin="round"
+          />
+          <circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" strokeWidth="1.75" />
+        </svg>
+        <b>{online === null ? '—' : online.toLocaleString('pt-BR')}</b>
+        <span>{online === 1 ? 'pessoa agora' : 'pessoas agora'}</span>
+      </span>
+      <button
+        type="button"
+        className={open ? 'chat-launcher is-open' : 'chat-launcher'}
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls="chat-panel"
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M4 5h16v11H9l-5 4V5Z"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinejoin="round"
+          />
+        </svg>
+        Chat
+        {unread > 0 && !open && (
+          <span className="chat-launcher-count" aria-label={`${unread} mensagens novas`}>
+            {unread > 99 ? '99+' : unread}
+          </span>
+        )}
+      </button>
+    </>
   );
 
   return (
     <>
-      {slot && createPortal(launcher, slot)}
+      {slot && createPortal(badge, slot)}
       <aside
         id="chat-panel"
         className={['chat-panel', open && 'is-open', full && 'is-full'].filter(Boolean).join(' ')}
@@ -414,7 +480,7 @@ export function ChatDock() {
             onPhoto={() => setCapturing(true)}
             onSent={(message) => setMessages((current) => merge(current, [message]))}
             paid={status.state === 'paid'}
-            staff={status.staff}
+            staff={status.staff || status.granted}
             stickers={status.stickers}
             onStickers={setStickers}
             onBuy={buyStickers}
@@ -422,10 +488,21 @@ export function ChatDock() {
           />
         ) : (
           <div className="chat-locked">
-            <p>Seu tempo grátis acabou.</p>
-            <button type="button" onClick={offerAccess}>
-              Liberar o acesso · {brl(status.price)}
-            </button>
+            {status.guest ? (
+              <>
+                <p>Crie sua conta para continuar no chat.</p>
+                <button type="button" onClick={offerAccess}>
+                  Criar conta
+                </button>
+              </>
+            ) : (
+              <>
+                <p>Libere o acesso para continuar no chat.</p>
+                <button type="button" onClick={offerAccess}>
+                  Liberar o acesso · {brl(status.price)}
+                </button>
+              </>
+            )}
           </div>
         )}
       </aside>
@@ -459,7 +536,7 @@ function StickerCard({ sticker }: { sticker: Sticker }) {
     );
   return (
     <span
-      className="chat-sticker"
+      className={sticker.ink === 'dark' ? 'chat-sticker is-ink-dark' : 'chat-sticker'}
       style={{ '--from': sticker.from, '--to': sticker.to } as React.CSSProperties}
       role="img"
       aria-label={`Figurinha: ${sticker.text}`}
@@ -496,11 +573,11 @@ function Composer({
   onSent: (message: PublicMessage) => void;
   /** Opens the camera / upload to change the profile photo. */
   onPhoto: () => void;
-  /** Paid access: may use stickers. */
+  /** Paid access: may use party/paid stickers. */
   paid: boolean;
-  /** Team: stickers without spending. */
+  /** Team: paid stickers without spending. */
   staff: boolean;
-  /** Stickers left in the packs. */
+  /** Paid sticker credits left. */
   stickers: number;
   onStickers: (stickers: number) => void;
   /** Opens the sticker shop. */
@@ -612,20 +689,23 @@ function Composer({
         >
           <div className="chat-stickers-head">
             <p>
-              {hasPack && paid && waiting > 0 ? (
+              {hasPack && waiting > 0 ? (
                 <span className="chat-stickers-wait">⏱ Aguarde {waiting}s para enviar</span>
               ) : !hasPack ? (
                 'Ainda não há figurinhas para o seu partido'
-              ) : !paid ? (
-                'Figurinhas são para quem liberou o acesso'
               ) : staff ? (
                 'Figurinhas da equipe · à vontade'
-              ) : stickers > 0 ? (
-                `Você tem ${stickers} ${stickers === 1 ? 'envio' : 'envios'}`
+              ) : paid && stickers > 0 ? (
+                `Grátis + ${stickers} ${stickers === 1 ? 'envio' : 'envios'} exclusivos`
+              ) : paid ? (
+                'Figurinhas grátis · exclusivas pedem novos envios'
               ) : (
-                'Compre envios para mandar figurinhas'
+                'Figurinhas grátis · toque para enviar'
               )}
-              {hasPack && paid && waiting === 0 && (staff || stickers > 0) && (
+              {hasPack && waiting === 0 && !paid && (
+                <small> · packs do partido pedem acesso</small>
+              )}
+              {hasPack && waiting === 0 && paid && (staff || stickers > 0) && (
                 <small> · toque para enviar</small>
               )}
             </p>
@@ -663,33 +743,41 @@ function Composer({
               <div key={group.title ?? 'all'}>
                 {group.title && <p className="chat-stickers-group">{group.title}</p>}
                 <div className="chat-stickers-grid">
-                  {group.list.map((sticker) => (
-                    <button
-                      key={sticker.id}
-                      type="button"
-                      disabled={sending}
-                      // Slow mode: not disabled, so hovering shows the countdown on the sticker.
-                      aria-disabled={waiting > 0 || undefined}
-                      data-wait={paid && waiting > 0 ? `${waiting}s` : undefined}
-                      // No access yet: the access offer; no stickers left: the sticker shop.
-                      onClick={() =>
-                        !paid
-                          ? onNeedAccess()
-                          : waiting > 0
+                  {group.list.map((sticker) => {
+                    const free = !!sticker.free;
+                    const lockedPaid = !free && !paid;
+                    const needsCredit = !free && paid && !staff && stickers <= 0;
+                    return (
+                      <button
+                        key={sticker.id}
+                        type="button"
+                        disabled={sending}
+                        // Slow mode: not disabled, so hovering shows the countdown on the sticker.
+                        aria-disabled={waiting > 0 || undefined}
+                        data-wait={waiting > 0 ? `${waiting}s` : undefined}
+                        data-locked={lockedPaid || needsCredit || undefined}
+                        // Free: send. Paid pack without access: offer. No credits: shop.
+                        onClick={() =>
+                          waiting > 0
                             ? undefined
-                            : !staff && stickers <= 0
-                              ? onBuy()
-                              : post({ sticker: sticker.id })
-                      }
-                      aria-label={
-                        paid && waiting > 0
-                          ? `Aguarde ${waiting} segundos para enviar: ${sticker.text}`
-                          : `Enviar figurinha: ${sticker.text}`
-                      }
-                    >
-                      <StickerCard sticker={sticker} />
-                    </button>
-                  ))}
+                            : lockedPaid
+                              ? onNeedAccess()
+                              : needsCredit
+                                ? onBuy()
+                                : post({ sticker: sticker.id })
+                        }
+                        aria-label={
+                          waiting > 0
+                            ? `Aguarde ${waiting} segundos para enviar: ${sticker.text}`
+                            : lockedPaid
+                              ? `Liberar acesso para enviar: ${sticker.text}`
+                              : `Enviar figurinha: ${sticker.text}`
+                        }
+                      >
+                        <StickerCard sticker={sticker} />
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             ))}

@@ -18,3 +18,9 @@ next-env.d.ts
 
 # Original sticker art (large); the site serves resized copies from public/stickers.
 figurinhas-neutras/
+
+# Static files published for Caddy (deploy/publish-static.sh)
+/static
+
+# Scratch files from manual deploys
+.tmp-*

@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { mercadoPagoConfig, PIX_EXPIRATION_MINUTES, siteUrl } from './config';
 import { forgetAccess } from './guard';
+import { checkEmail } from './password';
 import { MercadoPago, paymentStatus, type CardInput, type MercadoPagoPayment } from './mercadopago';
 import { accessProduct, type Product } from './products';
 import type { AccessStore, AccessUser, PixPayment } from './types';
@@ -13,6 +14,39 @@ export const mercadoPago = () => {
 /** Mercado Pago only calls public HTTPS addresses, so localhost relies on status polling. */
 export function webhookUrl(base = siteUrl()) {
   return base.startsWith('https://') ? `${base}/api/billing/webhook` : null;
+}
+
+/** The account has no usable e-mail, and Mercado Pago needs a real one from the payer. */
+export class PayerEmailError extends Error {
+  constructor(message = 'Informe um e-mail válido para pagar.') {
+    super(message);
+    this.name = 'PayerEmailError';
+  }
+}
+
+/**
+ * The payer e-mail Mercado Pago gets: the account's real e-mail, or `fallback` (the one typed at
+ * checkout). Never an invented address: Mercado Pago uses it to approve, notify and score fraud
+ * risk, so a placeholder or typo (`@gmai.com`) gets payments rejected.
+ */
+export function payerEmailFor(user: Pick<AccessUser, 'email'>, fallback?: string) {
+  const own = checkEmail(user.email);
+  if (own.ok) return own.email;
+  const typed = fallback ? checkEmail(fallback) : null;
+  if (typed?.ok) return typed.email;
+  throw new PayerEmailError(typed && !typed.ok ? typed.error : undefined);
+}
+
+/**
+ * Before charging through Mercado Pago: makes sure the account has a real e-mail, saving the one
+ * typed at checkout when it is missing or invalid (admin-created and older accounts).
+ */
+export async function ensurePayerEmail(user: AccessUser, store: AccessStore, typed?: unknown) {
+  if (checkEmail(user.email).ok) return user;
+  const checked = checkEmail(typed);
+  if (!checked.ok) throw new PayerEmailError(typed ? checked.error : undefined);
+  await store.setEmail(user.id, checked.email);
+  return { ...user, email: checked.email };
 }
 
 /**
@@ -43,7 +77,7 @@ export async function openPix(
         ...fromMercadoPago(
           await mp.createPix({
             amount: product.amount,
-            email: user.email,
+            email: payerEmailFor(user),
             userId: user.id,
             description: product.description,
             expiresAt,
@@ -91,7 +125,7 @@ export async function payWithCard(
     ? await mp.createCard({
         ...card,
         amount: product.amount,
-        email: user.email || card.email || '',
+        email: payerEmailFor(user, card.email),
         userId: user.id,
         description: product.description,
         notificationUrl: webhookUrl(),
@@ -171,15 +205,28 @@ export async function applyPayment(
   return true;
 }
 
-/** Checks the user's latest pending charge with Mercado Pago (covers missed or local webhooks). */
+/** True when the id is a real Mercado Pago payment id (never `admin:grant` / `staff:grant`). */
+export function isMercadoPagoPaymentId(id: string) {
+  return /^\d+$/.test(id);
+}
+
+/**
+ * Checks a pending charge with Mercado Pago (covers missed or local webhooks): the one the screen
+ * is watching when `paymentId` is given, otherwise the user's latest. Watching by id matters: a
+ * card attempt made after the Pix opened becomes the latest, and the paid Pix must still count.
+ */
 export async function refreshPayment(
   user: AccessUser,
   store: AccessStore,
   mp: MercadoPago | null,
   now = Date.now(),
+  paymentId?: string | null,
 ) {
-  const latest = await store.latestPayment(user.id);
-  if (!latest || latest.status !== 'pending' || !mp) return latest;
-  await applyPayment(await mp.getPayment(latest.id), store, now);
-  return store.getPayment(latest.id);
+  const payment = paymentId ? await store.getPayment(paymentId) : await store.latestPayment(user.id);
+  if (!payment || payment.userId !== user.id) return null;
+  if (payment.status !== 'pending' || !mp) return payment;
+  // Admin/staff grants live on the user row only — never call Mercado Pago with those ids.
+  if (!isMercadoPagoPaymentId(payment.id)) return payment;
+  await applyPayment(await mp.getPayment(payment.id), store, now);
+  return store.getPayment(payment.id);
 }

@@ -56,6 +56,15 @@ summary:focus-visible {
 ::selection {
   background: #f5c51880;
 }
+/* Shared soft-nav fallback (see app/loading.tsx); not the election BootShell. */
+.route-loading {
+  display: grid;
+  place-items: center;
+  min-height: 100dvh;
+  margin: 0;
+  color: var(--muted);
+  font: 15px/1.4 var(--font-sans);
+}
 .skip-link {
   position: absolute;
   left: 20px;

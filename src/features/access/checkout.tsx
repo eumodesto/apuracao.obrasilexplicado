@@ -26,12 +26,15 @@ export function Checkout({
   item,
   publicKey,
   simulated,
+  email = '',
   onPaid,
   onPixReady,
 }: {
   item: CheckoutItem;
   publicKey: string | null;
   simulated: boolean;
+  /** The account's e-mail: Mercado Pago needs a real one from the payer. */
+  email?: string;
   onPaid: () => void;
   /** When set, Pix QR is handed to the parent instead of rendering inline. */
   onPixReady?: (pix: PixCharge) => void;
@@ -57,11 +60,18 @@ export function Checkout({
         <PixPane
           item={item}
           simulated={simulated}
+          email={email}
           onPaid={onPaid}
           onPixReady={onPixReady}
         />
       ) : (
-        <CardPane item={item} publicKey={publicKey} simulated={simulated} onPaid={onPaid} />
+        <CardPane
+          item={item}
+          publicKey={publicKey}
+          simulated={simulated}
+          email={email}
+          onPaid={onPaid}
+        />
       )}
     </div>
   );
@@ -70,14 +80,19 @@ export function Checkout({
 function PixPane({
   item,
   simulated,
+  email,
   onPaid,
   onPixReady,
 }: {
   item: CheckoutItem;
   simulated: boolean;
+  email: string;
   onPaid: () => void;
   onPixReady?: (pix: PixCharge) => void;
 }) {
+  const [typed, setTyped] = useState('');
+  // Accounts created without an e-mail (or a bad one) must give one before paying.
+  const [needEmail, setNeedEmail] = useState(!email.includes('@'));
   const [pix, setPix] = useState<PixCharge | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -89,10 +104,16 @@ function PixPane({
       const response = await fetch('/api/billing/pix', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item.pack ? { pack: item.pack } : {}),
+        body: JSON.stringify({
+          ...(item.pack ? { pack: item.pack } : {}),
+          ...(needEmail ? { email: typed.trim() } : {}),
+        }),
       });
       const body = await response.json();
-      if (!response.ok) throw new Error(body.error);
+      if (!response.ok) {
+        if (body.code === 'email_required') setNeedEmail(true);
+        throw new Error(body.error);
+      }
       if (!item.pack && body.access?.state === 'paid') return onPaid();
       if (onPixReady) return onPixReady(body.payment as PixCharge);
       setPix(body.payment);
@@ -111,7 +132,33 @@ function PixPane({
             {error}
           </p>
         )}
-        <button type="button" className="paywall-pay" onClick={open} disabled={loading}>
+        {needEmail && (
+          <>
+            <label className="paywall-code-label" htmlFor="payer-email">
+              Seu e-mail (o Mercado Pago confirma o pagamento por ele)
+            </label>
+            <div className="paywall-code">
+              <input
+                id="payer-email"
+                type="email"
+                value={typed}
+                onChange={(event) => setTyped(event.target.value.replace(/\s+/g, ''))}
+                placeholder="voce@exemplo.com"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={254}
+                required
+              />
+            </div>
+          </>
+        )}
+        <button
+          type="button"
+          className="paywall-pay"
+          onClick={open}
+          disabled={loading || (needEmail && !typed.includes('@'))}
+        >
           {loading ? 'Gerando o Pix…' : `Pagar ${brl(item.amount)} com Pix`}
         </button>
       </div>
@@ -152,7 +199,7 @@ export function PixPaymentPanel({
     let timer: ReturnType<typeof setTimeout>;
     const check = async () => {
       try {
-        const response = await fetch('/api/billing/status');
+        const response = await fetch(`/api/billing/status?id=${encodeURIComponent(pix.id)}`);
         const body = await response.json();
         if (stopped) return;
         if (body.paymentStatus === 'approved' || (!pack && body.access?.state === 'paid'))
@@ -273,11 +320,13 @@ function CardPane({
   item,
   publicKey,
   simulated,
+  email,
   onPaid,
 }: {
   item: CheckoutItem;
   publicKey: string | null;
   simulated: boolean;
+  email: string;
   onPaid: () => void;
 }) {
   const container = `card-brick-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
@@ -311,7 +360,10 @@ function CardPane({
     loadSdk()
       .then((MercadoPago) =>
         new MercadoPago(publicKey, { locale: 'pt-BR' }).bricks().create('cardPayment', container, {
-          initialization: { amount: item.amount },
+          initialization: {
+            amount: item.amount,
+            ...(email.includes('@') ? { payer: { email } } : {}),
+          },
           customization: {
             visual: { style: { theme: 'dark' } },
             paymentMethods: { maxInstallments: 1 },

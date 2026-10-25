@@ -87,6 +87,8 @@ services:
       EXTRA_DOMAINS: ${EXTRA_DOMAINS:-}
     volumes:
       - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Static files served by Caddy itself; filled by deploy/publish-static.sh.
+      - ./static:/srv/static:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on:

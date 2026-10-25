@@ -1,9 +1,10 @@
-import { hasPaidAccess, isAdmin, isStaff } from '@/lib/access/access';
+import { hasPaidAccess, isAdmin, isGrantedAccess, isStaff } from '@/lib/access/access';
 import type { AccessUser } from '@/lib/access/types';
 import { photoRef } from '@/lib/profile/photo';
 
 /** What the admin screens show about an account. */
 export function adminUser(user: AccessUser, now = Date.now()) {
+  const granted = isGrantedAccess(user);
   return {
     id: user.id,
     email: user.email,
@@ -13,6 +14,8 @@ export function adminUser(user: AccessUser, now = Date.now()) {
     photo: photoRef(user),
     paid: hasPaidAccess(user),
     paidAt: user.paidAt,
+    /** Unlocked by admin/staff — no Mercado Pago charge. */
+    granted,
     staff: isStaff(user),
     admin: isAdmin(user),
     freeSecondsUsed: Math.round(user.freeSecondsUsed),

@@ -73,8 +73,17 @@ export class MercadoPago {
       }),
       signal: AbortSignal.timeout(15000),
     });
-    if (!response.ok) throw new Error(`Mercado Pago recusou a cobrança (${response.status}).`);
-    const payment = toPayment(await response.json());
+    const body = await response.json().catch(() => null);
+    if (!response.ok) {
+      const detail =
+        body && typeof body === 'object' && 'message' in body
+          ? String((body as { message?: string }).message ?? '')
+          : '';
+      throw new Error(
+        `Mercado Pago recusou a cobrança (${response.status})${detail ? `: ${detail}` : ''}.`,
+      );
+    }
+    const payment = toPayment(body as RawPayment);
     if (!payment.qrCode) throw new Error('Mercado Pago não retornou o código Pix.');
     return payment;
   }

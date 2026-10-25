@@ -1,3 +1,63 @@
+/* Plain admin sign-in: no panel preview, no marketing card. */
+.login-admin {
+  box-sizing: border-box;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  align-content: start;
+  gap: 16px;
+  width: 100%;
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 48px 16px max(48px, env(safe-area-inset-bottom));
+  background: #fff;
+  color: #111;
+  font: 15px/1.4 system-ui, sans-serif;
+}
+@media (max-width: 480px) {
+  .login-admin {
+    max-width: none;
+    padding: 28px 16px max(28px, env(safe-area-inset-bottom));
+  }
+}
+.login-admin h1 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 600;
+}
+.login-admin .login-label {
+  color: #333;
+}
+.login-admin .login-input {
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+}
+.login-admin .login-submit {
+  background: #111;
+  color: #fff;
+}
+.login-admin .login-submit:hover {
+  background: #333;
+}
+.login-admin .login-fine,
+.login-admin .login-fine a {
+  color: #666;
+}
+.login-admin .login-error {
+  margin: 0;
+  color: #b00020;
+}
+.login-admin form button[type='submit']:not(.login-submit) {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #666;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .login {
   position: relative;
   min-height: 100vh;

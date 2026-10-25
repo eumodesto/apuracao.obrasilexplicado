@@ -23,6 +23,7 @@ import { RoundBand } from '@/features/landing/round-band-view';
 import { roundBand } from '@/features/landing/round-band-model';
 import { countedLabel, RaceCards, RaceWaiting, type ChartSeries } from '../race/race-cards';
 import { raceModel } from '../race/race-model';
+import { projectionModel } from '@/features/election/projection/projection-model';
 import { RegionBoard } from '../regions/region-board';
 import { aggregateRegion, REGION_NAMES, type RegionRowModel } from '@/lib/tse/region-rows';
 type Moment = {
@@ -509,6 +510,7 @@ export function ElectionCockpit({
     contextState?.updatedAt;
   const liveBand = roundBand(snapshot ?? null);
   const race = raceModel(snapshot ?? null);
+  const projection = projectionModel(snapshot ?? null);
   const raceTag = `${snapshot?.turn ?? '2'}º turno · ${countedLabel(snapshot?.progress.percentageCounted ?? 0)} apurado`;
   // The chart follows the observed moments up to the one on screen (all of them when live).
   const observed = timeline.slice(0, Math.max(0, selectedIndex) + 1);
@@ -639,7 +641,8 @@ export function ElectionCockpit({
           <span>Última tentativa: {time(live.telemetry.attemptedAt)}</span>
           <p>
             Revalidar cache não significa novos votos. Cartografia: IBGE, malha municipal
-            simplificada; zonas não são bairros. Histórico observado, sem projeções.{' '}
+            simplificada; zonas não são bairros. O gráfico usa só observações reais; a
+            projeção fica no card separado (modelo próprio).{' '}
             {payload?.temporary
               ? 'Armazenamento temporário por instância: o histórico pode reiniciar.'
               : 'Registro em arquivo local.'}
@@ -663,6 +666,7 @@ export function ElectionCockpit({
             series={series}
             emptyChart="A curva aparece após duas observações reais da apuração. Nenhum dado é inventado."
             allCandidates={snapshot?.turn === '1'}
+            projection={projection}
             note={
               stale && !historyId && snapshot?.status !== 'finished'
                 ? `Último dado válido preservado às ${time(official)}.`
@@ -670,7 +674,11 @@ export function ElectionCockpit({
             }
           />
         ) : (
-          <RaceWaiting tag={raceTag} text="Aguardando os primeiros votos válidos do TSE." />
+          <RaceWaiting
+            tag={raceTag}
+            text="Aguardando os primeiros votos válidos do TSE."
+            projection={projection}
+          />
         )}
         <section
           className="map-panel"

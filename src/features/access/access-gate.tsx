@@ -1,12 +1,31 @@
 'use client';
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { PasswordForm } from '@/app/login/password-form';
+import {
+  createContext,
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import '@/app/login/login.css';
 import { STICKER_PACKS } from '@/lib/access/packs';
 import type { AccessStatus } from '@/lib/access/types';
-import { Checkout, PixPaymentPanel, type CheckoutItem, type PixCharge } from './checkout';
+import type { CheckoutItem, PixCharge } from './checkout';
 import { brl, clock } from './format';
 import './access.css';
+
+/** Paywall / shop JS (Mercado Pago Brick, login form) stays off the election first paint. */
+const PasswordForm = lazy(() =>
+  import('@/app/login/password-form').then((module) => ({ default: module.PasswordForm })),
+);
+const Checkout = lazy(() =>
+  import('./checkout').then((module) => ({ default: module.Checkout })),
+);
+const PixPaymentPanel = lazy(() =>
+  import('./checkout').then((module) => ({ default: module.PixPaymentPanel })),
+);
 
 /** Also how fast a device notices that the account signed in somewhere else. */
 // Every 20 s: result requests also count watched time, so this mostly checks the session.
@@ -35,7 +54,8 @@ export const BADGE_SLOT_ID = 'access-badge-slot';
 
 /**
  * Free time is counted on the server; this only mirrors it. When it ends: a visitor is asked to
- * sign up or in; an account without access is asked to pay (Pix or card).
+ * create an account (without mentioning the free minute); only after sign-up does an unlocked
+ * account see the payment offer (Pix or card).
  */
 export function AccessGate({
   initial,
@@ -178,7 +198,11 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
       )}
       {status.state === 'paid' && (
         <span className="access-badge-time">
-          {status.staff ? 'Acesso da equipe' : 'Acesso vitalício'}
+          {status.staff
+            ? 'Acesso da equipe'
+            : status.granted
+              ? 'Acesso liberado'
+              : 'Acesso vitalício'}
         </span>
       )}
       {status.guest ? (
@@ -253,18 +277,19 @@ function Paywall({
     return () => clearTimeout(timer);
   }, [paid]);
 
+  // Visitors: only ask for sign-up / sign-in. Never mention the free minute; payment comes after.
   if (status.guest)
     return (
       <Dialog label="paywall-title" onClose={onClose}>
-        <h2 id="paywall-title">
-          {onClose ? 'Crie sua conta para continuar' : 'Seu minuto grátis acabou'}
-        </h2>
+        <h2 id="paywall-title">Crie sua conta para continuar</h2>
         <p className="paywall-text">
-          Crie sua conta para continuar vendo a apuração ao vivo e o chat. É rápido: escolha um
-          @nome (sem espaços) e uma senha.
+          Para seguir com a apuração ao vivo e o chat, crie sua conta. É rápido: escolha um @nome
+          (sem espaços), um e-mail e uma senha.
         </p>
         <div className="paywall-auth">
-          <PasswordForm next="/" initialMode="criar" emphasizeSignup />
+          <Suspense fallback={<p className="paywall-waiting">Carregando…</p>}>
+            <PasswordForm next="/" initialMode="criar" emphasizeSignup />
+          </Suspense>
         </div>
       </Dialog>
     );
@@ -274,12 +299,14 @@ function Paywall({
     return (
       <Dialog label="pix-title">
         <h2 id="pix-title">Pague com Pix</h2>
-        <PixPaymentPanel
-          pix={pix}
-          simulated={simulatedPayment}
-          onPaid={done}
-          onExpired={() => setPix(null)}
-        />
+        <Suspense fallback={<p className="paywall-waiting">Carregando Pix…</p>}>
+          <PixPaymentPanel
+            pix={pix}
+            simulated={simulatedPayment}
+            onPaid={done}
+            onExpired={() => setPix(null)}
+          />
+        </Suspense>
         <button type="button" className="shop-back" onClick={() => setPix(null)}>
           ← Voltar
         </button>
@@ -321,13 +348,16 @@ function Paywall({
             <li>Mapa por estado, município e zona</li>
             <li>Parte do valor ajuda o Natal de crianças carentes</li>
           </ul>
-          <Checkout
-            item={{ amount: status.price }}
-            publicKey={publicKey}
-            simulated={simulatedPayment}
-            onPaid={done}
-            onPixReady={setPix}
-          />
+          <Suspense fallback={<p className="paywall-waiting">Carregando pagamento…</p>}>
+            <Checkout
+              item={{ amount: status.price }}
+              publicKey={publicKey}
+              simulated={simulatedPayment}
+              email={status.user.email}
+              onPaid={done}
+              onPixReady={setPix}
+            />
+          </Suspense>
         </>
       )}
       <form className="paywall-account" method="post" action="/api/auth/logout">
@@ -378,7 +408,15 @@ function StickerShop({
           <h2 id="shop-title">
             {item.credits} envios por {brl(item.amount)}
           </h2>
-          <Checkout item={item} publicKey={publicKey} simulated={simulatedPayment} onPaid={done} />
+          <Suspense fallback={<p className="paywall-waiting">Carregando pagamento…</p>}>
+            <Checkout
+              item={item}
+              publicKey={publicKey}
+              simulated={simulatedPayment}
+              email={status.user.email}
+              onPaid={done}
+            />
+          </Suspense>
           <button type="button" className="shop-back" onClick={() => setItem(null)}>
             ← Escolher outro pacote
           </button>

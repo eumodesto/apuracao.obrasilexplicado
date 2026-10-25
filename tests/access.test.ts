@@ -7,6 +7,9 @@ import { accessStatus, watchedSeconds } from '../src/lib/access/access';
 import {
   applyPayment,
   openPix,
+  ensurePayerEmail,
+  PayerEmailError,
+  payerEmailFor,
   payWithCard,
   refreshPayment,
   webhookUrl,
@@ -162,6 +165,35 @@ const fakeMercadoPago = (payment: MercadoPagoPayment) =>
 const P5 = { purpose: 'access' as const, amount: 5, credits: null, description: 'Acesso' };
 
 describe('Pix payment', () => {
+  it('sends Mercado Pago the real e-mail and never invents one', () => {
+    expect(payerEmailFor({ email: 'Ana@Example.com' })).toBe('ana@example.com');
+    expect(payerEmailFor({ email: '' }, ' Bia@Example.com ')).toBe('bia@example.com');
+    expect(() => payerEmailFor({ email: '' })).toThrow(PayerEmailError);
+    expect(() => payerEmailFor({ email: 'ana@gmai.com' })).toThrow(PayerEmailError);
+    expect(() => payerEmailFor({ email: 'x@pagadores.portaleleicao.com.br' })).toThrow(
+      PayerEmailError,
+    );
+  });
+
+  it('asks for and saves the e-mail of an account that has none before charging', async () => {
+    const store = new FileAccessStore();
+    const user = await store.upsertUser({ id: 'user:sem', email: '', name: 'sem' });
+    await expect(ensurePayerEmail(user, store)).rejects.toThrow(PayerEmailError);
+    await expect(ensurePayerEmail(user, store, 'sem@gmial.com')).rejects.toThrow(/gmail\.com/);
+    const fixed = await ensurePayerEmail(user, store, ' Sem@Example.com ');
+    expect(fixed.email).toBe('sem@example.com');
+    expect((await store.getUser('user:sem'))?.email).toBe('sem@example.com');
+    expect(await ensurePayerEmail(fixed, store)).toBe(fixed);
+  });
+
+  it('does not create a Pix charge without a payer e-mail', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser({ id: 'user:sem2', email: '', name: 'sem2' }),
+      mp = fakeMercadoPago(remote());
+    await expect(openPix(user, store, mp, T0, P5)).rejects.toThrow(PayerEmailError);
+    expect(mp.createPix).not.toHaveBeenCalled();
+  });
+
   it('creates one charge and reuses it while it is still payable', async () => {
     const store = new FileAccessStore(),
       user = await store.upsertUser(profile),
@@ -213,6 +245,42 @@ describe('Pix payment', () => {
     );
     expect(payment?.status).toBe('approved');
     expect((await store.getUser(profile.id))!.paymentId).toBe('123');
+  });
+
+  it('confirms the watched Pix even after a declined card became the latest charge', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile);
+    await openPix(user, store, fakeMercadoPago(remote()), T0, P5);
+    const declined = {
+      createCard: vi.fn(async () =>
+        remote({ id: '999', status: 'rejected', statusDetail: 'cc_rejected_other_reason' }),
+      ),
+    } as unknown as MercadoPago;
+    const card = {
+      token: 't',
+      installments: 1,
+      paymentMethodId: 'visa',
+      issuerId: null,
+      identification: null,
+    };
+    await payWithCard(user, store, declined, card, P5, T0 + 60_000);
+    expect((await store.latestPayment(user.id))!.id).toBe('999');
+
+    const mp = fakeMercadoPago(remote({ status: 'approved' }));
+    const payment = await refreshPayment(user, store, mp, T0 + 120_000, '123');
+    expect(mp.getPayment).toHaveBeenCalledWith('123');
+    expect(payment).toMatchObject({ id: '123', status: 'approved' });
+    expect((await store.getUser(profile.id))!.paymentId).toBe('123');
+  });
+
+  it('does not refresh a charge that belongs to someone else', async () => {
+    const store = new FileAccessStore(),
+      user = await store.upsertUser(profile),
+      other = await store.upsertUser({ ...profile, id: 'google:2', email: 'bia@example.com' });
+    await openPix(user, store, fakeMercadoPago(remote()), T0, P5);
+    const mp = fakeMercadoPago(remote({ status: 'approved' }));
+    expect(await refreshPayment(other, store, mp, T0, '123')).toBeNull();
+    expect(mp.getPayment).not.toHaveBeenCalled();
   });
 
   it('simulates a charge without Mercado Pago', async () => {
@@ -817,15 +885,23 @@ describe('visitors without an account', () => {
     });
   });
 
-  it('shares free-minute usage across IP and device so a new browser profile stays locked', async () => {
+  it('shares free-minute usage on the same device id, not across a whole CGNAT IP', async () => {
+    const { freeQuotaKeys } = await import('../src/lib/access/device');
+    expect(freeQuotaKeys('1.2.3.4', 'abc')).toEqual(['dev:abc']);
+    expect(freeQuotaKeys('1.2.3.4', null)).toEqual(['ip:1.2.3.4']);
     const store = new FileAccessStore();
-    await store.bumpFreeQuota(['ip:1.2.3.4', 'dev:abc'], 60);
-    expect(await store.maxFreeQuota(['ip:1.2.3.4'])).toBe(60);
+    await store.bumpFreeQuota(['dev:abc'], 60);
+    expect(await store.maxFreeQuota(['dev:abc'])).toBe(60);
     expect(await store.maxFreeQuota(['dev:other'])).toBe(0);
     expect(await store.createGuest('guest:b', 'Visitante 7777', T0)).toBe('ok');
-    await store.inheritFreeTime('guest:b', await store.maxFreeQuota(['ip:1.2.3.4']));
+    await store.inheritFreeTime('guest:b', await store.maxFreeQuota(['dev:abc']));
     expect(accessStatus((await store.getUser('guest:b'))!, T0, { free: 60, price: 5 }).state).toBe(
       'locked',
+    );
+    expect(await store.createGuest('guest:c', 'Visitante 8888', T0)).toBe('ok');
+    await store.inheritFreeTime('guest:c', await store.maxFreeQuota(['dev:other']));
+    expect(accessStatus((await store.getUser('guest:c'))!, T0, { free: 60, price: 5 }).state).toBe(
+      'free',
     );
   });
 

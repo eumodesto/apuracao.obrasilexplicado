@@ -61,7 +61,24 @@ export async function startGuest(
   const token = sign({ id }, sessionSecret(), GUEST_TTL_SECONDS);
   jar.set(GUEST_COOKIE, token, cookieOptions(GUEST_TTL_SECONDS));
   await signIn({ sub: id!, email: '', name: 'Visitante' }, store);
-  const user = await store.getUser(id!);
+  let user = await store.getUser(id!);
+  // Repair a visitor created without onboardedAt/username (upsert-only): otherwise `/` sends
+  // them to /cadastro and the free minute never appears to run on the panel.
+  if (user && (user.onboardedAt == null || !user.username)) {
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const name = guestName(attempt < 4 ? 4 : 6);
+      if (await store.usernameTaken(name, id!)) continue;
+      if (
+        (await store.saveProfile(
+          id!,
+          { username: name, party: 'none', partyConsentAt: null },
+          Date.now(),
+        )) === 'ok'
+      )
+        break;
+    }
+    user = (await store.getUser(id!)) ?? user;
+  }
   if (user) await store.bumpFreeQuota(bind.keys, user.freeSecondsUsed);
   return { id: id!, resume: token, deviceId: bind.deviceId };
 }

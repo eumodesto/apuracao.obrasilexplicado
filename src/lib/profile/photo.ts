@@ -2,6 +2,7 @@ import { createHmac } from 'node:crypto';
 import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import postgres from 'postgres';
+import { ensureSchema } from '@/lib/db/migrate';
 import sharp from 'sharp';
 import { sessionSecret } from '@/lib/access/config';
 import type { AccessUser } from '@/lib/access/types';
@@ -83,12 +84,12 @@ export class PostgresPhotoStore implements PhotoStore {
   }
 
   private schema() {
-    this.ready ??= this.sql`
+    this.ready ??= ensureSchema(this.sql, 'profile_photos', 1, `
       CREATE TABLE IF NOT EXISTS profile_photos (
         key text PRIMARY KEY,
         data bytea NOT NULL,
         updated_at timestamptz NOT NULL DEFAULT now()
-      )`.catch((error) => {
+      )`).catch((error) => {
       this.ready = null;
       throw error;
     });

@@ -15,3 +15,4 @@ playwright-report
 Dockerfile
 docker-compose.yml
 deploy
+static

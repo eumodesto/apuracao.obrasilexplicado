@@ -26,6 +26,30 @@
 	handle @stream {
 		import app
 	}
+
+	# Static files never touch Node: Caddy serves them from /srv/static (filled at deploy by
+	# deploy/publish-static.sh: Next's hashed build assets, `public/` and the icons), already
+	# compressed on disk. Under load, serving ~60% of all requests (assets, favicon) from the Node
+	# processes kept their event loops at 100% and stalled logins, APIs and the admin panel. A file
+	# that is not on disk falls through to the app, so a missed publish degrades, not breaks.
+	@static path /_next/static/* /maps/* /stickers/* /access/* /favicon.ico /apple-icon.png
+	handle @static {
+		route {
+			# Hashed Next assets: long cache in the browser (names change every build).
+			header /_next/static/* Cache-Control "public, max-age=31536000, immutable"
+			header /maps/* Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+			header /stickers/* Cache-Control "public, max-age=86400, stale-while-revalidate=604800"
+			header /access/* Cache-Control "public, max-age=86400"
+			header /favicon.ico Cache-Control "public, max-age=86400"
+			header /apple-icon.png Cache-Control "public, max-age=86400"
+			root * /srv/static
+			file_server {
+				precompressed br gzip
+				pass_thru
+			}
+			import app
+		}
+	}
 	handle {
 		encode zstd gzip
 		import app

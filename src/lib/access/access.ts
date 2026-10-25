@@ -15,6 +15,15 @@ export function hasPaidAccess(user: Pick<AccessUser, 'paidAt'>) {
   return user.paidAt !== null;
 }
 
+/**
+ * Access unlocked by an administrator or staff list — never a Mercado Pago charge.
+ * `payment_id` is `admin:grant` / `staff:grant`, not an MP payment id.
+ */
+export function isGrantedAccess(user: Pick<AccessUser, 'paymentId'>) {
+  const id = user.paymentId ?? '';
+  return id.startsWith('admin:') || id.startsWith('staff:');
+}
+
 /** Seconds to add for a request at `now`, given the previous one. Long absences count as one gap. */
 export function watchedSeconds(lastSeenAt: number | null, now: number, maxGapSeconds: number) {
   if (lastSeenAt === null) return 0;
@@ -33,6 +42,7 @@ export function accessStatus(
     // same guest id (cookie + localStorage resume), so a reload cannot mint another minute;
     // closing the tab must pause, not burn the minute in the background.
     remainingSeconds = paid ? 0 : Math.max(0, Math.ceil(limits.free - user.freeSecondsUsed));
+  const granted = isGrantedAccess(user);
   return {
     state: paid ? 'paid' : remainingSeconds > 0 ? 'free' : 'locked',
     remainingSeconds,
@@ -42,6 +52,8 @@ export function accessStatus(
     paidUntil: null,
     waiting: !paid && waiting,
     staff,
+    /** Unlocked by admin/staff — no Mercado Pago; stickers do not spend credits. */
+    granted,
     guest: isGuest(user),
     stickers: user.stickerCredits ?? 0,
     user: { name: user.name, email: user.email, username: user.username },

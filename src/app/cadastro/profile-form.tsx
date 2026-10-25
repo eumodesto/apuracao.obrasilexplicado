@@ -4,33 +4,41 @@ import { useEffect, useRef, useState } from 'react';
 import type { Party } from '@/lib/profile/parties';
 
 type Check = { state: 'idle' | 'checking' | 'ok' | 'error'; message?: string | null };
-type Errors = Partial<Record<'username' | 'party' | 'form', string>>;
+type Errors = Partial<Record<'username' | 'email' | 'party' | 'form', string>>;
 
 const CHECK_DELAY_MS = 400;
+const emailOk = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
 export function ProfileForm({
   parties,
   noParty,
   suggestion,
   lockedUsername = null,
+  needsEmail = false,
 }: {
   parties: Party[];
   noParty: string;
   suggestion: string;
   /** Username already chosen at sign-up — only the party remains. */
   lockedUsername?: string | null;
+  /** Legacy accounts created without e-mail still need one for Pix. */
+  needsEmail?: boolean;
 }) {
   const router = useRouter();
   const locked = !!lockedUsername;
   const [username, setUsername] = useState(lockedUsername ?? suggestion);
+  const [email, setEmail] = useState('');
   const [check, setCheck] = useState<Check>({ state: locked ? 'ok' : 'idle' });
   const [party, setParty] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [sending, setSending] = useState(false);
   const usernameInput = useRef<HTMLInputElement>(null);
+  const emailInput = useRef<HTMLInputElement>(null);
   const usernameRef = useRef(username);
+  const emailRef = useRef(email);
   const checkRef = useRef(check);
   usernameRef.current = username;
+  emailRef.current = email;
   checkRef.current = check;
 
   // Checks availability while typing, keeping only the answer for the latest text.
@@ -63,6 +71,7 @@ export function ProfileForm({
   const finish = async (chosen: string) => {
     if (sending) return;
     const name = usernameRef.current.trim().replace(/^@/, '');
+    const mail = emailRef.current.trim().toLowerCase();
     const next: Errors = {};
     if (!name) next.username = 'Escolha um nome de usuário.';
     else if (!locked) {
@@ -71,9 +80,14 @@ export function ProfileForm({
       else if (checkRef.current.state === 'checking' || checkRef.current.state === 'idle')
         next.username = 'Aguarde a verificação do nome de usuário.';
     }
+    if (needsEmail) {
+      if (!mail) next.email = 'Digite um e-mail.';
+      else if (!emailOk(mail)) next.email = 'Digite um e-mail válido.';
+    }
     setErrors(next);
     if (Object.keys(next).length) {
-      usernameInput.current?.focus();
+      if (next.username) usernameInput.current?.focus();
+      else if (next.email) emailInput.current?.focus();
       return;
     }
     setParty(chosen);
@@ -87,6 +101,7 @@ export function ProfileForm({
           username: name,
           party: chosen,
           consent: chosen !== noParty,
+          ...(needsEmail ? { email: mail } : {}),
         }),
       });
       if (response.status === 401) return router.replace('/login');
@@ -96,7 +111,7 @@ export function ProfileForm({
         if (body.field === 'username') {
           setCheck({ state: 'error', message: body.error });
           usernameInput.current?.focus();
-        }
+        } else if (body.field === 'email') emailInput.current?.focus();
         setParty('');
         return setSending(false);
       }
@@ -165,6 +180,41 @@ export function ProfileForm({
           <p id="username-help" className="signup-help">
             De 3 a 20 caracteres: letras sem acento, números, ponto e sublinhado. Ninguém mais pode
             usar o mesmo nome.
+          </p>
+        </>
+      )}
+
+      {needsEmail && (
+        <>
+          <label className="signup-label" htmlFor="signup-email">
+            E-mail
+          </label>
+          <input
+            ref={emailInput}
+            id="signup-email"
+            className="login-input"
+            name="email"
+            type="email"
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value.trim());
+              setErrors((current) => ({ ...current, email: undefined }));
+            }}
+            autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={120}
+            disabled={sending}
+            aria-invalid={!!errors.email}
+            aria-describedby="signup-email-help"
+          />
+          {errors.email && (
+            <p className="signup-status is-error" role="alert">
+              {errors.email}
+            </p>
+          )}
+          <p id="signup-email-help" className="signup-help">
+            Usado no Pix e em avisos da conta. Não substitui o @nome.
           </p>
         </>
       )}

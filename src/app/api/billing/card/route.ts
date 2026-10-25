@@ -1,4 +1,4 @@
-import { mercadoPago, payWithCard } from '@/lib/access/billing';
+import { ensurePayerEmail, mercadoPago, payWithCard, PayerEmailError } from '@/lib/access/billing';
 import { devPaymentEnabled } from '@/lib/access/config';
 import { currentAccess, sessionProblem } from '@/lib/access/guard';
 import { cardMessage, purchaseFor } from '@/lib/access/purchase';
@@ -47,9 +47,12 @@ export async function POST(request: Request) {
   const idType = text(body?.payer?.identification?.type, 10),
     idNumber = text(body?.payer?.identification?.number, 20);
   try {
+    const store = accessStore();
+    const typedEmail = text(body?.email, 254) ?? text(body?.payer?.email, 254) ?? undefined;
+    const user = mp ? await ensurePayerEmail(access.user, store, typedEmail) : access.user;
     const result = await payWithCard(
-      access.user,
-      accessStore(),
+      user,
+      store,
       mp,
       {
         token: token ?? 'dev',
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
         paymentMethodId: methodId ?? 'dev',
         issuerId: text(body?.issuer_id, 20),
         identification: idType && idNumber ? { type: idType, number: idNumber } : null,
-        email: text(body?.payer?.email, 254) ?? undefined,
+        email: typedEmail,
       },
       purchase.product,
     );
@@ -71,6 +74,8 @@ export async function POST(request: Request) {
       { headers: { 'Cache-Control': 'no-store' } },
     );
   } catch (error) {
+    if (error instanceof PayerEmailError)
+      return Response.json({ error: error.message, code: 'email_required' }, { status: 409 });
     console.error('[billing] card payment failed', error);
     return Response.json(
       { error: 'Não foi possível processar o cartão. Tente de novo ou pague com Pix.' },
