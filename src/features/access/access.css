@@ -523,10 +523,20 @@ body:has(.access-badge) {
   font-size: 16px;
   color: #d8d7d0;
 }
-.paywall-auth .login-form.is-easy .login-input {
+.paywall-auth .login-form.is-easy .login-input,
+.paywall-auth .login-form.is-easy .login-username {
   height: 52px;
-  margin-bottom: 14px;
+  margin-bottom: 6px;
   font-size: 18px;
+}
+.paywall-auth .login-form.is-easy .login-username > span,
+.paywall-auth .login-form.is-easy .login-username input {
+  font-size: 18px;
+}
+.paywall-auth .login-form.is-easy .login-username-help {
+  margin-bottom: 14px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 .paywall-auth .login-form.is-easy .login-dev,
 .paywall-auth .login-form.is-easy .login-submit {

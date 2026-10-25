@@ -158,7 +158,7 @@ async function post(
       ok: false,
       status: 402,
       code: 'no_stickers',
-      error: 'Suas figurinhas acabaram. Compre um pacote para enviar mais.',
+      error: 'Seus envios acabaram. Compre um pacote para mandar mais figurinhas.',
     };
   const message = {
     id: now.toString(36) + randomBytes(6).toString('hex'),

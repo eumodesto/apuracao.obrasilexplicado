@@ -27,7 +27,7 @@ export function stickerProduct(id: unknown): Product | null {
         purpose: 'stickers',
         amount: pack.price,
         credits: pack.credits,
-        description: `Resultados Brasil — ${pack.credits} figurinhas para o chat`,
+        description: `Resultados Brasil — ${pack.credits} envios de figurinha no chat`,
       }
     : null;
 }

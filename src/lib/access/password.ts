@@ -17,7 +17,8 @@ const N = 16384,
   R = 8,
   P = 1,
   KEY_LENGTH = 64;
-export const MIN_PASSWORD = 8;
+/** Any non-empty password is accepted — ease of signup over strength. */
+export const MIN_PASSWORD = 1;
 export const MAX_PASSWORD = 200;
 
 const scrypt = (password: string, salt: Buffer, keyLength: number, options: ScryptOptions) =>
@@ -64,8 +65,11 @@ export const cleanEmail = (value: unknown) => {
   return email.length <= 254 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null;
 };
 
-/** Accounts created with e-mail and password: one id per e-mail. */
+/** Accounts created with e-mail and password: one id per e-mail (staff / admin / legacy). */
 export const emailAccountId = (email: string) => `email:${email}`;
+
+/** Public sign-up accounts: one id per username (case-insensitive). */
+export const usernameAccountId = (username: string) => `user:${username.toLowerCase()}`;
 
 export interface PasswordStore {
   get(userId: string): Promise<string | null>;

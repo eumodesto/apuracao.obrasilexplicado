@@ -274,8 +274,8 @@ describe('stickers', () => {
   it('has the neutral Apuração pack for everyone, with every picture in place', async () => {
     const { existsSync } = await import('node:fs');
     const { STICKERS, stickersFor } = await import('../src/lib/chat/stickers');
-    expect(STICKERS).toHaveLength(33);
-    expect(stickersFor('PT')).toHaveLength(22);
+    expect(STICKERS).toHaveLength(36);
+    expect(stickersFor('PT')).toHaveLength(25);
     expect(stickersFor('PL')).toHaveLength(20);
     expect(stickersFor('none')).toHaveLength(9);
     expect(stickersFor(null)).toHaveLength(9);

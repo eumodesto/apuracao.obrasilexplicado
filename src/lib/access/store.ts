@@ -173,6 +173,21 @@ export class FileAccessStore implements AccessStore {
     });
   }
 
+  async claimUsername(id: string, username: string) {
+    return this.change((data) => {
+      const user = data.users[id];
+      if (!user) return 'missing' as const;
+      const key = usernameKey(username);
+      const taken = Object.values(data.users).some(
+        (other) => other.id !== id && other.username && usernameKey(other.username) === key,
+      );
+      if (taken) return 'taken' as const;
+      user.username = username;
+      user.name = username;
+      return 'ok' as const;
+    });
+  }
+
   async usernameTaken(username: string, exceptId?: string) {
     await this.load();
     const key = usernameKey(username);
@@ -547,6 +562,22 @@ export class PostgresAccessStore implements AccessStore {
           party_consent_at = ${profile.partyConsentAt === null ? null : new Date(profile.partyConsentAt)},
           onboarded_at = COALESCE(onboarded_at, ${new Date(now)}),
           last_seen_at = NULL
+        WHERE id = ${id}
+        RETURNING id`;
+      return rows.length ? ('ok' as const) : ('missing' as const);
+    } catch (error) {
+      if ((error as { code?: string }).code === '23505') return 'taken' as const;
+      throw error;
+    }
+  }
+
+  async claimUsername(id: string, username: string) {
+    await this.schema();
+    const [mine] = await this.sql<{ id: string }[]>`SELECT id FROM access_users WHERE id = ${id}`;
+    if (!mine) return 'missing' as const;
+    try {
+      const rows = await this.sql`
+        UPDATE access_users SET username = ${username}, name = ${username}
         WHERE id = ${id}
         RETURNING id`;
       return rows.length ? ('ok' as const) : ('missing' as const);

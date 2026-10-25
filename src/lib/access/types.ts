@@ -97,6 +97,11 @@ export interface AccessStore {
   startSession(id: string, sessionId: string): Promise<void>;
   /** Saves the sign-up profile. 'taken' when another account has the username. */
   saveProfile(id: string, profile: ProfileInput, now: number): Promise<'ok' | 'taken' | 'missing'>;
+  /**
+   * Reserves the username on a new account before party onboarding. Does not set onboardedAt.
+   * 'taken' when another account already has it.
+   */
+  claimUsername(id: string, username: string): Promise<'ok' | 'taken' | 'missing'>;
   usernameTaken(username: string, exceptId?: string): Promise<boolean>;
   /** The account with this username (case-insensitive), for signing in by username. */
   userIdByUsername(username: string): Promise<string | null>;

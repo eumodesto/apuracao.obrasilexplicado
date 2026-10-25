@@ -621,9 +621,9 @@ function Composer({
               ) : staff ? (
                 'Figurinhas da equipe · à vontade'
               ) : stickers > 0 ? (
-                `Você tem ${stickers} ${stickers === 1 ? 'figurinha' : 'figurinhas'}`
+                `Você tem ${stickers} ${stickers === 1 ? 'envio' : 'envios'}`
               ) : (
-                'Escolha uma figurinha para liberar o pacote'
+                'Compre envios para mandar figurinhas'
               )}
               {hasPack && paid && waiting === 0 && (staff || stickers > 0) && (
                 <small> · toque para enviar</small>

@@ -690,10 +690,14 @@ describe('sticker packs and card payments', () => {
     const store = new FileAccessStore(),
       user = await store.upsertUser(profile);
     const pack = stickerProduct('s20')!;
-    expect(pack).toMatchObject({ purpose: 'stickers', amount: 5, credits: 20 });
+    expect(pack).toMatchObject({ purpose: 'stickers', amount: 3.5, credits: 20 });
+    expect(stickerProduct('s10')).toMatchObject({ amount: 3, credits: 10 });
+    expect(stickerProduct('s30')).toMatchObject({ amount: 4, credits: 30 });
+    expect(stickerProduct('s50')).toMatchObject({ amount: 5, credits: 50 });
+    expect(stickerProduct('s5')).toBeNull();
     expect(stickerProduct('s999')).toBeNull();
-    await openPix(user, store, fakeMercadoPago(remote({ amount: 5 })), T0, pack);
-    const approved = remote({ status: 'approved', amount: 5 });
+    await openPix(user, store, fakeMercadoPago(remote({ amount: 3.5 })), T0, pack);
+    const approved = remote({ status: 'approved', amount: 3.5 });
     expect(await applyPayment(approved, store, T0)).toBe(true);
     expect(await applyPayment(approved, store, T0 + 1)).toBe(true);
     const after = (await store.getUser(profile.id))!;
@@ -705,7 +709,7 @@ describe('sticker packs and card payments', () => {
   it('refuses a pack paid with less than its price', async () => {
     const store = new FileAccessStore(),
       user = await store.upsertUser(profile);
-    await openPix(user, store, fakeMercadoPago(remote({ amount: 10 })), T0, stickerProduct('s50')!);
+    await openPix(user, store, fakeMercadoPago(remote({ amount: 5 })), T0, stickerProduct('s50')!);
     expect(await applyPayment(remote({ status: 'approved', amount: 2 }), store, T0)).toBe(false);
     expect((await store.getUser(profile.id))!.stickerCredits).toBe(0);
   });

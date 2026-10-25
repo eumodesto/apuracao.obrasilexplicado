@@ -23,19 +23,22 @@ export default async function SignUpPage() {
         <p className="login-eyebrow">Resultados Brasil · Eleições 2026</p>
         <h1 id="signup-title">Quase lá</h1>
         <p className="login-text">
-          Escolha seu nome de usuário e toque no lado que você apoia para entrar no painel.
+          {active.user.username
+            ? `Olá, @${active.user.username}. Toque no lado que você apoia para entrar no painel.`
+            : 'Escolha seu nome de usuário e toque no lado que você apoia para entrar no painel.'}
         </p>
         <ProfileForm
           parties={PARTIES}
           noParty={NO_PARTY}
-          suggestion={suggestUsername(active.user.name)}
+          suggestion={active.user.username ?? suggestUsername(active.user.name)}
+          lockedUsername={active.user.username}
         />
       </section>
     </main>
   );
 }
 
-/** A starting point from the account name (the e-mail before the @): "maria.souza" → "mariasouza". */
+/** Fallback when a legacy account has no username yet: "maria.souza" → "mariasouza". */
 function suggestUsername(name: string) {
   const base = name
     .normalize('NFD')

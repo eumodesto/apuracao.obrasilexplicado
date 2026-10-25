@@ -157,7 +157,10 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
     <div className="access-badge" role="status">
       <span id={BADGE_SLOT_ID} className="access-badge-slot" />
       {status.user.username && (
-        <span className="access-badge-user" title={status.user.email || undefined}>
+        <span
+          className="access-badge-user"
+          title={status.user.username ? `@${status.user.username}` : status.user.email || undefined}
+        >
           {status.guest ? status.user.username : `@${status.user.username}`}
         </span>
       )}
@@ -184,8 +187,11 @@ function AccessBadge({ status, remaining }: { status: AccessStatus; remaining: n
         </button>
       ) : (
         <form method="post" action="/api/auth/logout">
-          <button type="submit" className="access-badge-logout" title={status.user.email}>
-            Sair
+          <button
+            type="submit"
+            className="access-badge-logout"
+            title={status.user.username ? `@${status.user.username}` : status.user.email}
+          >            Sair
           </button>
         </form>
       )}
@@ -254,8 +260,8 @@ function Paywall({
           {onClose ? 'Crie sua conta para continuar' : 'Seu minuto grátis acabou'}
         </h2>
         <p className="paywall-text">
-          Crie sua conta para continuar vendo a apuração ao vivo e o chat. É rápido — só e-mail e
-          senha.
+          Crie sua conta para continuar vendo a apuração ao vivo e o chat. É rápido: escolha um
+          @nome (sem espaços) e uma senha.
         </p>
         <div className="paywall-auth">
           <PasswordForm next="/" initialMode="criar" emphasizeSignup />
@@ -325,7 +331,10 @@ function Paywall({
         </>
       )}
       <form className="paywall-account" method="post" action="/api/auth/logout">
-        <span>Conectado como {status.user.email}</span>
+        <span>
+          Conectado como{' '}
+          {status.user.username ? `@${status.user.username}` : status.user.name || status.user.email}
+        </span>
         <button type="submit">Sair</button>
       </form>
     </Dialog>
@@ -358,7 +367,7 @@ function StickerShop({
         <>
           <h2 id="shop-title">Figurinhas liberadas</h2>
           <p className="paywall-text" aria-live="polite">
-            {bought} figurinhas foram adicionadas. Bom chat!
+            {bought} {bought === 1 ? 'envio foi adicionado' : 'envios foram adicionados'}. Bom chat!
           </p>
           <button type="button" className="paywall-pay" onClick={onClose}>
             Voltar ao chat
@@ -367,7 +376,7 @@ function StickerShop({
       ) : item ? (
         <>
           <h2 id="shop-title">
-            {item.credits} figurinhas por {brl(item.amount)}
+            {item.credits} envios por {brl(item.amount)}
           </h2>
           <Checkout item={item} publicKey={publicKey} simulated={simulatedPayment} onPaid={done} />
           <button type="button" className="shop-back" onClick={() => setItem(null)}>
@@ -378,8 +387,9 @@ function StickerShop({
         <>
           <h2 id="shop-title">Figurinhas para o chat</h2>
           <p className="paywall-text">
-            Você tem <b>{status.stickers}</b> {status.stickers === 1 ? 'figurinha' : 'figurinhas'}.
-            Cada figurinha enviada usa uma.
+            Você tem <b>{status.stickers}</b>{' '}
+            {status.stickers === 1 ? 'envio' : 'envios'}. Cada envio gasta 1 — pode repetir a mesma
+            figurinha.
           </p>
           <div className="shop-packs">
             {STICKER_PACKS.map((pack) => (
@@ -392,7 +402,7 @@ function StickerShop({
                 }
               >
                 <b>{pack.credits}</b>
-                <span>figurinhas</span>
+                <span>envios</span>
                 <em>{brl(pack.price)}</em>
               </button>
             ))}

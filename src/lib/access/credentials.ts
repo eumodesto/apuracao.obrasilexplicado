@@ -1,10 +1,11 @@
-import { staffEmails } from './config';
+import { cleanUsername, usernameProblem } from '@/lib/profile/username';
 import {
   cleanEmail,
   emailAccountId,
   hashPassword,
   passwordProblem,
   passwordStore,
+  usernameAccountId,
   verifyPassword,
   type PasswordStore,
 } from './password';
@@ -16,37 +17,41 @@ export type CredentialResult =
   | { ok: false; status: number; error: string };
 
 const fail = (status: number, error: string): CredentialResult => ({ ok: false, status, error });
-const WRONG = 'E-mail, nome de usuário ou senha incorretos.';
+const WRONG = 'Nome de usuário ou senha incorretos.';
 
 /**
- * New account with e-mail and password. Team and administrator e-mails cannot be claimed here:
- * nobody confirms that the person owns the e-mail, so those accounts get their password only on
- * the server (scripts/set-password.mjs).
+ * New account with username and password. The person still picks a party on /cadastro.
+ * Team/admin accounts are not created here (they use e-mail via adminCreateAccount).
  */
 export async function signUp(
-  input: { email: unknown; password: unknown },
+  input: { username: unknown; password: unknown },
   stores: { access?: AccessStore; passwords?: PasswordStore } = {},
 ): Promise<CredentialResult> {
   const access = stores.access ?? accessStore(),
     passwords = stores.passwords ?? passwordStore();
-  const email = cleanEmail(input.email);
-  if (!email) return fail(400, 'Digite um e-mail válido.');
-  const password = String(input.password ?? '');
-  const problem = passwordProblem(password);
+  const username = cleanUsername(String(input.username ?? ''));
+  const problem = usernameProblem(username);
   if (problem) return fail(400, problem);
-  if (staffEmails().has(email))
-    return fail(403, 'Este e-mail é reservado. Peça a senha à administração do site.');
-  const id = emailAccountId(email);
+  const password = String(input.password ?? '');
+  const passProblem = passwordProblem(password);
+  if (passProblem) return fail(400, passProblem);
+  if (await access.usernameTaken(username))
+    return fail(409, 'Esse nome já está em uso. Escolha outro.');
+  const id = usernameAccountId(username);
   const existing = await access.getUser(id);
   if (existing?.deletedAt) return fail(403, 'Esta conta foi excluída.');
+  if (existing) return fail(409, 'Esse nome já está em uso. Escolha outro.');
   if (!(await passwords.create(id, await hashPassword(password))))
-    return fail(409, 'Já existe uma conta com este e-mail. Use "Entrar".');
-  const name = email.split('@')[0];
-  await access.upsertUser({ id, email, name });
-  return { ok: true, profile: { sub: id, email, name } };
+    return fail(409, 'Esse nome já está em uso. Escolha outro.');
+  await access.upsertUser({ id, email: '', name: username });
+  const claimed = await access.claimUsername(id, username);
+  if (claimed !== 'ok') {
+    return fail(409, 'Esse nome já está em uso. Escolha outro.');
+  }
+  return { ok: true, profile: { sub: id, email: '', name: username } };
 }
 
-/** Signs in with the e-mail or the username, plus the password. */
+/** Signs in with the username (or legacy e-mail), plus the password. */
 export async function logIn(
   input: { login: unknown; password: unknown },
   stores: { access?: AccessStore; passwords?: PasswordStore } = {},
@@ -59,7 +64,12 @@ export async function logIn(
   const password = String(input.password ?? '');
   if (!login || !password || password.length > 200) return fail(400, WRONG);
   const email = login.includes('@') ? cleanEmail(login) : null;
-  const id = email ? emailAccountId(email) : await access.userIdByUsername(login.slice(0, 40));
+  const id = email
+    ? emailAccountId(email)
+    : ((await access.userIdByUsername(login.slice(0, 40))) ??
+      (usernameProblem(cleanUsername(login.slice(0, 40))) === null
+        ? usernameAccountId(cleanUsername(login.slice(0, 40)))
+        : null));
   const hash = id ? await passwords.get(id) : null;
   // verifyPassword does the same work without a hash, so a missing account takes as long.
   if (!(await verifyPassword(password, hash)) || !id) return fail(401, WRONG);

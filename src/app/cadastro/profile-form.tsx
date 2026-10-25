@@ -12,14 +12,18 @@ export function ProfileForm({
   parties,
   noParty,
   suggestion,
+  lockedUsername = null,
 }: {
   parties: Party[];
   noParty: string;
   suggestion: string;
+  /** Username already chosen at sign-up — only the party remains. */
+  lockedUsername?: string | null;
 }) {
   const router = useRouter();
-  const [username, setUsername] = useState(suggestion);
-  const [check, setCheck] = useState<Check>({ state: 'idle' });
+  const locked = !!lockedUsername;
+  const [username, setUsername] = useState(lockedUsername ?? suggestion);
+  const [check, setCheck] = useState<Check>({ state: locked ? 'ok' : 'idle' });
   const [party, setParty] = useState('');
   const [errors, setErrors] = useState<Errors>({});
   const [sending, setSending] = useState(false);
@@ -31,6 +35,7 @@ export function ProfileForm({
 
   // Checks availability while typing, keeping only the answer for the latest text.
   useEffect(() => {
+    if (locked) return;
     const value = username.trim().replace(/^@/, '');
     if (!value) return;
     const controller = new AbortController();
@@ -53,17 +58,19 @@ export function ProfileForm({
       clearTimeout(timer);
       controller.abort();
     };
-  }, [username, router]);
+  }, [username, router, locked]);
 
   const finish = async (chosen: string) => {
     if (sending) return;
     const name = usernameRef.current.trim().replace(/^@/, '');
     const next: Errors = {};
     if (!name) next.username = 'Escolha um nome de usuário.';
-    else if (checkRef.current.state === 'error')
-      next.username = checkRef.current.message ?? 'Esse nome não pode ser usado.';
-    else if (checkRef.current.state === 'checking' || checkRef.current.state === 'idle')
-      next.username = 'Aguarde a verificação do nome de usuário.';
+    else if (!locked) {
+      if (checkRef.current.state === 'error')
+        next.username = checkRef.current.message ?? 'Esse nome não pode ser usado.';
+      else if (checkRef.current.state === 'checking' || checkRef.current.state === 'idle')
+        next.username = 'Aguarde a verificação do nome de usuário.';
+    }
     setErrors(next);
     if (Object.keys(next).length) {
       usernameInput.current?.focus();
@@ -118,41 +125,49 @@ export function ProfileForm({
       noValidate
       aria-busy={sending}
     >
-      <label className="signup-label" htmlFor="username">
-        Nome de usuário
-      </label>
-      <div className={`signup-username is-${errors.username ? 'error' : check.state}`}>
-        <span aria-hidden="true">@</span>
-        <input
-          ref={usernameInput}
-          id="username"
-          name="username"
-          value={username}
-          onChange={(e) => {
-            setUsername(e.target.value);
-            setErrors((current) => ({ ...current, username: undefined }));
-            if (!e.target.value.trim()) setCheck({ state: 'idle' });
-          }}
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          maxLength={21}
-          disabled={sending}
-          aria-describedby="username-help username-status"
-          aria-invalid={!!errors.username || check.state === 'error'}
-        />
-      </div>
-      <p
-        id="username-status"
-        className={`signup-status is-${errors.username ? 'error' : check.state}`}
-        aria-live="polite"
-      >
-        {usernameMessage}
-      </p>
-      <p id="username-help" className="signup-help">
-        De 3 a 20 caracteres: letras sem acento, números, ponto e sublinhado. Ninguém mais pode usar
-        o mesmo nome.
-      </p>
+      {locked ? (
+        <p className="signup-help">
+          Seu nome no chat: <b>@{lockedUsername}</b>
+        </p>
+      ) : (
+        <>
+          <label className="signup-label" htmlFor="username">
+            Nome de usuário
+          </label>
+          <div className={`signup-username is-${errors.username ? 'error' : check.state}`}>
+            <span aria-hidden="true">@</span>
+            <input
+              ref={usernameInput}
+              id="username"
+              name="username"
+              value={username}
+              onChange={(e) => {
+                setUsername(e.target.value);
+                setErrors((current) => ({ ...current, username: undefined }));
+                if (!e.target.value.trim()) setCheck({ state: 'idle' });
+              }}
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={21}
+              disabled={sending}
+              aria-describedby="username-help username-status"
+              aria-invalid={!!errors.username || check.state === 'error'}
+            />
+          </div>
+          <p
+            id="username-status"
+            className={`signup-status is-${errors.username ? 'error' : check.state}`}
+            aria-live="polite"
+          >
+            {usernameMessage}
+          </p>
+          <p id="username-help" className="signup-help">
+            De 3 a 20 caracteres: letras sem acento, números, ponto e sublinhado. Ninguém mais pode
+            usar o mesmo nome.
+          </p>
+        </>
+      )}
 
       <fieldset
         className="signup-parties"

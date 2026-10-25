@@ -51,6 +51,9 @@ export const STICKERS: Sticker[] = [
     ['o-meu-voto-e-secreto', 'O meu voto é secreto'],
     ['dia-25-vote-lula', 'Dia 25 vote Lula'],
     ['meu-voto-e-secreto-estrela', 'Meu voto é secreto!'],
+    ['o-pai-ta-on', 'O pai ta on'],
+    ['lula-juliet', 'Lula Juliet'],
+    ['conta-ate-13', 'Conta até 13'],
   ]),
   ...partyPack('PL', '22', '#1f4e9c', '#0f2d5c', [
     ['nois-e-peao', 'Nois e peao'],
